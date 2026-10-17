@@ -7,6 +7,18 @@ Independently maintained from NeonWings commit `5ebcb1de1adb288b41a3c5e387f747bc
 - [x] Configure standalone Pages workflow
 - [ ] Verify site deployment and controller tests on hardware
 
+## v26.2.0 — NeonWings-Pan red weapon
+
+- [x] Add fourth, red P pickup to normal loot selection and hit-recovery drop paths
+- [x] Two fixed parallel red shots; rest for 0.4s after 5 + star level volleys
+- [x] Independent 10% proc on normal red volleys with only one active special
+- [x] Exactly 250 projectiles within ±10° in 3 seconds of active combat
+- [x] Star grant after fan completion, max five; keep stars when switching weapons
+- [x] Deduct one star on real HP loss, including while a non-red gun is equipped
+- [x] Persistent HUD star display and bounded player bullet budget of 360
+- [x] Add unit, integration, static asset and regression checks
+- [ ] Manually playtest red cone readability, difficulty balance and sustained 60 FPS on target devices
+
 ## Inherited baseline history (reference only)
 
 # NeonWings development roadmap
