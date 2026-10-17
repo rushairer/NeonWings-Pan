@@ -1127,3 +1127,161 @@ test("BLACK slow does not alter the velocity of already-launched enemy projectil
   app.eval('updateEnemies(.2)');
   assert.equal(app.eval('game.enemyBullets[0].vx'), -300);
 });
+
+
+test("WHITE P is the seventh drop, fires paired unlimited-penetration bolts and retains base cadence", () => {
+  const app = boot();
+  app.eval('game.state="PLAYING";game.weaponType="white";game.weaponLevel=3;game.bullets=[];firePlayerWeapons()');
+  assert.equal(app.eval("game.bullets.length"), 2);
+  assert.equal(app.eval("game.bullets.every(b=>b.whiteConductive && b.hitEnemies.length===0)"), true);
+  assert.equal(app.eval("game.bullets.every(b=>b.vx===1120 && b.vy===0)"), true);
+  assert.equal(app.eval("game.bullets.every(b=>!b.dead && !b.whiteBossHit)"), true);
+  assert.equal(app.eval("game.missiles.length"), 0);
+  assert.ok(Math.abs(app.eval("getFireCooldown()") - 0.101) < 1e-10);
+  app.eval("Math.random=()=>0.95");
+  assert.equal(app.eval("randomPowerType()"), "P_WHITE");
+  app.eval('game.weaponLevel=3;game.powerups=[];dropPlayerPowerOnHit()');
+  assert.equal(app.eval("game.powerups.at(-1).type"), "P_WHITE");
+  const labels = app.eval([
+    '(() => {',
+    'const arr=[];ctx.fillText=(label)=>arr.push(String(label));',
+    'drawHud();return arr;',
+    '})()'
+  ].join("\n"));
+  assert.ok(labels.includes("WHITE PIERCE + ARC"));
+});
+
+test("one white direct hit conducts once to all neighbors within GREEN's 360-radius", () => {
+  const app = boot();
+  app.eval([
+    'game.state="PLAYING";game.player.x=200;game.player.y=480;',
+    'game.enemies=[',
+    '  {kind:"gunner",x:400,y:480,r:20,hp:50,maxHp:50,score:40,color:"#fff",core:"#eee"},',
+    '  {kind:"scout",x:735,y:480,r:20,hp:50,maxHp:50,score:40,color:"#fff",core:"#eee"},',
+    '  {kind:"scout",x:850,y:480,r:20,hp:50,maxHp:50,score:40,color:"#fff",core:"#eee"}',
+    '];addPlayerShot(300,480,1100,0,9,1.15,"#fff",whiteRules.createShot());',
+    'updatePlayerBullets(.10);'
+  ].join("\n"));
+  assert.ok(Math.abs(app.eval("game.enemies[0].hp") - 48.85) < 1e-9);
+  assert.ok(Math.abs(app.eval("game.enemies[1].hp") - (50 - 1.15*.55)) < 1e-9);
+  assert.equal(app.eval("game.enemies[2].hp"), 50);
+  assert.equal(app.eval("game.bullets.length"), 1); // actual piercing
+  assert.equal(app.eval("game.bullets[0].hitEnemies.length"), 2);
+  assert.equal(app.eval("game.electricArcs.length"), 2); // direct and secondary light
+});
+
+test("conducted targets cannot conduct further and cannot be hit twice by one piercing shot", () => {
+  const app = boot();
+  app.eval([
+    'game.state="PLAYING";game.player.x=200;game.player.y=480;',
+    'game.enemies=[',
+    '  {kind:"scout",x:400,y:480,r:20,hp:50,maxHp:50,score:20,color:"#fff",core:"#eee"},',
+    '  {kind:"scout",x:735,y:480,r:20,hp:50,maxHp:50,score:20,color:"#fff",core:"#eee"},',
+    '  {kind:"scout",x:1090,y:480,r:20,hp:50,maxHp:50,score:20,color:"#fff",core:"#eee"}',
+    '];addPlayerShot(300,480,1100,0,9,1.15,"#fff",whiteRules.createShot());',
+    'updatePlayerBullets(.10);'
+  ].join("\n"));
+  // Third enemy is 690px from the first contact. One-hop shock never reaches it.
+  assert.equal(app.eval("game.enemies[2].hp"), 50);
+  const secondaryHp = app.eval("game.enemies[1].hp");
+  app.eval("updatePlayerBullets(.30)"); // Cross the already-conducted middle target
+  assert.equal(app.eval("game.enemies[1].hp"), secondaryHp);
+  assert.equal(app.eval("game.enemies[2].hp"), 50);
+  app.eval("updatePlayerBullets(.35)"); // Third target is far enough for a new DIRECT hit
+  assert.ok(Math.abs(app.eval("game.enemies[2].hp") - 48.85) < 1e-9);
+  assert.equal(app.eval("game.enemies[1].hp"), secondaryHp);
+  assert.equal(app.eval("game.bullets[0].hitEnemies.length"), 3);
+  assert.equal(app.eval("game.bullets.length"), 1);
+});
+
+test("electrical fan-out never damages newly spawned splitter children on the same impact", () => {
+  const app = boot();
+  app.eval([
+    'game.state="PLAYING";game.stageMode="WAVE";game.player.x=200;game.player.y=480;',
+    'game.enemies=[{kind:"splitter",x:400,y:480,r:35,hp:1,maxHp:1,',
+    'score:60,color:"#fff",core:"#eee"}];',
+    'addPlayerShot(300,480,1100,0,9,1.15,"#fff",whiteRules.createShot());',
+    'updatePlayerBullets(.10);'
+  ].join("\n"));
+  assert.equal(app.eval("game.stats.kills"), 1);
+  assert.equal(app.eval("game.enemies.length"), 3); // dead parent is removed by enemy update
+  assert.equal(app.eval("game.enemies.filter(e=>e.minion).length"), 2);
+  assert.equal(app.eval("game.enemies.filter(e=>e.minion).every(e=>e.hp>0)"), true);
+  assert.equal(app.eval("game.bullets[0].hitEnemies.length"), 1);
+});
+
+test("WHITE conductive splash damages a nearby Boss hull only once per projectile", () => {
+  const app = boot();
+  app.eval([
+    'game.state="PLAYING";game.player.x=200;game.player.y=480;',
+    'game.enemies=[{kind:"scout",x:400,y:480,r:20,hp:50,maxHp:50,score:40,color:"#fff",core:"#eee"}];',
+    'game.boss={active:true,x:820,y:480,rx:90,ry:80,hp:100,maxHp:100,color:"#fff",parts:[]};',
+    'addPlayerShot(300,480,1100,0,9,1.15,"#fff",whiteRules.createShot());',
+    'updatePlayerBullets(.10);'
+  ].join("\n"));
+  assert.ok(Math.abs(app.eval("game.boss.hp") - (100-1.15*.55)) < 1e-9);
+  assert.equal(app.eval("game.bullets[0].whiteBossHit"), true);
+  // Passing through the Boss later must not inflict a second hit.
+  app.eval("updatePlayerBullets(.45)");
+  assert.ok(Math.abs(app.eval("game.boss.hp") - (100-1.15*.55)) < 1e-9);
+});
+
+test("piercing WHITE boss hull contact conducts once to nearby enemies", () => {
+  const app = boot();
+  app.eval([
+    'game.state="PLAYING";game.player.x=200;game.player.y=480;',
+    'game.boss={active:true,x:760,y:480,rx:90,ry:80,hp:100,maxHp:100,color:"#fff",parts:[]};',
+    'game.enemies=[{kind:"scout",x:730,y:200,r:20,hp:50,maxHp:50,score:40,color:"#fff",core:"#eee"}];',
+    'addPlayerShot(300,480,1100,0,9,1.15,"#fff",whiteRules.createShot());',
+    'updatePlayerBullets(.44);'
+  ].join("\n"));
+  assert.ok(Math.abs(app.eval("game.boss.hp") - 98.85) < 1e-9);
+  assert.ok(Math.abs(app.eval("game.enemies[0].hp") - (50-1.15*.55)) < 1e-9);
+  assert.equal(app.eval("game.bullets.length"), 1);
+  assert.equal(app.eval("game.bullets[0].whiteBossHit"), true);
+});
+
+test("white projectile hits Boss turrets before core and cannot damage the same Boss twice", () => {
+  const app = boot();
+  app.eval([
+    'game.state="PLAYING";game.stageMode="WAVE";spawnBoss();game.boss.active=true;',
+    'game.boss.x=1010;game.boss.y=480;',
+    'const mount=game.boss.parts[0];',
+    'const tx=game.boss.x+mount.x,ty=game.boss.y+mount.y;',
+    'addPlayerShot(tx-160,ty,1200,0,9,1.15,"#fff",whiteRules.createShot());',
+    'updatePlayerBullets(.15);'
+  ].join("\n"));
+  assert.ok(app.eval("game.boss.parts[0].hp<game.boss.parts[0].maxHp"));
+  assert.equal(app.eval("game.boss.hp"), app.eval("game.boss.maxHp"));
+  assert.equal(app.eval("game.bullets[0].whiteBossHit"), true);
+  app.eval("updatePlayerBullets(.18)");
+  assert.equal(app.eval("game.boss.hp"), app.eval("game.boss.maxHp"));
+  assert.equal(app.eval("game.bullets[0].whiteBossHit"), true);
+});
+
+test("switching away from white does not disable electricity on bolts in flight", () => {
+  const app = boot();
+  app.eval([
+    'game.state="PLAYING";game.player.x=200;game.player.y=480;',
+    'game.weaponType="white";game.redWeapon.stars=3;game.enemies=[',
+    '{kind:"scout",x:450,y:470,r:22,hp:20,maxHp:20,score:40,color:"#fff",core:"#eee"},',
+    '{kind:"scout",x:700,y:470,r:22,hp:20,maxHp:20,score:40,color:"#fff",core:"#eee"}',
+    '];firePlayerWeapons();',
+    'collectPowerup({type:"P_GREEN",x:240,y:480,life:1});',
+    'updatePlayerBullets(.22);'
+  ].join("\n"));
+  assert.equal(app.eval("game.weaponType"), "green");
+  assert.equal(app.eval("game.redWeapon.stars"), 3);
+  assert.ok(app.eval("game.enemies[0].hp<20 && game.enemies[1].hp<20"));
+  assert.equal(app.eval("game.bullets.some(b=>b.whiteConductive)"), true);
+});
+
+test("lightning arcs are strictly bounded, fade away and do not persist during pause", () => {
+  const app = boot();
+  app.eval('for(let i=0;i<500;i++)addElectricArc(100,100,300,200)');
+  assert.equal(app.eval("game.electricArcs.length"), 96);
+  app.eval("updateParticles(.19)");
+  assert.equal(app.eval("game.electricArcs.length"), 0);
+  app.eval("game.state='PAUSED';addElectricArc(100,100,200,200);drawElectricArcs()");
+  assert.equal(app.eval("game.electricArcs.length"), 1);
+});
