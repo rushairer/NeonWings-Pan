@@ -1713,17 +1713,20 @@ const W = 1280;
         e.t += movementDt;
         e.x += e.vx * movementDt;
 
-        if (e.kind === "zigzag") {
-          e.y = e.baseY + Math.sin(e.t * 5.2 + e.wave) * 120;
-        } else if (e.kind === "orb" || e.kind === "splitter") {
-          e.y += (Math.sin(e.t * 4 + e.wave) * 75) * movementDt;
-        } else if (e.kind === "sniper" || e.kind === "shield") {
-          e.y += (e.vy + Math.sin(e.t * 2.8 + e.wave) * 26) * movementDt;
-        } else {
-          e.y += (e.vy + Math.sin(e.t * 3.8 + e.wave) * 38) * movementDt;
+        // Even scripted zigzag positioning must freeze at the exact on-hit
+        // coordinates, not snap to its sinusoidal path while movementDt is 0.
+        if (movementDt > 0) {
+          if (e.kind === "zigzag") {
+            e.y = e.baseY + Math.sin(e.t * 5.2 + e.wave) * 120;
+          } else if (e.kind === "orb" || e.kind === "splitter") {
+            e.y += (Math.sin(e.t * 4 + e.wave) * 75) * movementDt;
+          } else if (e.kind === "sniper" || e.kind === "shield") {
+            e.y += (e.vy + Math.sin(e.t * 2.8 + e.wave) * 26) * movementDt;
+          } else {
+            e.y += (e.vy + Math.sin(e.t * 3.8 + e.wave) * 38) * movementDt;
+          }
+          if (e.y < 70 || e.y > H - 70) e.vy *= -1;
         }
-
-        if (e.y < 70 || e.y > H - 70) e.vy *= -1;
 
         if (attackDt > 0 && e.kind === "carrier" && e.x < W - 120 && e.x > 110) {
           const escortCount = game.enemies.reduce(
@@ -2393,8 +2396,10 @@ const W = 1280;
       const phaseBoost = 1 + b.phase * 0.10;
       const ampX = [18, 36, 28, 44, 54][b.pattern] * phaseBoost;
       const ampY = [140, 190, 155, 210, 170][b.pattern] * phaseBoost;
-      b.x = clamp(b.targetX + Math.sin(b.t * (0.55 + b.pattern * 0.08 + b.phase * 0.04)) * ampX, W - 390, W - 125);
-      b.y = clamp(H / 2 + Math.sin(b.t * (0.85 + b.pattern * 0.06 + b.phase * 0.05)) * ampY, 145, H - 145);
+      if (movementDt > 0) {
+        b.x = clamp(b.targetX + Math.sin(b.t * (0.55 + b.pattern * 0.08 + b.phase * 0.04)) * ampX, W - 390, W - 125);
+        b.y = clamp(H / 2 + Math.sin(b.t * (0.85 + b.pattern * 0.06 + b.phase * 0.05)) * ampY, 145, H - 145);
+      }
 
       // A previously ready shot still must not fire during a one-second stun.
       if (attackDt <= 0) return;
