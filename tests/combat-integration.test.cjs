@@ -826,7 +826,7 @@ test("green aura respects frontal enemy shielding and can hit a Boss by hull edg
   assert.equal(app.eval('game.enemies[0].hp'), 10);
   assert.equal(app.eval('game.enemies[0].shieldHp'), 6);
   assert.equal(app.eval('game.boss.hp'), 58);
-  app.eval('game.player.x=300; updateGreenAura(1)');
+  app.eval('game.player.x=220; updateGreenAura(1)');
   assert.equal(app.eval('game.boss.hp'), 58);
   assert.equal(app.eval('game.enemies[0].shieldHp'), 6);
 });
@@ -891,7 +891,7 @@ test("green ring is visibly drawn at its actual damaging radius and only while e
     'return {radii,labels};',
     '})()'
   ].join("\n"));
-  assert.ok(shown.radii.includes(180));
+  assert.ok(shown.radii.includes(360));
   assert.ok(shown.labels.some(s=>s.includes("GREEN AURA  2 DMG/S")));
   const hidden = app.eval([
     '(() => {',
@@ -901,4 +901,48 @@ test("green ring is visibly drawn at its actual damaging radius and only while e
     '})()'
   ].join("\n"));
   assert.equal(hidden.length, 0);
+});
+
+
+test("green aura starts its global one-second clock on equip even with no targets", () => {
+  const app = boot();
+  app.eval([
+    'game.state="PLAYING";game.stageMode="WAVE";game.weaponType="blue";',
+    'game.player.x=500;game.player.y=480;game.nextGuaranteedP=999;',
+    'collectPowerup({type:"P_GREEN",x:300,y:300,life:1});',
+    'game.enemies=[];',
+    'updateGreenAura(.80);'
+  ].join("\n"));
+  assert.equal(app.eval("game.greenAura.elapsed"), 0.8);
+  // This enemy crosses into the ring at t=0.80 and must be hit at t=1.00.
+  app.eval('game.enemies=[{kind:"scout",x:780,y:480,r:25,hp:8,maxHp:8,score:40,color:"#fff",core:"#eee"}]');
+  app.eval("updateGreenAura(.19)");
+  assert.equal(app.eval("game.enemies[0].hp"), 8);
+  app.eval("updateGreenAura(.01)");
+  assert.equal(app.eval("game.enemies[0].hp"), 6);
+
+  // Once a target leaves, the global clock continues; coming back does not restart it.
+  app.eval("game.enemies[0].x=1100;updateGreenAura(.9)");
+  assert.equal(app.eval("game.enemies[0].hp"), 6);
+  app.eval("game.enemies[0].x=800;updateGreenAura(.1)");
+  assert.equal(app.eval("game.enemies[0].hp"), 4);
+  // A second collection of the same GREEN P does not restart an existing aura.
+  app.eval('updateGreenAura(.80);collectPowerup({type:"P_GREEN",x:300,y:300,life:1})');
+  assert.ok(Math.abs(app.eval("game.greenAura.elapsed") - .8) < 1e-9);
+  app.eval("updateGreenAura(.20)");
+  assert.equal(app.eval("game.enemies[0].hp"), 2);
+});
+
+test("doubled green halo hits enemies beyond previous radius but not beyond 360 + hitbox", () => {
+  const app = boot();
+  app.eval([
+    'game.state="PLAYING";game.stageMode="WAVE";game.weaponType="green";',
+    'game.player.x=500;game.player.y=480;',
+    'game.enemies=[',
+    ' {kind:"gunner",x:835,y:480,r:20,hp:8,maxHp:8,score:50,color:"#fff",core:"#eee"},',
+    ' {kind:"gunner",x:881,y:480,r:20,hp:8,maxHp:8,score:50,color:"#fff",core:"#eee"}',
+    '];updateGreenAura(1);'
+  ].join("\n"));
+  assert.equal(app.eval("game.enemies[0].hp"), 6);
+  assert.equal(app.eval("game.enemies[1].hp"), 8);
 });

@@ -3,7 +3,7 @@
   "use strict";
 
   const RULES = Object.freeze({
-    radius: 180,
+    radius: 360,
     secondsPerPulse: 1,
     damagePerPulse: 2
   });
@@ -16,9 +16,12 @@
     state.elapsed = 0;
   }
 
-  // Called only for playable combat frames. Disabled means the equipped weapon
-  // changed and its partial interval is discarded. Pauses/stage transitions
-  // freeze by not calling tick at all.
+  // This is a SINGLE global clock anchored to activation/equip of GREEN P.
+  // It advances during active combat whether the ring contains zero, one, or
+  // many targets; enemy contact must never reset or start a hit timer.
+  // Every elapsed second causes one snapshot damage pulse to current targets.
+  // Disabled means the equipped weapon changed and discards the partial interval.
+  // Pauses/stage transitions freeze by not calling tick at all.
   function tick(state, dt, active, onPulse) {
     if (!active) {
       switchWeapon(state);

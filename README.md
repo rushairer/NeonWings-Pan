@@ -29,14 +29,20 @@ A controller-first, five-stage, side-scrolling neon arcade shooter built with br
 - **v26.2.0 NeonWings-Pan exclusive:** red P twin-line fire, a 250-projectile ±10° special fan triggered on 10% of eligible volleys, and an independent 0–5 star progression.
 - **v26.3.0 NeonWings-Pan exclusive:** green P retains starter-grade dual shots and adds a passive neon halo dealing area damage to nearby enemies once per second.
 
+## v26.3.1 — GREEN P halo size and global pulse timing
+
+- Doubled the green ring's **visual and damage radius** from 180 to 360 logical pixels (diameter 720).
+- Locked damage to a **single global one-second clock from activation**. Enemy touch/entry never starts or resets a separate timer.
+- Added regression tests covering empty-field startup, late enemy entry, leaving/re-entering range, visual radius, and boundary collision.
+
 ## v26.3.0 — GREEN P / AURA
 
 The fifth collectible P is green. Picking it up surrounds the selected fighter with a glowing green ring and equips the proximity aura.
 
 - **Regular bullets:** identical to the untouched starting (blue Lv.1) dual-line shots and their original firing interval, regardless of the current overall weapon level. Green adds no missiles, spread, or blue Overdrive lance. Ordinary Overdrive damage scaling still applies to its starter bullets.
-- **Passive ring:** 180 logical-pixel radius centered on the fighter, visible as a glowing green circle. It **does not require holding fire**.
-- **Damage:** every completed second of active combat, each intersecting enemy takes 2 HP damage. The ring also damages Boss hulls when their hitboxes intersect it, and honors existing enemy frontal shields, kills, and loot/score rules. This fixed radius/damage is the initial balance baseline; hardware playtesting is still needed.
-- **Timing:** its one-second timer pauses when the game is paused or in stage transitions/reward screens. Switching to another P stops the aura and resets its partial second. On re-equipping green, a new full second is required to pulse.
+- **Passive ring:** 360 logical-pixel radius (twice its previous radius) centered on the fighter, visible as a glowing green circle. It **does not require holding fire**.
+- **Damage:** every completed second of active combat after the aura is equipped, each intersecting enemy takes 2 HP damage. The one-second clock starts at activation, continues even if no enemies are nearby, and is never restarted when an enemy enters or leaves the ring. Enemies entering mid-cycle are hit at the next global one-second pulse, not one second after contact. The ring also damages Boss hulls when their hitboxes intersect it, and honors existing enemy frontal shields, kills, and loot/score rules. This fixed radius/damage is the initial balance baseline; hardware playtesting is still needed.
+- **Timing:** its activation-based one-second timer pauses when the game is paused or in stage transitions/reward screens. Switching to another P stops the aura and resets its partial second. On re-equipping green, a new full second is required to pulse.
 - **Coexistence:** RED P star levels still persist independently when switching to green; a previously activated red fan is allowed to finish normally.
 
 ## v26.2.0 — RED P / SCATTER
