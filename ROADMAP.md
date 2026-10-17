@@ -7,6 +7,18 @@ Independently maintained from NeonWings commit `5ebcb1de1adb288b41a3c5e387f747bc
 - [x] Configure standalone Pages workflow
 - [ ] Verify site deployment and controller tests on hardware
 
+## v26.6.0 — WHITE P probabilistic chains + new GRAY P
+
+- [x] WHITE secondary damage 60%, no per-hop falloff, radius-360 geometry shared with GREEN
+- [x] Always first propagation wave; 50% second wave and 10% third conditional on second (max three)
+- [x] Breadth-first waves, no infinite recursion, per-projectile enemy/Boss hit dedup and origin-linked arcs
+- [x] GRAY P added as eighth pickup, visually distinguishable paired starter-grade bullets and HUD
+- [x] Every gray hit independently chooses 50% immediate 100-coordinate knockback or 50% one-second stun
+- [x] Stun freezes ordinary/Zigzag/Boss positioning, even pre-ready attacks and carrier escort production
+- [x] BLACK slowdown continues to age during GRAY stun; pause and stage boundaries freeze timers
+- [x] Complete syntax/build/test and Pages release gate
+- [ ] In-game difficulty, FX density, Boss arena clamping and handheld FPS acceptance
+
 ## v26.5.0 — White P piercing and one-hop electricity
 
 - [x] Seventh P pickup, white projectile artwork, status HUD and regular reward-drop integration

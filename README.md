@@ -13,7 +13,7 @@ A controller-first, five-stage, side-scrolling neon arcade shooter built with br
 ## Currently playable
 
 - Five themed stages and five multi-phase bosses; higher-difficulty loops after stage five
-- 11 enemy types, formations, seven weapon families, collectible power-ups and BOMB
+- 11 enemy types, formations, eight weapon families, collectible power-ups and BOMB
 - Gamepad rumble where browser/device supports it, Web Audio synthesis, volume and vibration options
 - Pause, fullscreen, local high score, end-of-run statistics
 - v23 foundation: 4:3 letterbox sizing; auto-pause on background/focus loss or controller disconnection; browser-storage fallback
@@ -28,6 +28,23 @@ A controller-first, five-stage, side-scrolling neon arcade shooter built with br
 - v26.1.1 UI fix: fighter/mode selector uses explicit non-overlapping layout geometry; selected fighter frame, Training hint, ship descriptions and score footer retain safe spacing.
 - **v26.2.0 NeonWings-Pan exclusive:** red P twin-line fire, a 250-projectile ±10° special fan triggered on 10% of eligible volleys, and an independent 0–5 star progression.
 - **v26.3.0 NeonWings-Pan exclusive:** green P retains starter-grade dual shots and adds a passive neon halo dealing area damage to nearby enemies once per second.
+
+## v26.6.0 — WHITE P conduction upgrade and new GRAY P
+
+WHITE P preserves its paired piercing white projectiles and GREEN P's radius-360 electric range. **Every secondary electricity hit now deals 60% of the original bullet's direct damage**, without any further loss across propagation levels.
+
+- **First hop: 100%** on every new direct projectile hit; targets hit electrically do not reroll a new chain.
+- **Second hop: 50% probability** per direct hit. If unlocked, every newly reached target from hop 1 becomes a possible origin for a second radius-360 spread.
+- **Third hop: 10% conditional probability** if hop 2 was unlocked, corresponding to 5% unconditional probability. No propagation is allowed past hop 3.
+- Each propagation wave may hit multiple targets, but per-projectile hit deduplication ensures a single projectile cannot repeatedly damage an enemy or a Boss. Visual white-blue arcs connect each actual hop origin and remain bounded at 96 concurrent effects. No infinite chain or exponential recursion.
+
+**GRAY P / IMPACT** is the eighth collectable P weapon, with two normal-damage gray projectiles at the original unupgraded firing cadence. Every bullet that hits a living enemy (including its shield), or an active Boss/turret, independently selects exactly one effect:
+
+- **50% knockback:** immediately move the victim **100 logical game coordinates** away from the incoming projectile. Bosses also shift their scripted anchor, with arena limits preventing pushing them offscreen.
+- **50% stun:** freeze the victim's motion, enemy shooting, carrier escort launches and Boss attacks/warnings for **1 second**. The stun wears off automatically; another stun hit refreshes the duration to 1 second. A small STUN label makes its active status visible.
+- Other weapons and already-fired enemy bullets are not altered. Swapping weapons preserves already-inflicted stun/knockback outcomes, while overlapping BLACK slow and GRAY stun expire on their own real-combat clocks. Pause, transitions and reward screens do not consume stun time.
+
+The eight P pickups share the regular P drop distribution. Test gates cover both probability boundaries, exact 100-unit displacement, attack/movement freezing, combined BLACK/GRAY timing, multi-hop White FX, and previous Blue/Red/Green/Black behavior. Hardware balance/FPS testing remains open.
 
 ## v26.5.0 — WHITE P / PIERCE + CONDUCT
 
