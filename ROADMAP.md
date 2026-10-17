@@ -7,6 +7,15 @@ Independently maintained from NeonWings commit `5ebcb1de1adb288b41a3c5e387f747bc
 - [x] Configure standalone Pages workflow
 - [ ] Verify site deployment and controller tests on hardware
 
+## v26.6.1 — GRAY P probability rebalance
+
+- [x] Reduce GRAY knockback chance from 50% to 10%, preserving 100-unit push
+- [x] Reduce GRAY stun chance from 50% to 10%, preserving 1-second duration
+- [x] Add mutually exclusive 80% 1.5× direct damage outcome
+- [x] Multiply pre-existing normal/Boss/shield damage path, without changing other P guns
+- [x] Cover [0, .1), [.1, .2), [.2, 1) boundaries and normal/shield/Boss/turret combat tests
+- [ ] Manual balance and performance acceptance on handheld hardware
+
 ## v26.6.0 — WHITE P probabilistic chains + new GRAY P
 
 - [x] WHITE secondary damage 60%, no per-hop falloff, radius-360 geometry shared with GREEN

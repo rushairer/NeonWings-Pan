@@ -2814,10 +2814,10 @@ const W = 1280;
             b.dead = true;
           }
           if (b.blackSlow) blackRules.apply(e); // Includes shield-absorbed hits.
-          if (b.grayImpact) grayRules.apply(e, Math.random(), {
+          const grayOutcome = b.grayImpact ? grayRules.apply(e, Math.random(), {
             direction: Math.sign(b.vx), minX: -120, maxX: W + 120
-          });
-          damageEnemy(e, damage, b.x, b.y, b.c);
+          }) : null;
+          damageEnemy(e, damage * grayRules.damageMultiplier(grayOutcome), b.x, b.y, b.c);
           if (b.dead) break;
         }
 
@@ -2831,10 +2831,10 @@ const W = 1280;
           if (part) {
             b.dead = true;
             if (b.blackSlow) blackRules.apply(boss);
-            if (b.grayImpact) grayRules.apply(boss, Math.random(), {
+            const grayOutcome = b.grayImpact ? grayRules.apply(boss, Math.random(), {
               boss: true, direction: Math.sign(b.vx), minX: W - 390, maxX: W - 125
-            });
-            damageBoss(damage, b.x, b.y, b.c, part);
+            }) : null;
+            damageBoss(damage * grayRules.damageMultiplier(grayOutcome), b.x, b.y, b.c, part);
           } else if (collision.sweptAabbHit(
             b.previousX, b.previousY, b.x, b.y,
             boss.x - boss.rx - b.r, boss.x + boss.rx + b.r,
@@ -2842,10 +2842,10 @@ const W = 1280;
           )) {
             b.dead = true; // Piercing lances also only hit a Boss once.
             if (b.blackSlow) blackRules.apply(boss);
-            if (b.grayImpact) grayRules.apply(boss, Math.random(), {
+            const grayOutcome = b.grayImpact ? grayRules.apply(boss, Math.random(), {
               boss: true, direction: Math.sign(b.vx), minX: W - 390, maxX: W - 125
-            });
-            damageBoss(damage, b.x, b.y, b.c);
+            }) : null;
+            damageBoss(damage * grayRules.damageMultiplier(grayOutcome), b.x, b.y, b.c);
           }
         }
       }
@@ -3553,7 +3553,7 @@ const W = 1280;
         : game.weaponType === "white"
         ? "WHITE ARC 60% 1-3 HOPS"
         : game.weaponType === "gray"
-        ? "GRAY 50% PUSH / STUN"
+        ? "GRAY 10/10/80  1.5X"
         : `${meta.short} WEAPON  LV.${game.weaponLevel}`, 656, 80, 21, "left",
         game.weaponType === "black" ? "#9cccff" : meta.color);
 
@@ -3713,7 +3713,7 @@ const W = 1280;
       ctx.fillRect(0, 0, W, H);
 
       drawText("NEON WINGS", W / 2, 195, 86, "center", "#e7fbff");
-      drawText("NEONWINGS PAN  /  v26.6.0", W / 2, 270, 28, "center", "#98f5ff");
+      drawText("NEONWINGS PAN  /  v26.6.1", W / 2, 270, 28, "center", "#98f5ff");
       drawText(`HIGH SCORE ${String(highScore()).padStart(6, "0")}`, W / 2, 318, 24, "center", "#fff4b7");
 
       drawPlayerShip(W / 2 - 170, 492, -0.20, false, ships[0]);

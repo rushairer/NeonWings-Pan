@@ -29,6 +29,17 @@ A controller-first, five-stage, side-scrolling neon arcade shooter built with br
 - **v26.2.0 NeonWings-Pan exclusive:** red P twin-line fire, a 250-projectile ±10° special fan triggered on 10% of eligible volleys, and an independent 0–5 star progression.
 - **v26.3.0 NeonWings-Pan exclusive:** green P retains starter-grade dual shots and adds a passive neon halo dealing area damage to nearby enemies once per second.
 
+## v26.6.1 — GRAY P 10/10/80 damage rebalance
+
+Each GRAY P projectile now rolls **exactly one** outcome on collision:
+
+- **10% knockback:** push the target 100 logical game coordinates; ordinary direct bullet damage remains unchanged.
+- **10% stun:** freeze enemy/Boss movement and attacks for 1 second; ordinary direct bullet damage remains unchanged.
+- **80% amplified damage:** deal **1.5× the normal direct bullet damage**, with neither knockback nor stun. The multiplier also affects existing frontal shield absorption and Boss turret weak-point damage, using the original damage pipeline.
+- Probability thresholds are [0, 0.1), [0.1, 0.2), and [0.2, 1). Every direct hit independently rolls once. The game HUD shows `GRAY 10/10/80 1.5X`.
+
+No change to gray bullet count or cadence, 100-coordinate push distance, stun duration, or any other P weapon's effects.
+
 ## v26.6.0 — WHITE P conduction upgrade and new GRAY P
 
 WHITE P preserves its paired piercing white projectiles and GREEN P's radius-360 electric range. **Every secondary electricity hit now deals 60% of the original bullet's direct damage**, without any further loss across propagation levels.

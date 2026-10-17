@@ -1,11 +1,14 @@
-/* Gray P: a direct projectile hit either knocks back or stuns its target.
+/* Gray P: mutually exclusive knockback, stun, or amplified damage per hit.
  * Pure deterministic rules; the caller supplies a single random roll per hit.
  */
 (function (root) {
   "use strict";
 
   const RULES = Object.freeze({
-    knockbackChance: 0.5,
+    knockbackChance: 0.10,
+    stunChance: 0.10,
+    amplifiedDamageChance: 0.80,
+    amplifiedDamageMultiplier: 1.5,
     knockbackDistance: 100,
     stunSeconds: 1
   });
@@ -24,7 +27,7 @@
   // anchor so their knockback is not overwritten by the next position update.
   // Arena boundaries cap displacement instead of ejecting bosses from view.
   function apply(target, roll, options = {}) {
-    if (!target || !(target.hp > 0) || !Number.isFinite(roll)) {
+    if (!target || !(target.hp > 0) || !Number.isFinite(roll) || roll < 0 || roll >= 1) {
       return { kind: "none", distance: 0 };
     }
     if (roll < RULES.knockbackChance) {
@@ -41,8 +44,17 @@
       target.x = clamp(target.x + displaced, minX, maxX);
       return { kind: "knockback", distance: Math.abs(displaced) };
     }
-    target.grayStunRemaining = RULES.stunSeconds;
-    return { kind: "stun", distance: 0 };
+    if (roll < RULES.knockbackChance + RULES.stunChance) {
+      target.grayStunRemaining = RULES.stunSeconds;
+      return { kind: "stun", distance: 0 };
+    }
+    // Remaining 80% of hits get normal impact behavior with 1.5x damage.
+    // No knockback or stun is attached in this outcome.
+    return { kind: "amplified", distance: 0 };
+  }
+
+  function damageMultiplier(outcome) {
+    return outcome?.kind === "amplified" ? RULES.amplifiedDamageMultiplier : 1;
   }
 
   // Consume one second of REAL combat time during which neither movement nor
@@ -63,7 +75,7 @@
     return { movementDt: dt - stunned, attackDt: dt - stunned };
   }
 
-  const api = Object.freeze({ RULES, apply, advance, isStunned });
+  const api = Object.freeze({ RULES, apply, advance, isStunned, damageMultiplier });
   root.NeonGrayWeapon = api;
   if (typeof module === "object" && module.exports) module.exports = api;
 })(typeof globalThis !== "undefined" ? globalThis : this);

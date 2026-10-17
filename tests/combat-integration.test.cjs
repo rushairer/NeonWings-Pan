@@ -1308,10 +1308,10 @@ test("GRAY P joins eighth-color drops and fires only baseline paired bullets", (
   assert.equal(app.eval("game.powerups.at(-1).type"),"P_GRAY");
 });
 
-test("GRAY hit with roll under 50% immediately knocks enemy 100 game coordinates", () => {
+test("GRAY hit with roll under 10% immediately knocks enemy 100 game coordinates", () => {
   const app=boot();
   app.eval([
-    'game.state="PLAYING";game.player.x=200;game.player.y=480;Math.random=()=>.49;',
+    'game.state="PLAYING";game.player.x=200;game.player.y=480;Math.random=()=>.09;',
     'game.enemies=[{kind:"scout",x:410,y:480,r:24,hp:40,maxHp:40,',
     'score:40,color:"#fff",core:"#eee",vx:-100,vy:0,shootCd:99,shootBase:99,t:0,wave:0}];',
     'addPlayerShot(300,480,1100,0,9,1.15,"#abb3c0",{grayImpact:true});updatePlayerBullets(.12);'
@@ -1322,10 +1322,10 @@ test("GRAY hit with roll under 50% immediately knocks enemy 100 game coordinates
   assert.equal(app.eval("game.bullets.length"),0);
 });
 
-test("GRAY hit with roll at least 50% fully freezes movement and even ready-to-fire attacks", () => {
+test("GRAY hit with roll between 10% and 20% freezes movement and ready-to-fire attacks", () => {
   const app=boot();
   app.eval([
-    'game.state="PLAYING";game.player.x=200;game.player.y=480;Math.random=()=>.5;',
+    'game.state="PLAYING";game.player.x=200;game.player.y=480;Math.random=()=>.15;',
     'game.enemies=[{kind:"gunner",x:410,y:480,r:25,hp:40,maxHp:40,',
     'score:40,color:"#fff",core:"#eee",vx:-100,vy:0,shootCd:0,shootBase:1,t:0,wave:0}];',
     'addPlayerShot(300,480,1100,0,9,1.15,"#abb3c0",{grayImpact:true});updatePlayerBullets(.12);'
@@ -1346,7 +1346,7 @@ test("GRAY stun and BLACK slow tick independently while carrier escorts cannot s
   app.eval([
     'game.state="PLAYING";game.stageMode="WAVE";game.player.x=200;game.player.y=480;',
     'const e=spawnEnemyOfKind("carrier",700,480,{vx:-100,vy:0,shootCd:99});',
-    'e.launchCooldown=0;blackRules.apply(e);grayRules.apply(e,.75);',
+    'e.launchCooldown=0;blackRules.apply(e);grayRules.apply(e,.15);',
     'updateEnemies(.5);'
   ].join("\n"));
   assert.equal(app.eval("game.enemies.length"),1);
@@ -1365,7 +1365,7 @@ test("GRAY stun and BLACK slow tick independently while carrier escorts cannot s
 test("GRAY stun applies on shielded hits without bypassing frontal shield", () => {
   const app=boot();
   app.eval([
-    'game.state="PLAYING";game.player.x=180;game.player.y=480;Math.random=()=>.8;',
+    'game.state="PLAYING";game.player.x=180;game.player.y=480;Math.random=()=>.15;',
     'game.enemies=[enemyBehaviors.initializeEnemy({kind:"shield",x:400,y:480,r:39,',
     'hp:10,maxHp:10,score:50,color:"#aaf",core:"#fff"})];',
     'addPlayerShot(280,480,1100,0,9,1.15,"#abb3c0",{grayImpact:true});updatePlayerBullets(.11);'
@@ -1380,7 +1380,7 @@ test("GRAY pushes Boss anchor within its arena or stuns a Boss with a ready atta
   push.eval([
     'game.state="PLAYING";game.stageMode="WAVE";spawnBoss();game.boss.active=true;',
     'game.boss.x=1010;game.boss.y=480;game.boss.targetX=1040;',
-    'Math.random=()=>.49;',
+    'Math.random=()=>.09;',
     'addPlayerShot(700,480,1500,0,9,1.15,"#abb3c0",{grayImpact:true});updatePlayerBullets(.25);'
   ].join("\n"));
   assert.equal(push.eval("game.boss.targetX"),1140);
@@ -1389,7 +1389,7 @@ test("GRAY pushes Boss anchor within its arena or stuns a Boss with a ready atta
   stun.eval([
     'game.state="PLAYING";game.stageMode="WAVE";spawnBoss();game.boss.active=true;',
     'game.boss.x=1010;game.boss.y=480;game.boss.targetX=1040;game.boss.shoot=0;',
-    'Math.random=()=>.5;',
+    'Math.random=()=>.15;',
     'addPlayerShot(700,480,1500,0,9,1.15,"#abb3c0",{grayImpact:true});updatePlayerBullets(.25);'
   ].join("\n"));
   assert.equal(stun.eval("game.boss.grayStunRemaining"),1);
@@ -1407,7 +1407,7 @@ test("GRAY bullet retains its on-hit effect after player switches to another wea
   const app=boot();
   app.eval([
     'game.state="PLAYING";game.player.x=200;game.player.y=480;',
-    'game.weaponType="gray";game.redWeapon.stars=3;Math.random=()=>.8;',
+    'game.weaponType="gray";game.redWeapon.stars=3;Math.random=()=>.15;',
     'game.enemies=[{kind:"scout",x:450,y:480,r:28,hp:30,maxHp:30,score:40,color:"#fff",core:"#eee"}];',
     'firePlayerWeapons();collectPowerup({type:"P_RED",x:250,y:480,life:1});updatePlayerBullets(.2);'
   ].join("\n"));
@@ -1458,7 +1458,7 @@ test("GRAY stun label disappears on expiration and stun time freezes during paus
     'game.state="PLAYING";const e=spawnEnemyOfKind("scout",550,470,{vx:0,vy:0});',
     'const labels=[];ctx.fillText=(text)=>labels.push(String(text));',
     'drawEnemy(e);const before=labels.filter(s=>s==="STUN").length;',
-    'grayRules.apply(e,.7);drawEnemy(e);',
+    'grayRules.apply(e,.15);drawEnemy(e);',
     'return {before,after:labels.filter(s=>s==="STUN").length};',
     '})()'
   ].join("\n"));
@@ -1470,4 +1470,78 @@ test("GRAY stun label disappears on expiration and stun time freezes during paus
   assert.equal(app.eval("game.enemies[0].grayStunRemaining"),1);
   app.eval("game.stageMode='WAVE';updateEnemies(1)");
   assert.equal(app.eval("game.enemies[0].grayStunRemaining"),0);
+});
+
+
+test("GRAY 80% amplified hit deals exactly 1.5x damage to a normal enemy, with no knockback or stun", () => {
+  const app = boot();
+  app.eval([
+    'game.state="PLAYING";game.player.x=200;game.player.y=480;Math.random=()=>.2;',
+    'game.enemies=[{kind:"scout",x:410,y:480,r:25,hp:40,maxHp:40,',
+    'score:40,color:"#fff",core:"#eee",vx:-100,vy:0,shootCd:2,shootBase:2,t:0,wave:0}];',
+    'addPlayerShot(300,480,1100,0,9,1.15,"#abb3c0",{grayImpact:true});',
+    'updatePlayerBullets(.12);'
+  ].join("\n"));
+  assert.ok(Math.abs(app.eval("game.enemies[0].hp") - (40 - 1.15 * 1.5)) < 1e-9);
+  assert.equal(app.eval("game.enemies[0].x"), 410);
+  assert.equal(app.eval("game.enemies[0].grayStunRemaining"), undefined);
+  assert.equal(app.eval("game.bullets.length"), 0);
+});
+
+test("GRAY amplified hit applies 1.5x to frontal shield rather than bypassing it", () => {
+  const app = boot();
+  app.eval([
+    'game.state="PLAYING";game.player.x=180;game.player.y=480;Math.random=()=>.999;',
+    'game.enemies=[enemyBehaviors.initializeEnemy({kind:"shield",x:400,y:480,r:39,',
+    'hp:10,maxHp:10,score:50,color:"#aaf",core:"#fff"})];',
+    'addPlayerShot(280,480,1100,0,9,1.15,"#abb3c0",{grayImpact:true});',
+    'updatePlayerBullets(.11);'
+  ].join("\n"));
+  assert.ok(Math.abs(app.eval("game.enemies[0].shieldMax - game.enemies[0].shieldHp") - 1.15 * 1.5) < 1e-9);
+  assert.equal(app.eval("game.enemies[0].hp"), 10);
+  assert.equal(app.eval("game.enemies[0].x"), 400);
+  assert.equal(app.eval("grayRules.isStunned(game.enemies[0])"), false);
+});
+
+test("GRAY amplified hit applies 1.5x to the Boss hull without control effects", () => {
+  const app = boot();
+  app.eval([
+    'game.state="PLAYING";game.player.x=200;game.player.y=480;Math.random=()=>.8;',
+    'game.boss={active:true,x:1010,y:480,rx:100,ry:80,hp:100,maxHp:100,',
+    'parts:[],color:"#fff",core:"#fff"};',
+    'addPlayerShot(700,480,1500,0,9,1.15,"#abb3c0",{grayImpact:true});',
+    'updatePlayerBullets(.25);'
+  ].join("\n"));
+  assert.ok(Math.abs(app.eval("game.boss.hp") - (100 - 1.15 * 1.5)) < 1e-9);
+  assert.equal(app.eval("game.boss.x"), 1010);
+  assert.equal(app.eval("grayRules.isStunned(game.boss)"), false);
+});
+
+test("GRAY amplified hit multiplies Boss turret damage before weak-point scaling", () => {
+  const app = boot();
+  app.eval([
+    'game.state="PLAYING";game.stageMode="WAVE";Math.random=()=>.5;spawnBoss();',
+    'game.boss.active=true;game.boss.x=1010;game.boss.y=480;',
+    'const part=game.boss.parts[0];',
+    'const px=game.boss.x+part.x, py=game.boss.y+part.y;',
+    'addPlayerShot(px-160,py,1200,0,9,1.15,"#abb3c0",{grayImpact:true});',
+    'updatePlayerBullets(.15);'
+  ].join("\n"));
+  const partLoss = app.eval("game.boss.parts[0].maxHp - game.boss.parts[0].hp");
+  assert.ok(Math.abs(partLoss - 1.15 * 1.5 * bossParts.BALANCE.weakPointDamageScale) < 1e-9);
+  assert.equal(app.eval("game.boss.hp"), app.eval("game.boss.maxHp"));
+  assert.equal(app.eval("grayRules.isStunned(game.boss)"), false);
+});
+
+test("GRAY-only multiplier leaves untagged projectiles at normal base damage", () => {
+  const app = boot();
+  app.eval([
+    'game.state="PLAYING";game.player.x=200;game.player.y=480;Math.random=()=>.9;',
+    'game.enemies=[{kind:"scout",x:410,y:480,r:25,hp:40,maxHp:40,',
+    'score:40,color:"#fff",core:"#eee"}];',
+    'addPlayerShot(300,480,1100,0,9,1.15,"#38e8ff");',
+    'updatePlayerBullets(.12);'
+  ].join("\n"));
+  assert.ok(Math.abs(app.eval("game.enemies[0].hp") - (40 - 1.15)) < 1e-9);
+  assert.equal(app.eval("game.enemies[0].grayStunRemaining"), undefined);
 });
