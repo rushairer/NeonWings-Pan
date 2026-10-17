@@ -768,3 +768,137 @@ test("red star HUD survives switching and original blue firing cooldown is uncha
   assert.ok(labels.some(text=>text.includes("RED P") && text.includes("★★★★☆")));
   assert.equal(app.eval("getFireCooldown()"), app.eval("Math.max(.07,.115-game.weaponLevel*.014)"));
 });
+
+
+test("green P pickup fires precisely the unupgraded starter bullets at every weapon level", () => {
+  const app = boot();
+  app.eval('game.state="PLAYING";game.weaponType="blue";game.weaponLevel=1;firePlayerWeapons()');
+  const starter = app.eval('JSON.stringify(game.bullets.map(b=>({x:b.x,y:b.y,vx:b.vx,vy:b.vy,r:b.r,power:b.power,c:b.c})))');
+  app.eval('game.bullets=[];collectPowerup({type:"P_GREEN",x:350,y:400,life:1});game.weaponLevel=3;firePlayerWeapons()');
+  assert.equal(app.eval('game.weaponType'), "green");
+  assert.equal(app.eval('weaponMeta().color'), "#43ff87");
+  assert.equal(app.eval('JSON.stringify(game.bullets.map(b=>({x:b.x,y:b.y,vx:b.vx,vy:b.vy,r:b.r,power:b.power,c:b.c})))'), starter);
+  assert.equal(app.eval('game.missiles.length'), 0);
+  assert.ok(Math.abs(app.eval("getFireCooldown()") - 0.101) < 1e-10);
+
+  app.eval('game.combat.energy=100;activateOverdrive();game.bullets=[];firePlayerWeapons()');
+  assert.equal(app.eval('game.bullets.length'), 2);
+  assert.equal(app.eval('game.bullets.some(b=>b.lance)'), false);
+  app.eval('Math.random=()=>0.99');
+  assert.equal(app.eval('randomPowerType()'), "P_GREEN");
+});
+
+test("green aura deals two HP once per second to all nearby enemies, not distant ones", () => {
+  const app = boot();
+  app.eval([
+    'game.state="PLAYING";game.stageMode="WAVE";game.weaponType="green";',
+    'game.player.x=500;game.player.y=480;',
+    'game.enemies=[',
+    '  {kind:"scout",x:570,y:480,r:25,hp:2,maxHp:2,score:35,color:"#fff",core:"#eee"},',
+    '  {kind:"gunner",x:688,y:480,r:20,hp:6,maxHp:6,score:45,color:"#fff",core:"#eee"},',
+    '  {kind:"scout",x:900,y:480,r:25,hp:6,maxHp:6,score:35,color:"#fff",core:"#eee"}',
+    ']; updateGreenAura(0.999);'
+  ].join("\n"));
+  assert.equal(app.eval('game.enemies.length'), 3);
+  assert.equal(app.eval('game.stats.kills'), 0);
+  app.eval('updateGreenAura(0.001)');
+  assert.equal(app.eval('game.stats.kills'), 1);
+  assert.equal(app.eval('game.waveKills'), 1);
+  assert.equal(app.eval('game.enemies.length'), 2);
+  assert.equal(app.eval('game.enemies.find(e=>e.kind==="gunner").hp'), 4);
+  assert.equal(app.eval('game.enemies.find(e=>e.x===900).hp'), 6);
+  app.eval('updateGreenAura(1)');
+  assert.equal(app.eval('game.enemies.find(e=>e.kind==="gunner").hp'), 2);
+  app.eval('updateGreenAura(1)');
+  assert.equal(app.eval('game.stats.kills'), 2);
+  assert.equal(app.eval('game.enemies.length'), 1);
+});
+
+test("green aura respects frontal enemy shielding and can hit a Boss by hull edge", () => {
+  const app = boot();
+  app.eval([
+    'game.state="PLAYING";game.stageMode="BOSS";game.weaponType="green";',
+    'game.player.x=500;game.player.y=480;',
+    'game.enemies=[enemyBehaviors.initializeEnemy({kind:"shield",x:630,y:480,r:35,hp:10,maxHp:10,score:80,color:"#f88",core:"#fff"})];',
+    'game.boss={x:775,y:480,rx:100,ry:80,hp:60,maxHp:60,active:true,color:"#f66",core:"#fff",parts:[]};',
+    'updateGreenAura(1);'
+  ].join("\n"));
+  assert.equal(app.eval('game.enemies[0].hp'), 10);
+  assert.equal(app.eval('game.enemies[0].shieldHp'), 6);
+  assert.equal(app.eval('game.boss.hp'), 58);
+  app.eval('game.player.x=300; updateGreenAura(1)');
+  assert.equal(app.eval('game.boss.hp'), 58);
+  assert.equal(app.eval('game.enemies[0].shieldHp'), 6);
+});
+
+test("green pulse clock freezes on pause and transitions; weapon swap cancels it", () => {
+  const app = boot();
+  app.eval([
+    'game.state="PLAYING";game.stageMode="WAVE";game.weaponType="green";',
+    'game.invuln=100;game.spawnTimer=999;game.formationTimer=999;',
+    'game.player.x=500;game.player.y=480;',
+    'game.enemies=[{kind:"scout",x:610,y:480,r:20,hp:10,maxHp:10,',
+    '  score:50,color:"#fff",core:"#eee",vx:0,vy:0,t:0,wave:0,shootCd:99,shootBase:99}];',
+    'updatePlaying(.49);updatePlaying(.49);'
+  ].join("\n"));
+  assert.equal(app.eval('game.enemies[0].hp'), 10);
+  app.eval('updatePlaying(.02)');
+  assert.equal(app.eval('game.enemies[0].hp'), 8);
+  app.eval('game.state="PAUSED";updatePlaying(5)');
+  assert.equal(app.eval('game.enemies[0].hp'), 8);
+  app.eval('game.state="PLAYING";game.stageMode="TRANSITION";game.transition=10;updatePlaying(5)');
+  assert.equal(app.eval('game.enemies[0].hp'), 8);
+  app.eval('game.stageMode="WAVE";updatePlaying(.5);updatePlaying(.5)');
+  assert.equal(app.eval('game.enemies[0].hp'), 6);
+
+  app.eval('game.greenAura.elapsed=.75;game.redWeapon.stars=3;collectPowerup({type:"P_PURPLE",x:300,y:300,life:1})');
+  assert.equal(app.eval('game.greenAura.elapsed'), 0);
+  assert.equal(app.eval('game.redWeapon.stars'), 3);
+  app.eval('updatePlaying(2)');
+  assert.equal(app.eval('game.enemies[0].hp'), 6);
+  app.eval('collectPowerup({type:"P_GREEN",x:300,y:300,life:1});updatePlaying(.5)');
+  assert.equal(app.eval('game.enemies[0].hp'), 6);
+  app.eval('updatePlaying(.5)');
+  assert.equal(app.eval('game.enemies[0].hp'), 4);
+  assert.equal(app.eval('game.redWeapon.stars'), 3);
+});
+
+test("aura kills a splitter but does not immediately hit the spawned children", () => {
+  const app = boot();
+  app.eval([
+    'game.state="PLAYING";game.stageMode="WAVE";game.weaponType="green";',
+    'game.player.x=500;game.player.y=480;',
+    'game.enemies=[{kind:"splitter",x:610,y:480,r:36,hp:2,maxHp:2,score:40,color:"#3fa",core:"#fff"}];',
+    'updateGreenAura(1);'
+  ].join("\n"));
+  assert.equal(app.eval('game.stats.kills'), 1);
+  assert.equal(app.eval('game.enemies.length'), 2);
+  assert.equal(app.eval('game.enemies.every(e=>e.minion && e.hp>0)'), true);
+  app.eval('updateGreenAura(1)');
+  assert.equal(app.eval('game.enemies.length'), 0);
+  assert.equal(app.eval('game.stats.kills'), 3);
+  assert.equal(app.eval('game.waveKills'), 1);
+});
+
+test("green ring is visibly drawn at its actual damaging radius and only while equipped", () => {
+  const app = boot();
+  const shown = app.eval([
+    '(() => {',
+    'game.state="PLAYING";game.stageMode="WAVE";game.weaponType="green";',
+    'const radii=[];const labels=[];',
+    'ctx.arc=(x,y,r)=>radii.push(r);ctx.fillText=(text)=>labels.push(String(text));',
+    'drawFrame(.016);',
+    'return {radii,labels};',
+    '})()'
+  ].join("\n"));
+  assert.ok(shown.radii.includes(180));
+  assert.ok(shown.labels.some(s=>s.includes("GREEN AURA  2 DMG/S")));
+  const hidden = app.eval([
+    '(() => {',
+    'game.weaponType="blue";const radii=[];',
+    'ctx.arc=(x,y,r)=>radii.push(r);',
+    'drawGreenAura(); return radii;',
+    '})()'
+  ].join("\n"));
+  assert.equal(hidden.length, 0);
+});
