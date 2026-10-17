@@ -14,6 +14,8 @@ const W = 1280;
     if (!blackRules) throw new Error("NeonWings-Pan black P runtime missing");
     const whiteRules = window.NeonWhiteWeapon;
     if (!whiteRules) throw new Error("NeonWings-Pan white P runtime missing");
+    const grayRules = window.NeonGrayWeapon;
+    if (!grayRules) throw new Error("NeonWings-Pan gray P runtime missing");
     const collision = window.NeonCollision;
     if (!collision) throw new Error("NeonWings collision runtime missing");
     const enemyBehaviors = window.NeonEnemyBehaviors;
@@ -1498,6 +1500,7 @@ const W = 1280;
         shootCd: extra.shootCd ?? rand(0.55, s.shoot),
         shootBase: s.shoot,
         slowRemaining: 0,
+        grayStunRemaining: 0,
         score: Math.round(s.score * (extra.scoreMul || 1)),
         wave: extra.wave ?? rand(0, Math.PI * 2),
         t: rand(0, 5)
@@ -1585,6 +1588,16 @@ const W = 1280;
       ctx.restore();
     }
 
+    function drawGrayStun(labelY) {
+      // Visual indicator only: status damage and hitboxes are unchanged.
+      ctx.save();
+      ctx.globalAlpha = 0.75 + Math.sin(game.t * 13) * 0.2;
+      ctx.shadowColor = "#e3ecff";
+      ctx.shadowBlur = 12;
+      drawText("STUN", 0, labelY, 17, "center", "#e9eef7");
+      ctx.restore();
+    }
+
     function drawEnemy(e) {
       ctx.save();
       ctx.translate(e.x, e.y);
@@ -1649,6 +1662,7 @@ const W = 1280;
       }
 
       if (blackRules.isSlowed(e)) drawSlowGlow(e.r + 25, e.r + 21);
+      if (grayRules.isStunned(e)) drawGrayStun(-e.r - 22);
       ctx.restore();
     }
 
@@ -1695,7 +1709,7 @@ const W = 1280;
       for (let i = 0; i < initialCount; i++) {
         const e = game.enemies[i];
         if (!e || e.hp <= 0) continue;
-        const { movementDt, attackDt } = blackRules.advance(e, dt);
+        const { movementDt, attackDt } = grayRules.advance(e, dt, blackRules);
         e.t += movementDt;
         e.x += e.vx * movementDt;
 
@@ -1711,7 +1725,7 @@ const W = 1280;
 
         if (e.y < 70 || e.y > H - 70) e.vy *= -1;
 
-        if (e.kind === "carrier" && e.x < W - 120 && e.x > 110) {
+        if (attackDt > 0 && e.kind === "carrier" && e.x < W - 120 && e.x > 110) {
           const escortCount = game.enemies.reduce(
             (count, other) => count + (other.hp > 0 && other.parentId === e.id ? 1 : 0), 0
           );
@@ -1727,7 +1741,7 @@ const W = 1280;
 
         if (e.x < W - 80 && e.x > 80) {
           e.shootCd -= attackDt;
-          if (e.shootCd <= 0) {
+          if (attackDt > 0 && e.shootCd <= 0) {
             fireEnemy(e);
             e.shootCd = e.shootBase * rand(0.75, 1.18);
           }
@@ -1739,13 +1753,14 @@ const W = 1280;
 
     function randomPowerType() {
       const r = Math.random();
-      if (r < 1 / 7) return "P_BLUE";
-      if (r < 2 / 7) return "P_PURPLE";
-      if (r < 3 / 7) return "P_YELLOW";
-      if (r < 4 / 7) return "P_RED";
-      if (r < 5 / 7) return "P_GREEN";
-      if (r < 6 / 7) return "P_BLACK";
-      return "P_WHITE";
+      if (r < 1 / 8) return "P_BLUE";
+      if (r < 2 / 8) return "P_PURPLE";
+      if (r < 3 / 8) return "P_YELLOW";
+      if (r < 4 / 8) return "P_RED";
+      if (r < 5 / 8) return "P_GREEN";
+      if (r < 6 / 8) return "P_BLACK";
+      if (r < 7 / 8) return "P_WHITE";
+      return "P_GRAY";
     }
 
     function weaponMeta(type = game.weaponType) {
@@ -1755,6 +1770,7 @@ const W = 1280;
       if (type === "green") return { name: "AURA", short: "GREEN", color: "#43ff87", core: "#e0ffed" };
       if (type === "black") return { name: "SLOW", short: "BLACK", color: "#191e2a", core: "#dce9ff" };
       if (type === "white") return { name: "CONDUCT", short: "WHITE", color: "#f1faff", core: "#bde9ff" };
+      if (type === "gray") return { name: "IMPACT", short: "GRAY", color: "#929ba9", core: "#f0f3ff" };
       return { name: "LINE", short: "BLUE", color: "#38e8ff", core: "#e8fdff" };
     }
 
@@ -1765,6 +1781,7 @@ const W = 1280;
       if (powerupType === "P_GREEN") return "green";
       if (powerupType === "P_BLACK") return "black";
       if (powerupType === "P_WHITE") return "white";
+      if (powerupType === "P_GRAY") return "gray";
       return "blue";
     }
 
@@ -1775,6 +1792,7 @@ const W = 1280;
       if (game.weaponType === "green") return "P_GREEN";
       if (game.weaponType === "black") return "P_BLACK";
       if (game.weaponType === "white") return "P_WHITE";
+      if (game.weaponType === "gray") return "P_GRAY";
       return "P_BLUE";
     }
 
@@ -1985,6 +2003,12 @@ const W = 1280;
             rect(18, 18, 9, 9, "#ffffff");
             rect(-4, -32, 8, 8, "#9fdfff");
             rect(7, 24, 8, 8, "#9fdfff");
+          } else if (wt === "gray") {
+            ctx.strokeStyle = "#f1f4ff";
+            ctx.lineWidth = 3;
+            ctx.strokeRect(-23, -23, 46, 46);
+            rect(-8, -32, 16, 6, "#e5e9f3");
+            rect(-8, 26, 16, 6, "#e5e9f3");
           }
         } else if (p.type === "BOMB") {
           // Cyan-white bomb pickup.
@@ -2120,9 +2144,13 @@ const W = 1280;
         }
       } else if (type === "white") {
         // Two persistent penetrating bolts. A shared victim ledger prevents
-        // direct and one-hop electric damage from hitting the same target twice.
+        // direct and chained electric damage from hitting the same target twice.
         addPlayerShot(muzzleX, baseY - 10, 1120, 0, 9, 1.15, "#f3fcff", whiteRules.createShot());
         addPlayerShot(muzzleX, baseY + 12, 1120, 0, 9, 1.15, "#f3fcff", whiteRules.createShot());
+      } else if (type === "gray") {
+        // Each actual gray bullet contact independently chooses one effect.
+        addPlayerShot(muzzleX, baseY - 10, 1100, 0, 9, 1.15, "#abb3c0", { grayImpact: true });
+        addPlayerShot(muzzleX, baseY + 12, 1100, 0, 9, 1.15, "#abb3c0", { grayImpact: true });
       } else if (type === "black") {
         // Baseline twin lanes; black bullets retain their slow marker after
         // swapping weapons and only attach the status on actual collisions.
@@ -2174,7 +2202,7 @@ const W = 1280;
       if (game.weaponType === "red") return redRules.RULES.volleySeconds;
       if (game.weaponType === "yellow") return Math.max(0.17, 0.25 - game.weaponLevel * 0.025);
       if (game.weaponType === "purple") return Math.max(0.10, 0.145 - game.weaponLevel * 0.012);
-      return Math.max(0.07, 0.115 - (game.weaponType === "green" || game.weaponType === "black" || game.weaponType === "white" ? 1 : game.weaponLevel) * 0.014);
+      return Math.max(0.07, 0.115 - (game.weaponType === "green" || game.weaponType === "black" || game.weaponType === "white" || game.weaponType === "gray" ? 1 : game.weaponLevel) * 0.014);
     }
 
     function findMissileTarget(m) {
@@ -2296,6 +2324,7 @@ const W = 1280;
         maxHp: Math.ceil(def.hp * d * (1 + game.stageIndex * 0.06)),
         shoot: 1.1,
         slowRemaining: 0,
+        grayStunRemaining: 0,
         phase: 0,
         lastPhase: 0,
         warning: 0
@@ -2334,7 +2363,7 @@ const W = 1280;
       const b = game.boss;
       if (!b) return;
 
-      const { movementDt, attackDt } = blackRules.advance(b, dt);
+      const { movementDt, attackDt } = grayRules.advance(b, dt, blackRules);
       b.t += movementDt;
 
       if (!b.active) {
@@ -2367,6 +2396,8 @@ const W = 1280;
       b.x = clamp(b.targetX + Math.sin(b.t * (0.55 + b.pattern * 0.08 + b.phase * 0.04)) * ampX, W - 390, W - 125);
       b.y = clamp(H / 2 + Math.sin(b.t * (0.85 + b.pattern * 0.06 + b.phase * 0.05)) * ampY, 145, H - 145);
 
+      // A previously ready shot still must not fire during a one-second stun.
+      if (attackDt <= 0) return;
       if (b.warning > 0) {
         b.warning -= attackDt;
 
@@ -2614,6 +2645,7 @@ const W = 1280;
       }
 
       if (blackRules.isSlowed(b)) drawSlowGlow(b.rx + 30, b.ry + 25);
+      if (grayRules.isStunned(b)) drawGrayStun(-b.ry - 30);
       ctx.restore();
 
       if (b.active) {
@@ -2732,13 +2764,13 @@ const W = 1280;
         // All secondary damage is one-hop; the damage callbacks NEVER call
         // updateWhiteProjectile or conduct recursively.
         whiteRules.conduct(b, impact, enemiesAtImpact, boss, greenRules,
-          e => {
-            addElectricArc(impact.x, impact.y, e.x, e.y);
+          (e, source) => {
+            addElectricArc(source.x, source.y, e.x, e.y);
             damageEnemy(e, b.power * whiteRules.RULES.secondaryDamageFactor,
               e.x, e.y, "#8fe6ff");
           },
-          target => {
-            addElectricArc(impact.x, impact.y, target.x, target.y);
+          (target, source) => {
+            addElectricArc(source.x, source.y, target.x, target.y);
             damageBoss(b.power * whiteRules.RULES.secondaryDamageFactor,
               impact.x, impact.y, "#8fe6ff");
           }
@@ -2777,6 +2809,9 @@ const W = 1280;
             b.dead = true;
           }
           if (b.blackSlow) blackRules.apply(e); // Includes shield-absorbed hits.
+          if (b.grayImpact) grayRules.apply(e, Math.random(), {
+            direction: Math.sign(b.vx), minX: -120, maxX: W + 120
+          });
           damageEnemy(e, damage, b.x, b.y, b.c);
           if (b.dead) break;
         }
@@ -2791,6 +2826,9 @@ const W = 1280;
           if (part) {
             b.dead = true;
             if (b.blackSlow) blackRules.apply(boss);
+            if (b.grayImpact) grayRules.apply(boss, Math.random(), {
+              boss: true, direction: Math.sign(b.vx), minX: W - 390, maxX: W - 125
+            });
             damageBoss(damage, b.x, b.y, b.c, part);
           } else if (collision.sweptAabbHit(
             b.previousX, b.previousY, b.x, b.y,
@@ -2799,6 +2837,9 @@ const W = 1280;
           )) {
             b.dead = true; // Piercing lances also only hit a Boss once.
             if (b.blackSlow) blackRules.apply(boss);
+            if (b.grayImpact) grayRules.apply(boss, Math.random(), {
+              boss: true, direction: Math.sign(b.vx), minX: W - 390, maxX: W - 125
+            });
             damageBoss(damage, b.x, b.y, b.c);
           }
         }
@@ -3303,6 +3344,14 @@ const W = 1280;
           ctx.restore();
           continue;
         }
+        if (b.grayImpact) {
+          ctx.shadowColor = "#dde3f0";
+          ctx.shadowBlur = 12;
+          rect(-5, -6, 36, 12, "#6c7382");
+          rect(-1, -4, 32, 8, "#c6cedb");
+          ctx.restore();
+          continue;
+        }
         if (b.blackSlow) {
           // A dark center with an icy edge remains visible in black arenas.
           ctx.shadowColor = "#469cff";
@@ -3497,7 +3546,9 @@ const W = 1280;
         : game.weaponType === "black"
         ? "BLACK SLOW  50% / 5.0S"
         : game.weaponType === "white"
-        ? "WHITE PIERCE + ARC"
+        ? "WHITE ARC 60% 1-3 HOPS"
+        : game.weaponType === "gray"
+        ? "GRAY 50% PUSH / STUN"
         : `${meta.short} WEAPON  LV.${game.weaponLevel}`, 656, 80, 21, "left",
         game.weaponType === "black" ? "#9cccff" : meta.color);
 
@@ -3657,7 +3708,7 @@ const W = 1280;
       ctx.fillRect(0, 0, W, H);
 
       drawText("NEON WINGS", W / 2, 195, 86, "center", "#e7fbff");
-      drawText("NEONWINGS PAN  /  v26.5.0", W / 2, 270, 28, "center", "#98f5ff");
+      drawText("NEONWINGS PAN  /  v26.6.0", W / 2, 270, 28, "center", "#98f5ff");
       drawText(`HIGH SCORE ${String(highScore()).padStart(6, "0")}`, W / 2, 318, 24, "center", "#fff4b7");
 
       drawPlayerShip(W / 2 - 170, 492, -0.20, false, ships[0]);
