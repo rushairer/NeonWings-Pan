@@ -948,3 +948,181 @@ test("doubled green halo hits enemies beyond previous radius but not beyond 360 
   assert.equal(app.eval("game.enemies[0].hp"), 6);
   assert.equal(app.eval("game.enemies[1].hp"), 8);
 });
+
+
+test("BLACK P drop is discoverable and its twin dark shots never inherit blue upgrades", () => {
+  const app = boot();
+  app.eval('game.state="PLAYING"; game.weaponType="blue"; game.weaponLevel=1; firePlayerWeapons()');
+  const baseline = app.eval('JSON.stringify(game.bullets.map(b=>({x:b.x,y:b.y,vx:b.vx,vy:b.vy,r:b.r,power:b.power})))');
+  app.eval('game.bullets=[];collectPowerup({type:"P_BLACK",x:350,y:400,life:1});game.weaponLevel=3;firePlayerWeapons()');
+  assert.equal(app.eval("game.weaponType"), "black");
+  assert.equal(app.eval("weaponMeta().name"), "SLOW");
+  assert.equal(app.eval("game.bullets.length"), 2);
+  assert.equal(app.eval('JSON.stringify(game.bullets.map(b=>({x:b.x,y:b.y,vx:b.vx,vy:b.vy,r:b.r,power:b.power})))'), baseline);
+  assert.equal(app.eval("game.bullets.every(b=>b.blackSlow && b.c==='#121522')"), true);
+  assert.equal(app.eval("game.bullets.some(b=>b.lance)"), false);
+  assert.equal(app.eval("game.missiles.length"), 0);
+  assert.ok(Math.abs(app.eval("getFireCooldown()") - 0.101) < 1e-10);
+  app.eval("Math.random=()=>0.98");
+  assert.equal(app.eval("randomPowerType()"), "P_BLACK");
+  app.eval("game.weaponLevel=3;game.powerups=[];dropPlayerPowerOnHit()");
+  assert.equal(app.eval('game.powerups.at(-1).type'), "P_BLACK");
+});
+
+test("only a real BLACK projectile hit applies 50% slow for 5 seconds and refreshes on repeat", () => {
+  const app = boot();
+  app.eval([
+    'game.state="PLAYING";game.player.x=200;game.player.y=480;',
+    'game.enemies=[{kind:"scout",x:410,y:480,r:22,hp:50,maxHp:50,score:40,',
+    'color:"#fff",core:"#eee",vx:-100,vy:0,t:0,wave:0,shootCd:2,shootBase:10}];',
+    'addPlayerShot(300,480,1100,0,9,1.15,"#121522",{blackSlow:true});',
+    'updatePlayerBullets(.12);'
+  ].join("\n"));
+  assert.equal(app.eval('game.enemies[0].slowRemaining'), 5);
+  assert.ok(app.eval('game.enemies[0].hp') < 50);
+  assert.equal(app.eval('game.bullets.length'), 0);
+
+  app.eval('updateEnemies(1)');
+  assert.equal(app.eval('game.enemies[0].x'), 360);
+  assert.equal(app.eval('game.enemies[0].shootCd'), 1.5);
+  assert.equal(app.eval('game.enemies[0].t'), 0.5);
+  assert.equal(app.eval('game.enemies[0].slowRemaining'), 4);
+
+  // Another weapon's shot cannot refresh a BLACK slow status.
+  app.eval('game.enemies[0].x=410;addPlayerShot(300,480,1100,0,9,1.15,"#38e8ff");updatePlayerBullets(.12)');
+  assert.equal(app.eval('game.enemies[0].slowRemaining'), 4);
+  app.eval('addPlayerShot(300,480,1100,0,9,1.15,"#121522",{blackSlow:true});updatePlayerBullets(.12)');
+  assert.equal(app.eval('game.enemies[0].slowRemaining'), 5);
+
+  // A status may expire midway through a frame and the original speed resumes.
+  app.eval('blackRules.advance(game.enemies[0],4.5);game.enemies[0].x=410;game.enemies[0].shootCd=2');
+  assert.equal(app.eval('game.enemies[0].slowRemaining'), 0.5);
+  app.eval('updateEnemies(1)');
+  assert.equal(app.eval('game.enemies[0].x'), 335);
+  assert.equal(app.eval('game.enemies[0].shootCd'), 1.25);
+  assert.equal(app.eval('game.enemies[0].slowRemaining'), 0);
+  app.eval('updateEnemies(.25)');
+  assert.equal(app.eval('game.enemies[0].x'), 310);
+  assert.equal(app.eval('game.enemies[0].shootCd'), 1);
+});
+
+test("BLACK projectile slows shielded enemies even if their barrier absorbs its damage", () => {
+  const app = boot();
+  app.eval([
+    'game.state="PLAYING";game.player.x=180;game.player.y=480;',
+    'game.enemies=[enemyBehaviors.initializeEnemy({kind:"shield",x:400,y:480,r:39,',
+    'hp:10,maxHp:10,score:60,color:"#aaf",core:"#fff"})];',
+    'addPlayerShot(280,480,1100,0,9,1.15,"#121522",{blackSlow:true});',
+    'updatePlayerBullets(.11);'
+  ].join("\n"));
+  assert.equal(app.eval("game.enemies[0].hp"), 10);
+  assert.ok(app.eval("game.enemies[0].shieldHp") < app.eval("game.enemies[0].shieldMax"));
+  assert.equal(app.eval("game.enemies[0].slowRemaining"), 5);
+});
+
+test("a black shot already flying still slows its victim after equipping another color", () => {
+  const app = boot();
+  app.eval([
+    'game.state="PLAYING";game.weaponType="black";game.player.x=200;game.player.y=480;',
+    'game.enemies=[{kind:"gunner",x:410,y:470,r:35,hp:40,maxHp:40,score:30,color:"#fff",core:"#eee"}];',
+    'firePlayerWeapons();',
+    'collectPowerup({type:"P_GREEN",x:220,y:470,life:1});',
+    'updatePlayerBullets(.16);'
+  ].join("\n"));
+  assert.equal(app.eval("game.weaponType"), "green");
+  assert.equal(app.eval("game.enemies[0].slowRemaining"), 5);
+  assert.equal(app.eval("game.redWeapon.stars"), 0);
+});
+
+test("BLACK P slows boss movement and attack clock on both hull and turret hits", () => {
+  const app = boot();
+  app.eval([
+    'game.state="PLAYING";game.stageMode="WAVE";spawnBoss();game.boss.active=true;',
+    'game.boss.x=1010;game.boss.y=480;game.boss.shoot=3;',
+    'game.player.x=500;game.player.y=480;',
+    'addPlayerShot(700,480,1500,0,9,1.15,"#121522",{blackSlow:true});',
+    'updatePlayerBullets(.25);'
+  ].join("\n"));
+  assert.equal(app.eval("game.boss.slowRemaining"), 5);
+  app.eval('game.boss.t=0;game.boss.shoot=3;game.boss.warning=0;updateBoss(1)');
+  assert.equal(app.eval("game.boss.t"), 0.5);
+  assert.equal(app.eval("game.boss.shoot"), 2.5);
+  assert.equal(app.eval("game.boss.slowRemaining"), 4);
+
+  // Turret collision also refreshes the same Boss status.
+  app.eval([
+    'game.boss.x=1010;game.boss.y=480;',
+    'const turret=game.boss.parts[0];',
+    'const turretX=game.boss.x+turret.x, turretY=game.boss.y+turret.y;',
+    'addPlayerShot(turretX-140,turretY,1400,0,9,1.15,"#121522",{blackSlow:true});',
+    'updatePlayerBullets(.13);'
+  ].join("\n"));
+  assert.equal(app.eval("game.boss.slowRemaining"), 5);
+  assert.ok(app.eval("game.boss.parts[0].hp < game.boss.parts[0].maxHp"));
+  app.eval('game.boss.warning=1;updateBoss(1)');
+  assert.equal(app.eval("game.boss.warning"), 0.5);
+});
+
+test("BLACK slow halves carrier escort launch cadence and pauses outside combat", () => {
+  const app = boot();
+  app.eval([
+    'game.state="PLAYING";game.stageMode="WAVE";game.player.x=200;game.player.y=200;',
+    'const carrier=spawnEnemyOfKind("carrier",700,480,{vx:0,vy:0,shootCd:99});',
+    'carrier.launchCooldown=1;',
+    'blackRules.apply(carrier);updateEnemies(1);'
+  ].join("\n"));
+  assert.equal(app.eval("game.enemies.length"), 1);
+  assert.equal(app.eval("game.enemies[0].launchCooldown"), 0.5);
+  assert.equal(app.eval("game.enemies[0].slowRemaining"), 4);
+  app.eval('game.state="PAUSED";updatePlaying(2)');
+  assert.equal(app.eval("game.enemies[0].slowRemaining"), 4);
+  app.eval('game.state="PLAYING";game.stageMode="TRANSITION";game.transition=10;updatePlaying(2)');
+  assert.equal(app.eval("game.enemies[0].slowRemaining"), 4);
+  app.eval('game.stageMode="WAVE";updateEnemies(1)');
+  assert.equal(app.eval("game.enemies[0].launchedEscorts"), 1);
+});
+
+test("slowed enemies and Bosses glow blue only while the debuff is active", () => {
+  const app = boot();
+  const result = app.eval([
+    '(() => {',
+    'game.state="PLAYING";game.stageMode="WAVE";game.player.x=180;',
+    'const e=spawnEnemyOfKind("scout",550,470,{vx:0,vy:0});',
+    'const glows=[];ctx.stroke=()=>{glows.push(ctx.shadowColor)};',
+    'drawEnemy(e);const before=glows.filter(x=>x==="#178bff").length;',
+    'blackRules.apply(e);drawEnemy(e);',
+    'const after=glows.filter(x=>x==="#178bff").length;',
+    'return {before,after};',
+    '})()'
+  ].join("\n"));
+  assert.equal(result.before, 0);
+  assert.equal(result.after, 2);
+
+  const boss = app.eval([
+    '(() => {',
+    'game.boss=null;game.stageMode="WAVE";spawnBoss();game.boss.active=true;',
+    'const glows=[];ctx.stroke=()=>{glows.push(ctx.shadowColor)};',
+    'drawBoss(game.boss);const before=glows.filter(x=>x==="#178bff").length;',
+    'blackRules.apply(game.boss);drawBoss(game.boss);',
+    'return {before,after:glows.filter(x=>x==="#178bff").length};',
+    '})()'
+  ].join("\n"));
+  assert.equal(boss.before, 0);
+  assert.equal(boss.after, 2);
+  app.eval('blackRules.advance(game.boss,5)');
+  assert.equal(app.eval('blackRules.isSlowed(game.boss)'), false);
+});
+
+test("BLACK slow does not alter the velocity of already-launched enemy projectiles", () => {
+  const app = boot();
+  app.eval([
+    'game.state="PLAYING";game.player.x=200;game.player.y=480;',
+    'game.enemies=[{kind:"scout",x:490,y:480,r:28,hp:10,maxHp:10,',
+    'vx:-100,vy:0,shootCd:3,shootBase:3,color:"#aaf",core:"#fff"}];',
+    'aimAtPlayer(490,480,300,8,"#fff","#eaf");',
+    'const enemy=game.enemies[0];blackRules.apply(enemy);'
+  ].join("\n"));
+  assert.equal(app.eval('game.enemyBullets[0].vx'), -300);
+  app.eval('updateEnemies(.2)');
+  assert.equal(app.eval('game.enemyBullets[0].vx'), -300);
+});
