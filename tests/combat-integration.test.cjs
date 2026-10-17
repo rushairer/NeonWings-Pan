@@ -10,6 +10,7 @@ const redWeapon = require("../src/red-weapon.js");
 const greenWeapon = require("../src/green-weapon.js");
 const blackWeapon = require("../src/black-weapon.js");
 const whiteWeapon = require("../src/white-weapon.js");
+const grayWeapon = require("../src/gray-weapon.js");
 const collision = require("../src/collision.js");
 const enemyBehaviors = require("../src/enemy-behaviors.js");
 const worlds = require("../src/worlds.js");
@@ -36,7 +37,7 @@ function boot() {
   const canvas = { style: {}, getContext: () => ctx };
   const storage = new Map();
   const window = {
-    NeonPlatform: platform, NeonController: controller, NeonCombat: combat, NeonRedWeapon: redWeapon, NeonGreenWeapon: greenWeapon, NeonBlackWeapon: blackWeapon, NeonWhiteWeapon: whiteWeapon, NeonCollision: collision, NeonEnemyBehaviors: enemyBehaviors, NeonWorlds: worlds, NeonBossParts: bossParts, NeonModes: modes, NeonRecords: records, NeonSelectLayout: selectLayout,
+    NeonPlatform: platform, NeonController: controller, NeonCombat: combat, NeonRedWeapon: redWeapon, NeonGreenWeapon: greenWeapon, NeonBlackWeapon: blackWeapon, NeonWhiteWeapon: whiteWeapon, NeonGrayWeapon: grayWeapon, NeonCollision: collision, NeonEnemyBehaviors: enemyBehaviors, NeonWorlds: worlds, NeonBossParts: bossParts, NeonModes: modes, NeonRecords: records, NeonSelectLayout: selectLayout,
     innerWidth: 1280, innerHeight: 960,
     addEventListener: (name, fn) => events.set(name, fn)
   };
@@ -682,7 +683,7 @@ test("red P is a collectible fourth weapon and fires exactly two parallel red li
   assert.equal(app.eval("game.bullets.every(b => b.vx===1120 && b.vy===0 && b.redNormal)"), true);
   app.eval('game.weaponType="blue";game.bullets.length=0;firePlayerWeapons()');
   assert.equal(app.eval("game.bullets.some(b=>b.redNormal)"), false);
-  app.eval('Math.random=()=>0.5');
+  app.eval('Math.random=()=>0.45');
   assert.equal(app.eval("randomPowerType()"), "P_RED");
 });
 
@@ -786,7 +787,7 @@ test("green P pickup fires precisely the unupgraded starter bullets at every wea
   app.eval('game.combat.energy=100;activateOverdrive();game.bullets=[];firePlayerWeapons()');
   assert.equal(app.eval('game.bullets.length'), 2);
   assert.equal(app.eval('game.bullets.some(b=>b.lance)'), false);
-  app.eval('Math.random=()=>0.65');
+  app.eval('Math.random=()=>0.55');
   assert.equal(app.eval('randomPowerType()'), "P_GREEN");
 });
 
@@ -964,7 +965,7 @@ test("BLACK P drop is discoverable and its twin dark shots never inherit blue up
   assert.equal(app.eval("game.bullets.some(b=>b.lance)"), false);
   assert.equal(app.eval("game.missiles.length"), 0);
   assert.ok(Math.abs(app.eval("getFireCooldown()") - 0.101) < 1e-10);
-  app.eval("Math.random=()=>0.8");
+  app.eval("Math.random=()=>0.7");
   assert.equal(app.eval("randomPowerType()"), "P_BLACK");
   app.eval("game.weaponLevel=3;game.powerups=[];dropPlayerPowerOnHit()");
   assert.equal(app.eval('game.powerups.at(-1).type'), "P_BLACK");
@@ -1138,7 +1139,7 @@ test("WHITE P is the seventh drop, fires paired unlimited-penetration bolts and 
   assert.equal(app.eval("game.bullets.every(b=>!b.dead && !b.whiteBossHit)"), true);
   assert.equal(app.eval("game.missiles.length"), 0);
   assert.ok(Math.abs(app.eval("getFireCooldown()") - 0.101) < 1e-10);
-  app.eval("Math.random=()=>0.95");
+  app.eval("Math.random=()=>0.8");
   assert.equal(app.eval("randomPowerType()"), "P_WHITE");
   app.eval('game.weaponLevel=3;game.powerups=[];dropPlayerPowerOnHit()');
   assert.equal(app.eval("game.powerups.at(-1).type"), "P_WHITE");
@@ -1148,11 +1149,12 @@ test("WHITE P is the seventh drop, fires paired unlimited-penetration bolts and 
     'drawHud();return arr;',
     '})()'
   ].join("\n"));
-  assert.ok(labels.includes("WHITE PIERCE + ARC"));
+  assert.ok(labels.includes("WHITE ARC 60% 1-3 HOPS"));
 });
 
 test("one white direct hit conducts once to all neighbors within GREEN's 360-radius", () => {
   const app = boot();
+  app.eval('Math.random=()=>0.99');
   app.eval([
     'game.state="PLAYING";game.player.x=200;game.player.y=480;',
     'game.enemies=[',
@@ -1163,15 +1165,16 @@ test("one white direct hit conducts once to all neighbors within GREEN's 360-rad
     'updatePlayerBullets(.10);'
   ].join("\n"));
   assert.ok(Math.abs(app.eval("game.enemies[0].hp") - 48.85) < 1e-9);
-  assert.ok(Math.abs(app.eval("game.enemies[1].hp") - (50 - 1.15*.55)) < 1e-9);
+  assert.ok(Math.abs(app.eval("game.enemies[1].hp") - (50 - 1.15*.60)) < 1e-9);
   assert.equal(app.eval("game.enemies[2].hp"), 50);
   assert.equal(app.eval("game.bullets.length"), 1); // actual piercing
   assert.equal(app.eval("game.bullets[0].hitEnemies.length"), 2);
   assert.equal(app.eval("game.electricArcs.length"), 2); // direct and secondary light
 });
 
-test("conducted targets cannot conduct further and cannot be hit twice by one piercing shot", () => {
+test("a one-hop probability result stops at the first wave and never repeats victims", () => {
   const app = boot();
+  app.eval('Math.random=()=>0.99');
   app.eval([
     'game.state="PLAYING";game.player.x=200;game.player.y=480;',
     'game.enemies=[',
@@ -1219,11 +1222,11 @@ test("WHITE conductive splash damages a nearby Boss hull only once per projectil
     'addPlayerShot(300,480,1100,0,9,1.15,"#fff",whiteRules.createShot());',
     'updatePlayerBullets(.10);'
   ].join("\n"));
-  assert.ok(Math.abs(app.eval("game.boss.hp") - (100-1.15*.55)) < 1e-9);
+  assert.ok(Math.abs(app.eval("game.boss.hp") - (100-1.15*.60)) < 1e-9);
   assert.equal(app.eval("game.bullets[0].whiteBossHit"), true);
   // Passing through the Boss later must not inflict a second hit.
   app.eval("updatePlayerBullets(.45)");
-  assert.ok(Math.abs(app.eval("game.boss.hp") - (100-1.15*.55)) < 1e-9);
+  assert.ok(Math.abs(app.eval("game.boss.hp") - (100-1.15*.60)) < 1e-9);
 });
 
 test("piercing WHITE boss hull contact conducts once to nearby enemies", () => {
@@ -1236,7 +1239,7 @@ test("piercing WHITE boss hull contact conducts once to nearby enemies", () => {
     'updatePlayerBullets(.44);'
   ].join("\n"));
   assert.ok(Math.abs(app.eval("game.boss.hp") - 98.85) < 1e-9);
-  assert.ok(Math.abs(app.eval("game.enemies[0].hp") - (50-1.15*.55)) < 1e-9);
+  assert.ok(Math.abs(app.eval("game.enemies[0].hp") - (50-1.15*.60)) < 1e-9);
   assert.equal(app.eval("game.bullets.length"), 1);
   assert.equal(app.eval("game.bullets[0].whiteBossHit"), true);
 });
