@@ -7,6 +7,16 @@ Independently maintained from NeonWings commit `5ebcb1de1adb288b41a3c5e387f747bc
 - [x] Configure standalone Pages workflow
 - [ ] Verify site deployment and controller tests on hardware
 
+## v26.4.0 — Black P slow-control weapon
+
+- [x] Sixth P pickup with black / icy-blue visual identity and paired normal projectiles
+- [x] Applying 50% enemy/Boss movement slowdown and 50% attack-frequency slowdown on direct projectile hit
+- [x] Five-second per-target status, refreshed but never stacked; pause and stage transitions freeze
+- [x] Blue electric glow while slowed with no damage or additional gameplay effects
+- [x] Preserve enemy frontal shields, boss turret collision and all existing weapon systems
+- [x] Isolate the rules and add unit/integration regression coverage
+- [ ] Check balance and visual clarity of slow effect in actual browser and handheld gameplay
+
 ## v26.3.2 — Faster green halo damage
 
 - [x] Shorten green aura period from 1s to 0.4s, still 2 HP per pulse (5 HP/s per target)

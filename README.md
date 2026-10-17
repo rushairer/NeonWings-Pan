@@ -13,7 +13,7 @@ A controller-first, five-stage, side-scrolling neon arcade shooter built with br
 ## Currently playable
 
 - Five themed stages and five multi-phase bosses; higher-difficulty loops after stage five
-- 11 enemy types, formations, five weapon families, collectible power-ups and BOMB
+- 11 enemy types, formations, six weapon families, collectible power-ups and BOMB
 - Gamepad rumble where browser/device supports it, Web Audio synthesis, volume and vibration options
 - Pause, fullscreen, local high score, end-of-run statistics
 - v23 foundation: 4:3 letterbox sizing; auto-pause on background/focus loss or controller disconnection; browser-storage fallback
@@ -28,6 +28,17 @@ A controller-first, five-stage, side-scrolling neon arcade shooter built with br
 - v26.1.1 UI fix: fighter/mode selector uses explicit non-overlapping layout geometry; selected fighter frame, Training hint, ship descriptions and score footer retain safe spacing.
 - **v26.2.0 NeonWings-Pan exclusive:** red P twin-line fire, a 250-projectile ±10° special fan triggered on 10% of eligible volleys, and an independent 0–5 star progression.
 - **v26.3.0 NeonWings-Pan exclusive:** green P retains starter-grade dual shots and adds a passive neon halo dealing area damage to nearby enemies once per second.
+
+## v26.4.0 — BLACK P / SLOW
+
+BLACK P joins the regular P pickup rotation as the sixth weapon. It fires two visible charcoal-dark shots with icy-blue edging at the starter dual-shot cadence, regardless of general weapon level. Black does not inherit blue's extra shots or Overdrive lance. Its usual bullet damage remains intact.
+
+- **Guaranteed slowing on collision:** any BLACK P projectile that hits a living enemy (including a frontal shield) or an active Boss (including a turret) applies **-50% movement speed and -50% attack frequency for five seconds**. Already-fired enemy bullets keep their existing velocities.
+- **Every hit refreshes 5s:** repeated black hits refresh the same status instead of stacking (never -75% or -100%).
+- **Movement and attack:** horizontal motion, oscillating vertical motion, Boss position patterns, enemy shooting intervals, carrier escort-launch cooldown and Boss warning/attack timers all progress at half speed while afflicted. After 5s the original speeds return automatically.
+- **Blue glow only:** afflicted regular enemies and Bosses visibly pulse with an electric-blue aura for the duration. The glow produces **no additional damage, shield, or other effect**.
+- **Persistence:** switching weapons does not immediately cure afflicted enemies; their existing five-second combat clock keeps running. The debuff freezes during pause, stage transitions, and non-combat reward screens. Red stars and green halo behavior are unchanged.
+- **Performance:** glow is drawn only for currently afflicted enemies, with no added particle spawning or unbounded gameplay arrays.
 
 ## v26.3.2 — GREEN P faster damage pulses
 
