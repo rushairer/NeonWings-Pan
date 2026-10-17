@@ -7,6 +7,7 @@ const platform = require("../src/platform.js");
 const controller = require("../src/controller.js");
 const combat = require("../src/combat.js");
 const redWeapon = require("../src/red-weapon.js");
+const greenWeapon = require("../src/green-weapon.js");
 const collision = require("../src/collision.js");
 const enemyBehaviors = require("../src/enemy-behaviors.js");
 const worlds = require("../src/worlds.js");
@@ -33,7 +34,7 @@ function boot() {
   const canvas = { style: {}, getContext: () => ctx };
   const storage = new Map();
   const window = {
-    NeonPlatform: platform, NeonController: controller, NeonCombat: combat, NeonRedWeapon: redWeapon, NeonCollision: collision, NeonEnemyBehaviors: enemyBehaviors, NeonWorlds: worlds, NeonBossParts: bossParts, NeonModes: modes, NeonRecords: records, NeonSelectLayout: selectLayout,
+    NeonPlatform: platform, NeonController: controller, NeonCombat: combat, NeonRedWeapon: redWeapon, NeonGreenWeapon: greenWeapon, NeonCollision: collision, NeonEnemyBehaviors: enemyBehaviors, NeonWorlds: worlds, NeonBossParts: bossParts, NeonModes: modes, NeonRecords: records, NeonSelectLayout: selectLayout,
     innerWidth: 1280, innerHeight: 960,
     addEventListener: (name, fn) => events.set(name, fn)
   };
@@ -679,7 +680,7 @@ test("red P is a collectible fourth weapon and fires exactly two parallel red li
   assert.equal(app.eval("game.bullets.every(b => b.vx===1120 && b.vy===0 && b.redNormal)"), true);
   app.eval('game.weaponType="blue";game.bullets.length=0;firePlayerWeapons()');
   assert.equal(app.eval("game.bullets.some(b=>b.redNormal)"), false);
-  app.eval('Math.random=()=>0.875');
+  app.eval('Math.random=()=>0.7');
   assert.equal(app.eval("randomPowerType()"), "P_RED");
 });
 

@@ -7,6 +7,16 @@ Independently maintained from NeonWings commit `5ebcb1de1adb288b41a3c5e387f747bc
 - [x] Configure standalone Pages workflow
 - [ ] Verify site deployment and controller tests on hardware
 
+## v26.3.0 — NeonWings-Pan green proximity weapon
+
+- [x] Add green P as fifth loot color, with distinct pickup visuals and green HUD status
+- [x] Reuse unupgraded dual starter shots, retaining original cadence at every upgrade level
+- [x] Add glowing radius-180 aura around equipped fighter, with full-geometry hit checks
+- [x] Deal 2 HP per second to all overlapping enemies and Boss hulls through existing damage pipelines
+- [x] Freeze clock in pause/transition/rewards; reset partial second when unequipped
+- [x] Add pure geometry/timing unit tests and combat/visual regression checks
+- [ ] Validate green aura readability, gameplay balance and FPS on browser/handheld devices
+
 ## v26.2.0 — NeonWings-Pan red weapon
 
 - [x] Add fourth, red P pickup to normal loot selection and hit-recovery drop paths

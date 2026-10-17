@@ -13,7 +13,7 @@ A controller-first, five-stage, side-scrolling neon arcade shooter built with br
 ## Currently playable
 
 - Five themed stages and five multi-phase bosses; higher-difficulty loops after stage five
-- 11 enemy types, formations, four weapon families, collectible power-ups and BOMB
+- 11 enemy types, formations, five weapon families, collectible power-ups and BOMB
 - Gamepad rumble where browser/device supports it, Web Audio synthesis, volume and vibration options
 - Pause, fullscreen, local high score, end-of-run statistics
 - v23 foundation: 4:3 letterbox sizing; auto-pause on background/focus loss or controller disconnection; browser-storage fallback
@@ -27,6 +27,17 @@ A controller-first, five-stage, side-scrolling neon arcade shooter built with br
 - v26.1 local hangar: Classic and Boss Rush each retain their five highest ranked runs, show a run grade and unlock eight milestone badges. Training remains unranked.
 - v26.1.1 UI fix: fighter/mode selector uses explicit non-overlapping layout geometry; selected fighter frame, Training hint, ship descriptions and score footer retain safe spacing.
 - **v26.2.0 NeonWings-Pan exclusive:** red P twin-line fire, a 250-projectile ±10° special fan triggered on 10% of eligible volleys, and an independent 0–5 star progression.
+- **v26.3.0 NeonWings-Pan exclusive:** green P retains starter-grade dual shots and adds a passive neon halo dealing area damage to nearby enemies once per second.
+
+## v26.3.0 — GREEN P / AURA
+
+The fifth collectible P is green. Picking it up surrounds the selected fighter with a glowing green ring and equips the proximity aura.
+
+- **Regular bullets:** identical to the untouched starting (blue Lv.1) dual-line shots and their original firing interval, regardless of the current overall weapon level. Green adds no missiles, spread, or blue Overdrive lance. Ordinary Overdrive damage scaling still applies to its starter bullets.
+- **Passive ring:** 180 logical-pixel radius centered on the fighter, visible as a glowing green circle. It **does not require holding fire**.
+- **Damage:** every completed second of active combat, each intersecting enemy takes 2 HP damage. The ring also damages Boss hulls when their hitboxes intersect it, and honors existing enemy frontal shields, kills, and loot/score rules. This fixed radius/damage is the initial balance baseline; hardware playtesting is still needed.
+- **Timing:** its one-second timer pauses when the game is paused or in stage transitions/reward screens. Switching to another P stops the aura and resets its partial second. On re-equipping green, a new full second is required to pulse.
+- **Coexistence:** RED P star levels still persist independently when switching to green; a previously activated red fan is allowed to finish normally.
 
 ## v26.2.0 — RED P / SCATTER
 

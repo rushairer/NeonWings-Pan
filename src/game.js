@@ -8,6 +8,8 @@ const W = 1280;
     if (!combatRules) throw new Error("NeonWings combat runtime missing");
     const redRules = window.NeonRedWeapon;
     if (!redRules) throw new Error("NeonWings-Pan red P runtime missing");
+    const greenRules = window.NeonGreenWeapon;
+    if (!greenRules) throw new Error("NeonWings-Pan green P runtime missing");
     const collision = window.NeonCollision;
     if (!collision) throw new Error("NeonWings collision runtime missing");
     const enemyBehaviors = window.NeonEnemyBehaviors;
@@ -1009,6 +1011,7 @@ const W = 1280;
         newBadges: [],
         combat: combatRules.createState(),
         redWeapon: redRules.createState(),
+        greenAura: greenRules.createState(),
         missileSequence: 0,
         enemySequence: 0,
         world: worlds.createState(0),
@@ -1705,16 +1708,18 @@ const W = 1280;
 
     function randomPowerType() {
       const r = Math.random();
-      if (r < 0.25) return "P_BLUE";
-      if (r < 0.50) return "P_PURPLE";
-      if (r < 0.75) return "P_YELLOW";
-      return "P_RED";
+      if (r < 0.20) return "P_BLUE";
+      if (r < 0.40) return "P_PURPLE";
+      if (r < 0.60) return "P_YELLOW";
+      if (r < 0.80) return "P_RED";
+      return "P_GREEN";
     }
 
     function weaponMeta(type = game.weaponType) {
       if (type === "purple") return { name: "SPREAD", short: "PURPLE", color: "#c084ff", core: "#f3d7ff" };
       if (type === "yellow") return { name: "MISSILE", short: "YELLOW", color: "#ffd76b", core: "#fff4b7" };
       if (type === "red") return { name: "SCATTER", short: "RED", color: "#ff3d5f", core: "#ffe3e8" };
+      if (type === "green") return { name: "AURA", short: "GREEN", color: "#43ff87", core: "#e0ffed" };
       return { name: "LINE", short: "BLUE", color: "#38e8ff", core: "#e8fdff" };
     }
 
@@ -1722,6 +1727,7 @@ const W = 1280;
       if (powerupType === "P_PURPLE") return "purple";
       if (powerupType === "P_YELLOW") return "yellow";
       if (powerupType === "P_RED") return "red";
+      if (powerupType === "P_GREEN") return "green";
       return "blue";
     }
 
@@ -1729,6 +1735,7 @@ const W = 1280;
       if (game.weaponType === "purple") return "P_PURPLE";
       if (game.weaponType === "yellow") return "P_YELLOW";
       if (game.weaponType === "red") return "P_RED";
+      if (game.weaponType === "green") return "P_GREEN";
       return "P_BLUE";
     }
 
@@ -1813,6 +1820,7 @@ const W = 1280;
         if (game.weaponType !== nextType) {
           // Only the pending P volley streak resets; red stars and an active fan survive.
           redRules.switchWeapon(game.redWeapon);
+          greenRules.switchWeapon(game.greenAura);
           game.fireCooldown = 0;
         }
         game.weaponType = nextType;
@@ -1916,6 +1924,15 @@ const W = 1280;
               rect(-29, offset, 6, 6, meta.core);
               rect(23, offset, 6, 6, meta.core);
             }
+          } else if (wt === "green") {
+            // Four light points and a tiny circular halo identify the aura pickup.
+            rect(-4, -30, 8, 6, meta.core);
+            rect(-4, 24, 8, 6, meta.core);
+            ctx.strokeStyle = meta.core;
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(0, 0, 29, 0, Math.PI * 2);
+            ctx.stroke();
           }
         } else if (p.type === "BOMB") {
           // Cyan-white bomb pickup.
@@ -2002,18 +2019,22 @@ const W = 1280;
       const muzzleX = game.player.x + 62;
       const baseY = game.player.y;
 
-      if (type === "blue") {
+      if (type === "blue" || type === "green") {
+        // GREEN uses exactly the unupgraded starting loadout (blue Lv.1)
+        // regardless of its pickup level, without inheriting the blue lance.
         addPlayerShot(muzzleX, baseY - 10, 1100, 0, 9, 1.15, "#38e8ff");
         addPlayerShot(muzzleX, baseY + 12, 1100, 0, 9, 1.15, "#38e8ff");
-        if (level >= 2) addPlayerShot(muzzleX + 8, baseY, 1180, 0, 12, 1.7, "#e8fdff");
-        if (level >= 3) {
-          addPlayerShot(muzzleX - 4, baseY - 26, 1060, 0, 8, 1, "#8ef7ff");
-          addPlayerShot(muzzleX - 4, baseY + 28, 1060, 0, 8, 1, "#8ef7ff");
-        }
-        if (overdrive) {
-          // An extra cyan lance can pierce three distinct enemies, not the same enemy three times.
-          addPlayerShot(muzzleX + 8, baseY, 1420, 0, 17, 2.25 + level * 0.25, "#e8fdff",
-            { pierce: 3, hitEnemies: [], lance: true });
+        if (type === "blue") {
+          if (level >= 2) addPlayerShot(muzzleX + 8, baseY, 1180, 0, 12, 1.7, "#e8fdff");
+          if (level >= 3) {
+            addPlayerShot(muzzleX - 4, baseY - 26, 1060, 0, 8, 1, "#8ef7ff");
+            addPlayerShot(muzzleX - 4, baseY + 28, 1060, 0, 8, 1, "#8ef7ff");
+          }
+          if (overdrive) {
+            // The original blue Overdrive lance remains blue-only.
+            addPlayerShot(muzzleX + 8, baseY, 1420, 0, 17, 2.25 + level * 0.25, "#e8fdff",
+              { pierce: 3, hitEnemies: [], lance: true });
+          }
         }
       } else if (type === "red") {
         // Two fixed parallel crimson lanes; only the P-specific streak changes cadence.
@@ -2061,7 +2082,7 @@ const W = 1280;
       if (game.weaponType === "red") return redRules.RULES.volleySeconds;
       if (game.weaponType === "yellow") return Math.max(0.17, 0.25 - game.weaponLevel * 0.025);
       if (game.weaponType === "purple") return Math.max(0.10, 0.145 - game.weaponLevel * 0.012);
-      return Math.max(0.07, 0.115 - game.weaponLevel * 0.014);
+      return Math.max(0.07, 0.115 - (game.weaponType === "green" ? 1 : game.weaponLevel) * 0.014);
     }
 
     function findMissileTarget(m) {
@@ -2901,6 +2922,30 @@ const W = 1280;
       showMessage(game.transitionText, 2.0);
     }
 
+    function updateGreenAura(dt) {
+      const enabled = game.state === "PLAYING" && game.weaponType === "green" &&
+        (game.stageMode === "WAVE" || game.stageMode === "BOSS");
+      const pulses = greenRules.tick(game.greenAura, dt, enabled, () => {
+        for (const enemy of game.enemies) {
+          if (enemy.hp > 0 && greenRules.enemyInRange(game.player, enemy)) {
+            // Preserve shielding, kill rewards, child-spawn caps and score economy.
+            damageEnemy(enemy, greenRules.RULES.damagePerPulse, enemy.x, enemy.y, "#43ff87");
+          }
+        }
+        const boss = game.boss;
+        if (boss && boss.active && greenRules.bossInRange(game.player, boss)) {
+          // The ring damages the nearby Boss hull, not distant turret weak points.
+          const x = clamp(game.player.x, boss.x - boss.rx, boss.x + boss.rx);
+          const y = clamp(game.player.y, boss.y - boss.ry, boss.y + boss.ry);
+          damageBoss(greenRules.RULES.damagePerPulse, x, y, "#43ff87");
+        }
+      });
+      if (pulses > 0) {
+        // Never leave a dead aura target to collide with the player this frame.
+        game.enemies = game.enemies.filter(e => e.hp > 0 && e.x > -120);
+      }
+    }
+
     function updatePlaying(dt) {
       if (game.state !== "PLAYING") return;
 
@@ -3034,6 +3079,7 @@ const W = 1280;
         showMessage("ARENA HAZARD - " + worlds.PROFILES[game.stageIndex].name, 1.25);
       }
 
+      updateGreenAura(dt);
       if (game.stageIntro > 0) game.stageIntro = Math.max(0, game.stageIntro - dt);
     }
 
@@ -3115,6 +3161,34 @@ const W = 1280;
         rect(-16, -1, 10, 2, "rgba(255,255,255,.35)");
         ctx.restore();
       }
+    }
+
+    function drawGreenAura() {
+      if (game.weaponType !== "green" ||
+          (game.stageMode !== "WAVE" && game.stageMode !== "BOSS")) return;
+      const radius = greenRules.RULES.radius;
+      const shimmer = 0.60 + Math.sin(game.t * 5.2) * 0.16;
+      ctx.save();
+      ctx.translate(game.player.x, game.player.y);
+      ctx.fillStyle = "rgba(40,255,135,.075)";
+      ctx.beginPath();
+      ctx.arc(0, 0, radius, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.strokeStyle = "#43ff87";
+      ctx.shadowColor = "#43ff87";
+      ctx.shadowBlur = 19;
+      ctx.lineWidth = 5;
+      ctx.globalAlpha = shimmer;
+      ctx.beginPath();
+      ctx.arc(0, 0, radius, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.shadowBlur = 0;
+      ctx.globalAlpha = shimmer * 0.42;
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(0, 0, radius * 0.75, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.restore();
     }
 
     function drawOverdriveAura() {
@@ -3229,7 +3303,9 @@ const W = 1280;
       ctx.fillStyle = "rgba(0,0,0,.34)";
       ctx.fillRect(636, 22, 312, 78);
       drawText(`BOMB ${"●".repeat(Math.max(0, game.bomb))}${"○".repeat(Math.max(0, game.bombMax - game.bomb))}`, 656, 50, 23, "left", "#8ef7ff");
-      drawText(`${meta.short} WEAPON  LV.${game.weaponLevel}`, 656, 80, 21, "left", meta.color);
+      drawText(game.weaponType === "green"
+        ? `GREEN AURA  ${greenRules.RULES.damagePerPulse} DMG/S`
+        : `${meta.short} WEAPON  LV.${game.weaponLevel}`, 656, 80, 21, "left", meta.color);
 
       ctx.fillStyle = "rgba(0,0,0,.30)";
       ctx.fillRect(978, 22, 278, 78);
@@ -3387,7 +3463,7 @@ const W = 1280;
       ctx.fillRect(0, 0, W, H);
 
       drawText("NEON WINGS", W / 2, 195, 86, "center", "#e7fbff");
-      drawText("NEONWINGS PAN  /  v26.2.0", W / 2, 270, 28, "center", "#98f5ff");
+      drawText("NEONWINGS PAN  /  v26.3.0", W / 2, 270, 28, "center", "#98f5ff");
       drawText(`HIGH SCORE ${String(highScore()).padStart(6, "0")}`, W / 2, 318, 24, "center", "#fff4b7");
 
       drawPlayerShip(W / 2 - 170, 492, -0.20, false, ships[0]);
@@ -3712,6 +3788,7 @@ const W = 1280;
 
       drawBackground(dt);
       worlds.drawHazard(ctx, game.world, W, H);
+      drawGreenAura();
       drawOverdriveAura();
       drawBombFlash();
 
