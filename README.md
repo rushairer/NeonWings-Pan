@@ -13,7 +13,7 @@ A controller-first, five-stage, side-scrolling neon arcade shooter built with br
 ## Currently playable
 
 - Five themed stages and five multi-phase bosses; higher-difficulty loops after stage five
-- 11 enemy types, formations, three weapon families, collectible power-ups and BOMB
+- 11 enemy types, formations, four weapon families, collectible power-ups and BOMB
 - Gamepad rumble where browser/device supports it, Web Audio synthesis, volume and vibration options
 - Pause, fullscreen, local high score, end-of-run statistics
 - v23 foundation: 4:3 letterbox sizing; auto-pause on background/focus loss or controller disconnection; browser-storage fallback
@@ -26,6 +26,21 @@ A controller-first, five-stage, side-scrolling neon arcade shooter built with br
 - v26 preview: select Classic, Boss Rush, or Training during fighter selection; Boss Rush has its own high score while Training never writes ranked scores
 - v26.1 local hangar: Classic and Boss Rush each retain their five highest ranked runs, show a run grade and unlock eight milestone badges. Training remains unranked.
 - v26.1.1 UI fix: fighter/mode selector uses explicit non-overlapping layout geometry; selected fighter frame, Training hint, ship descriptions and score footer retain safe spacing.
+- **v26.2.0 NeonWings-Pan exclusive:** red P twin-line fire, a 250-projectile ±10° special fan triggered on 10% of eligible volleys, and an independent 0–5 star progression.
+
+## v26.2.0 — RED P / SCATTER
+
+The fourth P pickup is **red** and can drop wherever blue/purple/yellow P pickups can drop. Picking it up equips RED P without resetting previously earned RED P stars.
+
+- **Normal fire:** every volley shoots two parallel red forward shots. After **5 + RED star level** volleys, the red gun pauses **0.4 seconds**. At zero stars it rests after five; at five stars it rests after ten.
+- **Proc chance:** each normal red volley has an independent **10%** chance to begin a special. There can only be **one special active at a time**.
+- **Special:** shoots **250 smaller red projectiles over three seconds**, distributed within **±10°** around the forward attack direction. The next star is granted **only when all 250 have been launched**; level caps at five, but the special can still activate at five stars.
+- **Switching weapons:** stored red stars survive switching to any other weapon; active special streams also finish. Other weapons keep their own original cadence, damage and Overdrive rules.
+- **Taking real damage:** each HP-losing hit subtracts **one red star**, down to zero, even if another gun is equipped. Invulnerability and absorbed Vanguard Overdrive guard hits do not subtract a star.
+- **Combat-time clock:** pause, focus loss, stage transitions and Boss reward intervals freeze the special timer. Releasing fire does not cancel an already-triggered special. New runs start at zero stars.
+- **HUD:** bottom-center red panel retains star progress even while another weapon is equipped. Player bullet cap is now 360 to accommodate the special while preserving bounded memory.
+
+The 250-shot fan is backed by deterministic timing/angle tests and browser mock integration tests. Browser visuals, controller feel and device FPS remain to be manually accepted.
 
 ## Run
 
@@ -73,7 +88,7 @@ Overdrive requires a full meter and cannot recharge while active. A damaging hit
 
 ### Profiling / performance budgets
 
-Press **F3** on a keyboard during play to toggle a small performance diagnostics overlay showing observed FPS, frames longer than 25 ms, particle/enemy-bullet counts, shots and missiles. Rendering uses a fixed logical 1280×960 playfield. v24.1 limits active particles to 800, enemy bullets to 340, player bullets to 240, and missiles to 48. These are defensive memory ceilings, **not** evidence of stable 60 FPS on AYANEO hardware. Bullets use swept collision against enemies and the player, including across frames with longer elapsed time. Real-device playtests should check controller feel, visual readability and frame pacing.
+Press **F3** on a keyboard during play to toggle a small performance diagnostics overlay showing observed FPS, frames longer than 25 ms, particle/enemy-bullet counts, shots and missiles. Rendering uses a fixed logical 1280×960 playfield. v24.1 limits active particles to 800, enemy bullets to 340, player bullets to 360, and missiles to 48. These are defensive memory ceilings, **not** evidence of stable 60 FPS on AYANEO hardware. Bullets use swept collision against enemies and the player, including across frames with longer elapsed time. Real-device playtests should check controller feel, visual readability and frame pacing.
 
 ## v25 enemy behavior preview
 
