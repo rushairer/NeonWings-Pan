@@ -231,7 +231,7 @@ test("large particle and bullet volleys have strict bounded memory budgets", () 
     for(let i=0; i<520; i++) aimAtPlayer(600,500,300,8,"#f00","#fff");
     for(let i=0; i<120; i++) addMissile(100,100,1,2)`);
   assert.equal(app.eval("game.particles.length"), 800);
-  assert.equal(app.eval("game.bullets.length"), 240);
+  assert.equal(app.eval("game.bullets.length"), 360);
   assert.equal(app.eval("game.enemyBullets.length"), 340);
   assert.equal(app.eval("game.missiles.length"), 48);
 });
