@@ -2773,7 +2773,7 @@ const W = 1280;
             addElectricArc(source.x, source.y, target.x, target.y);
             damageBoss(b.power * whiteRules.RULES.secondaryDamageFactor,
               impact.x, impact.y, "#8fe6ff");
-          }
+          }, Math.random
         );
       }
     }

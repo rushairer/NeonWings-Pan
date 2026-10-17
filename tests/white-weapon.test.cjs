@@ -22,7 +22,7 @@ test("conduction uses GREEN's exact 360 radius and touches enemy hit circles", (
   const hits = [];
   assert.equal(green.RULES.radius, 360);
   const result = white.conduct(shot, center, [touched, outside], null, green,
-    e => hits.push(e), () => {});
+    e => hits.push(e), () => {}, () => 0.99);
   assert.deepEqual(result, { enemies: 1, boss: false });
   assert.deepEqual(hits, [touched]);
   assert.equal(white.RULES.secondaryDamageFactor, 0.60);
