@@ -6,6 +6,8 @@ const W = 1280;
     if (!controller) throw new Error("NeonWings controller runtime missing");
     const combatRules = window.NeonCombat;
     if (!combatRules) throw new Error("NeonWings combat runtime missing");
+    const redRules = window.NeonRedWeapon;
+    if (!redRules) throw new Error("NeonWings-Pan red P runtime missing");
     const collision = window.NeonCollision;
     if (!collision) throw new Error("NeonWings collision runtime missing");
     const enemyBehaviors = window.NeonEnemyBehaviors;
@@ -32,7 +34,7 @@ const W = 1280;
     const LIMITS = Object.freeze({
       particles: 800,
       enemyBullets: 340,
-      playerBullets: 240,
+      playerBullets: 360,
       missiles: 48,
       enemies: enemyBehaviors.CONFIG.maxEnemies
     });
@@ -1006,6 +1008,7 @@ const W = 1280;
         resultGrade: null,
         newBadges: [],
         combat: combatRules.createState(),
+        redWeapon: redRules.createState(),
         missileSequence: 0,
         enemySequence: 0,
         world: worlds.createState(0),
@@ -1702,26 +1705,30 @@ const W = 1280;
 
     function randomPowerType() {
       const r = Math.random();
-      if (r < 0.34) return "P_BLUE";
-      if (r < 0.67) return "P_PURPLE";
-      return "P_YELLOW";
+      if (r < 0.25) return "P_BLUE";
+      if (r < 0.50) return "P_PURPLE";
+      if (r < 0.75) return "P_YELLOW";
+      return "P_RED";
     }
 
     function weaponMeta(type = game.weaponType) {
       if (type === "purple") return { name: "SPREAD", short: "PURPLE", color: "#c084ff", core: "#f3d7ff" };
       if (type === "yellow") return { name: "MISSILE", short: "YELLOW", color: "#ffd76b", core: "#fff4b7" };
+      if (type === "red") return { name: "SCATTER", short: "RED", color: "#ff3d5f", core: "#ffe3e8" };
       return { name: "LINE", short: "BLUE", color: "#38e8ff", core: "#e8fdff" };
     }
 
     function powerupWeaponType(powerupType) {
       if (powerupType === "P_PURPLE") return "purple";
       if (powerupType === "P_YELLOW") return "yellow";
+      if (powerupType === "P_RED") return "red";
       return "blue";
     }
 
     function currentPowerupType() {
       if (game.weaponType === "purple") return "P_PURPLE";
       if (game.weaponType === "yellow") return "P_YELLOW";
+      if (game.weaponType === "red") return "P_RED";
       return "P_BLUE";
     }
 
@@ -1803,6 +1810,11 @@ const W = 1280;
         hapticPickup();
 
         const nextType = powerupWeaponType(p.type);
+        if (game.weaponType !== nextType) {
+          // Only the pending P volley streak resets; red stars and an active fan survive.
+          redRules.switchWeapon(game.redWeapon);
+          game.fireCooldown = 0;
+        }
         game.weaponType = nextType;
 
         if (game.weaponLevel < game.weaponMax) {
@@ -1898,6 +1910,12 @@ const W = 1280;
             rect(2, -29, 6, 6, meta.core);
             rect(-8, 23, 6, 6, meta.core);
             rect(2, 23, 6, 6, meta.core);
+          } else if (wt === "red") {
+            // Four short side fins make the crimson P pickup easy to distinguish.
+            for (const offset of [-11, 5]) {
+              rect(-29, offset, 6, 6, meta.core);
+              rect(23, offset, 6, 6, meta.core);
+            }
           }
         } else if (p.type === "BOMB") {
           // Cyan-white bomb pickup.
@@ -1997,6 +2015,10 @@ const W = 1280;
           addPlayerShot(muzzleX + 8, baseY, 1420, 0, 17, 2.25 + level * 0.25, "#e8fdff",
             { pierce: 3, hitEnemies: [], lance: true });
         }
+      } else if (type === "red") {
+        // Two fixed parallel crimson lanes; only the P-specific streak changes cadence.
+        addPlayerShot(muzzleX, baseY - 13, 1120, 0, 8, 1.15, "#ff3d5f", { redNormal: true });
+        addPlayerShot(muzzleX, baseY + 13, 1120, 0, 8, 1.15, "#ff3d5f", { redNormal: true });
       } else if (type === "purple") {
         const fan = overdrive
           ? (level === 1 ? [-0.42, -0.21, 0, 0.21, 0.42]
@@ -2036,6 +2058,7 @@ const W = 1280;
     }
 
     function getFireCooldown() {
+      if (game.weaponType === "red") return redRules.RULES.volleySeconds;
       if (game.weaponType === "yellow") return Math.max(0.17, 0.25 - game.weaponLevel * 0.025);
       if (game.weaponType === "purple") return Math.max(0.10, 0.145 - game.weaponLevel * 0.012);
       return Math.max(0.07, 0.115 - game.weaponLevel * 0.014);
@@ -2666,6 +2689,9 @@ const W = 1280;
         return;
       }
 
+      // A real HP hit costs one RED P star even when another weapon is equipped.
+      // Vanguard shield absorption returned above and is not a damaging hit.
+      redRules.takeHit(game.redWeapon);
       sfx("damage");
       hapticDamage();
       game.stats.damageTaken += 1;
@@ -2934,8 +2960,32 @@ const W = 1280;
 
       const firing = readInput(dt);
       if (firing && game.fireCooldown <= 0) {
-        game.fireCooldown = getFireCooldown();
         firePlayerWeapons();
+        if (game.weaponType === "red") {
+          const volley = redRules.fire(game.redWeapon, Math.random());
+          game.fireCooldown = volley.cooldown;
+          if (volley.triggered) {
+            sfx("overdriveReady");
+            showMessage("RED P  /  SCATTER FAN ENGAGED", 1.1);
+          }
+        } else {
+          game.fireCooldown = getFireCooldown();
+        }
+      }
+
+      // The already-started fan finishes even if the player releases fire or
+      // switches weapons; only active combat time advances its three-second clock.
+      const fan = redRules.tick(game.redWeapon, dt, (angle, index) => {
+        const muzzleY = game.player.y + (index % 2 === 0 ? -7 : 7);
+        addPlayerShot(game.player.x + 60, muzzleY,
+          Math.cos(angle) * 1060, Math.sin(angle) * 1060,
+          5, 0.38, "#ff4264", { redSpecial: true });
+      });
+      if (fan.upgraded) {
+        sfx("pickupP");
+        showMessage(`RED P  STAR UP  ${game.redWeapon.stars}/5`, 1.6);
+      } else if (fan.completed) {
+        showMessage("RED P  MAX 5 STARS", 1.0);
       }
 
       if (game.stageMode === "WAVE") {
@@ -3028,8 +3078,8 @@ const W = 1280;
         ctx.translate(b.x, b.y);
         ctx.rotate(Math.atan2(b.vy || 0, b.vx || 1));
         const core = b.c || "#5ae8ff";
-        const length = b.lance ? 90 : b.power > 1.5 ? 40 : b.power > 1.1 ? 34 : 30;
-        const height = b.lance ? 22 : b.r > 9 ? 12 : 10;
+        const length = b.redSpecial ? 22 : b.lance ? 90 : b.power > 1.5 ? 40 : b.power > 1.1 ? 34 : 30;
+        const height = b.redSpecial ? 7 : b.lance ? 22 : b.r > 9 ? 12 : 10;
         if (b.lance) {
           ctx.shadowColor = "#8ef7ff";
           ctx.shadowBlur = 22;
@@ -3220,6 +3270,18 @@ const W = 1280;
         drawText(`GRAZES ${combat.grazes}  /  BEST ${combat.maxCombo}`, W - 336, H - 37, 19, "left", "#e7fbff");
       }
 
+      // Red star progress is visible even while another weapon is equipped.
+      if (game.weaponType === "red" || game.redWeapon.stars > 0 || game.redWeapon.special) {
+        ctx.fillStyle = "rgba(23, 3, 16, .70)";
+        ctx.fillRect(552, H - 94, 354, 72);
+        const stars = "★".repeat(game.redWeapon.stars) + "☆".repeat(5 - game.redWeapon.stars);
+        drawText(`RED P  ${stars}`, 570, H - 66, 22, "left", "#ff5574");
+        drawText(game.redWeapon.special
+          ? `FAN ${game.redWeapon.special.emitted}/250  /  3.0s`
+          : `${redRules.RULES.baseVolleys + game.redWeapon.stars} VOLLEYS  /  0.4s REST`,
+          570, H - 38, 18, "left", "#ffe3e8");
+      }
+
       if (game.stageIntro > 0 && game.state === "PLAYING" && game.stageMode === "WAVE") {
         ctx.fillStyle = "rgba(0,0,0,.42)";
         ctx.fillRect(W / 2 - 360, H / 2 - 60, 720, 120);
@@ -3325,7 +3387,7 @@ const W = 1280;
       ctx.fillRect(0, 0, W, H);
 
       drawText("NEON WINGS", W / 2, 195, 86, "center", "#e7fbff");
-      drawText("NEONWINGS PAN  /  v26.1.1", W / 2, 270, 28, "center", "#98f5ff");
+      drawText("NEONWINGS PAN  /  v26.2.0", W / 2, 270, 28, "center", "#98f5ff");
       drawText(`HIGH SCORE ${String(highScore()).padStart(6, "0")}`, W / 2, 318, 24, "center", "#fff4b7");
 
       drawPlayerShip(W / 2 - 170, 492, -0.20, false, ships[0]);
