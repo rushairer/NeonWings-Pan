@@ -7,6 +7,17 @@ Independently maintained from NeonWings commit `5ebcb1de1adb288b41a3c5e387f747bc
 - [x] Configure standalone Pages workflow
 - [ ] Verify site deployment and controller tests on hardware
 
+## v26.5.0 — White P piercing and one-hop electricity
+
+- [x] Seventh P pickup, white projectile artwork, status HUD and regular reward-drop integration
+- [x] Twin piercing shots continue to the edge of the playfield with per-projectile damage deduplication
+- [x] Direct hits trigger a single finite electrical spread using GREEN's 360-radius geometry
+- [x] Electrical hits have 55% direct-shot damage; chain victims never trigger more chains
+- [x] Preserve regular enemy shield and score pipelines and Boss turret/hull collision handling
+- [x] Bound the electricity visual effect pool to 96 transient white-blue arcs
+- [x] Add isolated unit tests and integration test fixtures for all affected runtimes
+- [ ] Real-browser and handheld playtest for difficulty, effect readability and sustained FPS
+
 ## v26.4.0 — Black P slow-control weapon
 
 - [x] Sixth P pickup with black / icy-blue visual identity and paired normal projectiles

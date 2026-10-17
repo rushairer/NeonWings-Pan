@@ -13,7 +13,7 @@ A controller-first, five-stage, side-scrolling neon arcade shooter built with br
 ## Currently playable
 
 - Five themed stages and five multi-phase bosses; higher-difficulty loops after stage five
-- 11 enemy types, formations, six weapon families, collectible power-ups and BOMB
+- 11 enemy types, formations, seven weapon families, collectible power-ups and BOMB
 - Gamepad rumble where browser/device supports it, Web Audio synthesis, volume and vibration options
 - Pause, fullscreen, local high score, end-of-run statistics
 - v23 foundation: 4:3 letterbox sizing; auto-pause on background/focus loss or controller disconnection; browser-storage fallback
@@ -28,6 +28,17 @@ A controller-first, five-stage, side-scrolling neon arcade shooter built with br
 - v26.1.1 UI fix: fighter/mode selector uses explicit non-overlapping layout geometry; selected fighter frame, Training hint, ship descriptions and score footer retain safe spacing.
 - **v26.2.0 NeonWings-Pan exclusive:** red P twin-line fire, a 250-projectile ±10° special fan triggered on 10% of eligible volleys, and an independent 0–5 star progression.
 - **v26.3.0 NeonWings-Pan exclusive:** green P retains starter-grade dual shots and adds a passive neon halo dealing area damage to nearby enemies once per second.
+
+## v26.5.0 — WHITE P / PIERCE + CONDUCT
+
+The seventh P pickup is **white**, appearing alongside the existing P colors. Its paired luminous-white shots use the starter weapon cadence and travel through enemies rather than vanishing on the first collision.
+
+- **Piercing:** each white projectile remains in flight until leaving the playfield, damaging each directly contacted enemy **at most once per projectile**; it can damage one Boss (hull or turret) at most once. Other weapons' piercing and ordinary bullets remain unchanged.
+- **Electric conduction:** every fresh **direct** contact causes one non-recursive area discharge centered on the projectile impact. All other living enemies intersecting that area also take electrical damage. The area uses the **exact same 360 logical-pixel radius as GREEN P**, including the target's hitbox, and is sourced from GREEN P's rule rather than duplicated.
+- **Damage balance baseline:** the struck target takes the normal white shot damage (1.15 before Overdrive scaling); secondary targets take **55% of the shot's direct damage**. Original enemy shield absorption, kills and Boss hull damage logic still apply. Direct boss turret hits preserve turret mechanics. Enemies within electric range of an enemy hit can conduct to the Boss hull once, but indirect conduction cannot target Boss turrets.
+- **No infinite chains:** secondary victims **never** generate new discharges. Direct and electrical contacts share one victim ledger per projectile, so a victim cannot be hit twice by the same projectile even if later crossed by it; direct hits farther along the shot can initiate further local discharges.
+- **Effects and performance:** short-lived, bounded white-blue lightning arcs show the struck neighbors and never cause additional damage. At most 96 arc effects are kept. Switching weapons does not strip conductivity from white shots already in flight.
+- **Coexistence:** RED P stars, GREEN P global 0.4-second halo ticks, and BLACK P 5-second slow status are unaffected.
 
 ## v26.4.0 — BLACK P / SLOW
 

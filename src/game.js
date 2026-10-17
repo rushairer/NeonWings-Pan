@@ -12,6 +12,8 @@ const W = 1280;
     if (!greenRules) throw new Error("NeonWings-Pan green P runtime missing");
     const blackRules = window.NeonBlackWeapon;
     if (!blackRules) throw new Error("NeonWings-Pan black P runtime missing");
+    const whiteRules = window.NeonWhiteWeapon;
+    if (!whiteRules) throw new Error("NeonWings-Pan white P runtime missing");
     const collision = window.NeonCollision;
     if (!collision) throw new Error("NeonWings collision runtime missing");
     const enemyBehaviors = window.NeonEnemyBehaviors;
@@ -39,6 +41,7 @@ const W = 1280;
       particles: 800,
       enemyBullets: 340,
       playerBullets: 360,
+      electricArcs: 96,
       missiles: 48,
       enemies: enemyBehaviors.CONFIG.maxEnemies
     });
@@ -1064,6 +1067,7 @@ const W = 1280;
         enemies: [],
         powerups: [],
         particles: [],
+        electricArcs: [],
         boss: null,
 
         stars: Array.from({ length: 110 }, () => ({
@@ -1735,12 +1739,13 @@ const W = 1280;
 
     function randomPowerType() {
       const r = Math.random();
-      if (r < 1 / 6) return "P_BLUE";
-      if (r < 2 / 6) return "P_PURPLE";
-      if (r < 3 / 6) return "P_YELLOW";
-      if (r < 4 / 6) return "P_RED";
-      if (r < 5 / 6) return "P_GREEN";
-      return "P_BLACK";
+      if (r < 1 / 7) return "P_BLUE";
+      if (r < 2 / 7) return "P_PURPLE";
+      if (r < 3 / 7) return "P_YELLOW";
+      if (r < 4 / 7) return "P_RED";
+      if (r < 5 / 7) return "P_GREEN";
+      if (r < 6 / 7) return "P_BLACK";
+      return "P_WHITE";
     }
 
     function weaponMeta(type = game.weaponType) {
@@ -1749,6 +1754,7 @@ const W = 1280;
       if (type === "red") return { name: "SCATTER", short: "RED", color: "#ff3d5f", core: "#ffe3e8" };
       if (type === "green") return { name: "AURA", short: "GREEN", color: "#43ff87", core: "#e0ffed" };
       if (type === "black") return { name: "SLOW", short: "BLACK", color: "#191e2a", core: "#dce9ff" };
+      if (type === "white") return { name: "CONDUCT", short: "WHITE", color: "#f1faff", core: "#bde9ff" };
       return { name: "LINE", short: "BLUE", color: "#38e8ff", core: "#e8fdff" };
     }
 
@@ -1758,6 +1764,7 @@ const W = 1280;
       if (powerupType === "P_RED") return "red";
       if (powerupType === "P_GREEN") return "green";
       if (powerupType === "P_BLACK") return "black";
+      if (powerupType === "P_WHITE") return "white";
       return "blue";
     }
 
@@ -1767,6 +1774,7 @@ const W = 1280;
       if (game.weaponType === "red") return "P_RED";
       if (game.weaponType === "green") return "P_GREEN";
       if (game.weaponType === "black") return "P_BLACK";
+      if (game.weaponType === "white") return "P_WHITE";
       return "P_BLUE";
     }
 
@@ -1971,6 +1979,12 @@ const W = 1280;
             ctx.strokeRect(-22, -22, 44, 44);
             rect(-4, -30, 8, 6, "#69bfff");
             rect(-4, 24, 8, 6, "#69bfff");
+          } else if (wt === "white") {
+            // Light corners and two tiny lightning steps distinguish white P.
+            rect(-27, -27, 9, 9, "#ffffff");
+            rect(18, 18, 9, 9, "#ffffff");
+            rect(-4, -32, 8, 8, "#9fdfff");
+            rect(7, 24, 8, 8, "#9fdfff");
           }
         } else if (p.type === "BOMB") {
           // Cyan-white bomb pickup.
@@ -2001,6 +2015,13 @@ const W = 1280;
       }
     }
 
+    function addElectricArc(fromX, fromY, toX, toY) {
+      if (game.electricArcs.length >= LIMITS.electricArcs) return;
+      game.electricArcs.push({
+        fromX, fromY, toX, toY, life: whiteRules.RULES.arcLife
+      });
+    }
+
     function addParticle(x, y, vx, vy, life, c) {
       if (game.particles.length >= LIMITS.particles) return;
       game.particles.push({ x, y, vx, vy, life, c });
@@ -2015,6 +2036,29 @@ const W = 1280;
         p.vy *= 0.985;
       }
       game.particles = game.particles.filter(p => p.life > 0);
+      for (const arc of game.electricArcs) arc.life -= dt;
+      game.electricArcs = game.electricArcs.filter(arc => arc.life > 0);
+    }
+
+    function drawElectricArcs() {
+      ctx.save();
+      for (const arc of game.electricArcs) {
+        const alpha = clamp(arc.life / whiteRules.RULES.arcLife, 0, 1);
+        const midX = (arc.fromX + arc.toX) * 0.5;
+        const midY = (arc.fromY + arc.toY) * 0.5;
+        const offset = Math.sin((arc.fromX + arc.toY) * 0.07 + game.t * 25) * 14;
+        ctx.globalAlpha = 0.25 + 0.75 * alpha;
+        ctx.strokeStyle = "#bcf2ff";
+        ctx.shadowColor = "#4aaaff";
+        ctx.shadowBlur = 15;
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.moveTo(arc.fromX, arc.fromY);
+        ctx.lineTo(midX, midY + offset);
+        ctx.lineTo(arc.toX, arc.toY);
+        ctx.stroke();
+      }
+      ctx.restore();
     }
 
     function drawParticles() {
@@ -2074,6 +2118,11 @@ const W = 1280;
               { pierce: 3, hitEnemies: [], lance: true });
           }
         }
+      } else if (type === "white") {
+        // Two persistent penetrating bolts. A shared victim ledger prevents
+        // direct and one-hop electric damage from hitting the same target twice.
+        addPlayerShot(muzzleX, baseY - 10, 1120, 0, 9, 1.15, "#f3fcff", whiteRules.createShot());
+        addPlayerShot(muzzleX, baseY + 12, 1120, 0, 9, 1.15, "#f3fcff", whiteRules.createShot());
       } else if (type === "black") {
         // Baseline twin lanes; black bullets retain their slow marker after
         // swapping weapons and only attach the status on actual collisions.
@@ -2125,7 +2174,7 @@ const W = 1280;
       if (game.weaponType === "red") return redRules.RULES.volleySeconds;
       if (game.weaponType === "yellow") return Math.max(0.17, 0.25 - game.weaponLevel * 0.025);
       if (game.weaponType === "purple") return Math.max(0.10, 0.145 - game.weaponLevel * 0.012);
-      return Math.max(0.07, 0.115 - (game.weaponType === "green" || game.weaponType === "black" ? 1 : game.weaponLevel) * 0.014);
+      return Math.max(0.07, 0.115 - (game.weaponType === "green" || game.weaponType === "black" || game.weaponType === "white" ? 1 : game.weaponLevel) * 0.014);
     }
 
     function findMissileTarget(m) {
@@ -2635,6 +2684,68 @@ const W = 1280;
       game.missiles = game.missiles.filter(m => m.life > 0 && m.x > -90 && m.x < W + 150 && m.y > -140 && m.y < H + 140);
     }
 
+    function updateWhiteProjectile(b) {
+      // Collect swept DIRECT collisions first, ordered by the impact position.
+      // Indirectly electrocuted targets may not create additional conductive
+      // origins. A white projectile remains alive until it leaves the screen.
+      const enemiesAtImpact = game.enemies.slice();
+      const boss = game.boss && game.boss.active && game.boss.hp > 0 ? game.boss : null;
+      const candidates = [];
+      for (const e of enemiesAtImpact) {
+        if (e.hp <= 0 || b.hitEnemies.includes(e) || !collision.sweptCircleHit(
+          b.previousX, b.previousY, b.x, b.y, e.x, e.y, b.r + e.r
+        )) continue;
+        const impact = whiteRules.closestPoint(b, e.x, e.y);
+        candidates.push({ kind: "enemy", enemy: e, impact, part: null });
+      }
+      if (boss && !b.whiteBossHit) {
+        const part = bossParts.findHit(
+          boss, b.previousX, b.previousY, b.x, b.y, b.r
+        );
+        if (part) {
+          candidates.push({ kind: "boss", boss,
+            impact: whiteRules.closestPoint(b, boss.x + part.x, boss.y + part.y), part });
+        } else if (collision.sweptAabbHit(
+          b.previousX, b.previousY, b.x, b.y,
+          boss.x - boss.rx - b.r, boss.x + boss.rx + b.r,
+          boss.y - boss.ry - b.r, boss.y + boss.ry + b.r
+        )) {
+          candidates.push({ kind: "boss", boss,
+            impact: whiteRules.closestPoint(b, boss.x - boss.rx, boss.y), part: null });
+        }
+      }
+
+      candidates.sort((a, c) => a.impact.t - c.impact.t);
+      for (const candidate of candidates) {
+        const { impact } = candidate;
+        if (candidate.kind === "enemy") {
+          const e = candidate.enemy;
+          if (!whiteRules.markEnemy(b, e)) continue;
+          addElectricArc(impact.x, impact.y, e.x, e.y);
+          damageEnemy(e, b.power, impact.x, impact.y, "#e5faff");
+        } else {
+          if (!whiteRules.markBoss(b, candidate.boss)) continue;
+          addElectricArc(impact.x, impact.y, candidate.boss.x, candidate.boss.y);
+          damageBoss(b.power, impact.x, impact.y, "#e5faff", candidate.part);
+        }
+
+        // All secondary damage is one-hop; the damage callbacks NEVER call
+        // updateWhiteProjectile or conduct recursively.
+        whiteRules.conduct(b, impact, enemiesAtImpact, boss, greenRules,
+          e => {
+            addElectricArc(impact.x, impact.y, e.x, e.y);
+            damageEnemy(e, b.power * whiteRules.RULES.secondaryDamageFactor,
+              e.x, e.y, "#8fe6ff");
+          },
+          target => {
+            addElectricArc(impact.x, impact.y, target.x, target.y);
+            damageBoss(b.power * whiteRules.RULES.secondaryDamageFactor,
+              impact.x, impact.y, "#8fe6ff");
+          }
+        );
+      }
+    }
+
     function updatePlayerBullets(dt) {
       for (const b of game.bullets) {
         b.previousX = b.x;
@@ -2645,6 +2756,10 @@ const W = 1280;
 
       for (const b of game.bullets) {
         if (b.dead) continue;
+        if (b.whiteConductive) {
+          updateWhiteProjectile(b);
+          continue;
+        }
 
         for (const e of game.enemies) {
           if (e.hp <= 0 || b.hitEnemies?.includes(e)) continue;
@@ -3179,6 +3294,15 @@ const W = 1280;
         ctx.translate(b.x, b.y);
         ctx.rotate(Math.atan2(b.vy || 0, b.vx || 1));
         const core = b.c || "#5ae8ff";
+        if (b.whiteConductive) {
+          ctx.shadowColor = "#88eaff";
+          ctx.shadowBlur = 20;
+          rect(-9, -9, 54, 18, "#8bdbff");
+          rect(-5, -5, 51, 10, "#ffffff");
+          rect(10, -2, 36, 4, "#d7faff");
+          ctx.restore();
+          continue;
+        }
         if (b.blackSlow) {
           // A dark center with an icy edge remains visible in black arenas.
           ctx.shadowColor = "#469cff";
@@ -3372,6 +3496,8 @@ const W = 1280;
         ? `GREEN AURA  ${greenRules.RULES.damagePerPulse} DMG/0.4S`
         : game.weaponType === "black"
         ? "BLACK SLOW  50% / 5.0S"
+        : game.weaponType === "white"
+        ? "WHITE PIERCE + ARC"
         : `${meta.short} WEAPON  LV.${game.weaponLevel}`, 656, 80, 21, "left",
         game.weaponType === "black" ? "#9cccff" : meta.color);
 
@@ -3531,7 +3657,7 @@ const W = 1280;
       ctx.fillRect(0, 0, W, H);
 
       drawText("NEON WINGS", W / 2, 195, 86, "center", "#e7fbff");
-      drawText("NEONWINGS PAN  /  v26.4.0", W / 2, 270, 28, "center", "#98f5ff");
+      drawText("NEONWINGS PAN  /  v26.5.0", W / 2, 270, 28, "center", "#98f5ff");
       drawText(`HIGH SCORE ${String(highScore()).padStart(6, "0")}`, W / 2, 318, 24, "center", "#fff4b7");
 
       drawPlayerShip(W / 2 - 170, 492, -0.20, false, ships[0]);
@@ -3867,6 +3993,7 @@ const W = 1280;
       for (const e of game.enemies) drawEnemy(e);
       drawBossWarning(game.boss);
       drawBoss(game.boss);
+      drawElectricArcs();
       drawPowerups();
       drawParticles();
 
