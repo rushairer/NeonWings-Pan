@@ -7,6 +7,13 @@ Independently maintained from NeonWings commit `5ebcb1de1adb288b41a3c5e387f747bc
 - [x] Configure standalone Pages workflow
 - [ ] Verify site deployment and controller tests on hardware
 
+## v26.3.2 — Faster green halo damage
+
+- [x] Shorten green aura period from 1s to 0.4s, still 2 HP per pulse (5 HP/s per target)
+- [x] Preserve radius 360 and equip-based timer irrespective of target contact
+- [x] Align HUD, pure tests, integration tests and documentation
+- [ ] Recheck balance, visual density and FPS in real browser/device gameplay
+
 ## v26.3.1 — Enlarged green halo and activation-based pulse
 
 - [x] Double green P ring drawing and damage radius to 360 (diameter 720)

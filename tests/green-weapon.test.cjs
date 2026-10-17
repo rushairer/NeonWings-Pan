@@ -2,29 +2,32 @@ const test = require("node:test");
 const assert = require("node:assert/strict");
 const green = require("../src/green-weapon.js");
 
-test("green aura pulses exactly once for each full second of active combat", () => {
+test("green aura pulses every 0.4 seconds, including multiple pulses after a long frame", () => {
   const state = green.createState();
   let hits = 0;
-  for (let i = 0; i < 9; i++) {
+  for (let i = 0; i < 3; i++) {
     assert.equal(green.tick(state, 0.1, true, () => { hits++; }), 0);
   }
   assert.equal(hits, 0);
   assert.equal(green.tick(state, 0.1, true, () => { hits++; }), 1);
   assert.equal(hits, 1);
-  assert.equal(green.tick(state, 2.25, true, () => { hits++; }), 2);
+  assert.equal(green.tick(state, 0.85, true, () => { hits++; }), 2);
   assert.equal(hits, 3);
-  assert.ok(Math.abs(state.elapsed - 0.25) < 1e-9);
-  assert.equal(green.RULES.secondsPerPulse, 1);
+  assert.ok(Math.abs(state.elapsed - 0.05) < 1e-9);
+  assert.equal(green.tick(state, 0.34, true, () => { hits++; }), 0);
+  assert.equal(green.tick(state, 0.01, true, () => { hits++; }), 1);
+  assert.equal(hits, 4);
+  assert.equal(green.RULES.secondsPerPulse, 0.4);
   assert.equal(green.RULES.damagePerPulse, 2);
 });
 
 test("a weapon switch discards partial aura accumulation and disables hits", () => {
   const state = green.createState();
-  green.tick(state, 0.75, true, () => {});
+  green.tick(state, 0.30, true, () => {});
   assert.equal(green.tick(state, 4, false, () => { throw Error("cannot pulse while unequipped"); }), 0);
   assert.equal(state.elapsed, 0);
   let hits = 0;
-  green.tick(state, 0.9, true, () => { hits++; });
+  green.tick(state, 0.3, true, () => { hits++; });
   assert.equal(hits, 0);
   green.tick(state, 0.1, true, () => { hits++; });
   assert.equal(hits, 1);
@@ -58,25 +61,25 @@ test("boss hull contact checks nearest rectangle edge instead of center", () => 
 });
 
 
-test("one-second aura clock starts on activation, not first target contact", () => {
+test("0.4-second aura clock starts on equip, independently of target contact", () => {
   const state = green.createState();
   const pulses = [];
   let targetsPresent = false;
   const pulse = () => pulses.push(targetsPresent);
-  // Aura is empty for the first 0.80 seconds; the clock must still advance.
-  assert.equal(green.tick(state, 0.80, true, pulse), 0);
-  assert.equal(state.elapsed, 0.80);
-  // First enemy arrives at t=0.80, but the next damage pulse is at t=1.00.
+  // No enemies for the first .30s, but time still accumulates.
+  assert.equal(green.tick(state, 0.30, true, pulse), 0);
+  assert.ok(Math.abs(state.elapsed - 0.30) < 1e-9);
+  // Enemy arrives at t=.30, takes damage at global t=.40 (not .70).
   targetsPresent = true;
-  assert.equal(green.tick(state, 0.19, true, pulse), 0);
+  assert.equal(green.tick(state, 0.09, true, pulse), 0);
   assert.equal(green.tick(state, 0.01, true, pulse), 1);
   assert.deepEqual(pulses, [true]);
-  // Target leaves: the clock continues and still pulses at t=2.00.
+  // No enemy for second interval; pulse still occurs at t=.80.
   targetsPresent = false;
-  assert.equal(green.tick(state, 1, true, pulse), 1);
+  assert.equal(green.tick(state, 0.40, true, pulse), 1);
   assert.deepEqual(pulses, [true, false]);
-  // New enemy arrives at t=2.90: hit at t=3.00, not t=3.90.
-  assert.equal(green.tick(state, 0.90, true, pulse), 0);
+  // Returning at t=1.10 is hit at t=1.20, not t=1.50.
+  assert.equal(green.tick(state, 0.30, true, pulse), 0);
   targetsPresent = true;
   assert.equal(green.tick(state, 0.10, true, pulse), 1);
   assert.deepEqual(pulses, [true, false, true]);

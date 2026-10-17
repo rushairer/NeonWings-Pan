@@ -2923,7 +2923,7 @@ const W = 1280;
     }
 
     function updateGreenAura(dt) {
-      // One shared one-second pulse clock runs from equip, independently of
+      // One shared 0.4-second pulse clock runs from equip, independently of
       // enemy contact. Each pulse damages the targets currently within range.
       const enabled = game.state === "PLAYING" && game.weaponType === "green" &&
         (game.stageMode === "WAVE" || game.stageMode === "BOSS");
@@ -3310,7 +3310,7 @@ const W = 1280;
       ctx.fillRect(636, 22, 312, 78);
       drawText(`BOMB ${"●".repeat(Math.max(0, game.bomb))}${"○".repeat(Math.max(0, game.bombMax - game.bomb))}`, 656, 50, 23, "left", "#8ef7ff");
       drawText(game.weaponType === "green"
-        ? `GREEN AURA  ${greenRules.RULES.damagePerPulse} DMG/S`
+        ? `GREEN AURA  ${greenRules.RULES.damagePerPulse} DMG/0.4S`
         : `${meta.short} WEAPON  LV.${game.weaponLevel}`, 656, 80, 21, "left", meta.color);
 
       ctx.fillStyle = "rgba(0,0,0,.30)";
@@ -3469,7 +3469,7 @@ const W = 1280;
       ctx.fillRect(0, 0, W, H);
 
       drawText("NEON WINGS", W / 2, 195, 86, "center", "#e7fbff");
-      drawText("NEONWINGS PAN  /  v26.3.1", W / 2, 270, 28, "center", "#98f5ff");
+      drawText("NEONWINGS PAN  /  v26.3.2", W / 2, 270, 28, "center", "#98f5ff");
       drawText(`HIGH SCORE ${String(highScore()).padStart(6, "0")}`, W / 2, 318, 24, "center", "#fff4b7");
 
       drawPlayerShip(W / 2 - 170, 492, -0.20, false, ships[0]);
