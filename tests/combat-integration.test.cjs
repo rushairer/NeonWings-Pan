@@ -665,3 +665,105 @@ test("selection Canvas uses shared safe geometry for all modes and either active
     }
   }
 });
+
+
+test("red P is a collectible fourth weapon and fires exactly two parallel red lines", () => {
+  const app = boot();
+  app.eval('game.state="PLAYING"; collectPowerup({type:"P_RED",x:200,y:400,life:1})');
+  assert.equal(app.eval('game.weaponType'), "red");
+  assert.equal(app.eval('weaponMeta().color'), "#ff3d5f");
+  app.eval("game.bullets.length=0;firePlayerWeapons()");
+  assert.equal(app.eval("game.bullets.length"), 2);
+  assert.equal(app.eval("game.bullets[0].y"), app.eval("game.player.y") - 13);
+  assert.equal(app.eval("game.bullets[1].y"), app.eval("game.player.y") + 13);
+  assert.equal(app.eval("game.bullets.every(b => b.vx===1120 && b.vy===0 && b.redNormal)"), true);
+  app.eval('game.weaponType="blue";game.bullets.length=0;firePlayerWeapons()');
+  assert.equal(app.eval("game.bullets.some(b=>b.redNormal)"), false);
+  app.eval('Math.random=()=>0.875');
+  assert.equal(app.eval("randomPowerType()"), "P_RED");
+});
+
+test("five red volleys pause for 0.4 seconds and stars extend only red streaks", () => {
+  const app = boot();
+  app.eval('game.state="PLAYING";game.stageMode="WAVE";game.spawnTimer=100;game.formationTimer=100;game.weaponType="red";keys.Space=true;Math.random=()=>0.99');
+  for (let i=0; i<5; i++) app.eval("game.fireCooldown=0;updatePlaying(0.001)");
+  assert.equal(app.eval("game.redWeapon.volleys"), 0);
+  assert.equal(app.eval("game.fireCooldown"), 0.4);
+  app.eval("game.redWeapon.stars=2");
+  for(let i=0;i<6;i++)app.eval("game.fireCooldown=0;updatePlaying(0.001)");
+  assert.equal(app.eval("game.fireCooldown"), 0.1);
+  app.eval("game.fireCooldown=0;updatePlaying(0.001)");
+  assert.equal(app.eval("game.fireCooldown"), 0.4);
+  app.eval('keys.Space=false;collectPowerup({type:"P_PURPLE",x:600,y:400,life:1})');
+  assert.equal(app.eval("game.redWeapon.stars"), 2);
+  assert.equal(app.eval("getFireCooldown()"), app.eval("Math.max(0.10,0.145-game.weaponLevel*0.012)"));
+  app.eval('collectPowerup({type:"P_RED",x:600,y:400,life:1})');
+  assert.equal(app.eval("game.redWeapon.stars"), 2);
+  assert.equal(app.eval("game.redWeapon.volleys"), 0);
+});
+
+test("a triggered red fan completes its 250 projectiles and star only after active combat time", () => {
+  const app = boot();
+  app.eval('game.state="PLAYING";game.stageMode="WAVE";game.invuln=99;game.spawnTimer=999;game.formationTimer=999;game.weaponType="red";game.fireCooldown=0;keys.Space=true;Math.random=()=>0;updatePlaying(0.01);keys.Space=false');
+  assert.equal(app.eval("game.redWeapon.special !== null"), true);
+  assert.equal(app.eval("game.redWeapon.stars"), 0);
+  const before = app.eval("game.redWeapon.special.emitted");
+  app.eval('game.state="PAUSED";updatePlaying(1)');
+  assert.equal(app.eval("game.redWeapon.special.emitted"), before);
+  app.eval('game.state="PLAYING";game.stageMode="TRANSITION";game.transition=10;updatePlaying(1)');
+  assert.equal(app.eval("game.redWeapon.special.emitted"), before);
+  app.eval('game.stageMode="WAVE";collectPowerup({type:"P_BLUE",x:600,y:400,life:1})');
+  assert.equal(app.eval("game.weaponType"), "blue");
+  app.eval("updatePlaying(1)");
+  assert.equal(app.eval("game.redWeapon.stars"), 0);
+  assert.ok(app.eval("game.bullets.some(b=>b.redSpecial)"));
+  app.eval("updatePlaying(2)");
+  assert.equal(app.eval("game.redWeapon.stars"), 1);
+  assert.equal(app.eval("game.redWeapon.special"), null);
+  assert.equal(app.eval("game.weaponType"), "blue");
+});
+
+test("250 special shots fit the bounded projectiles budget, with real bullets and fan angles", () => {
+  const app = boot();
+  const stats = app.eval([
+    '(() => {',
+    '  game.weaponType="red"; redRules.fire(game.redWeapon,0); const sample=[];',
+    '  const outcome=redRules.tick(game.redWeapon,3,(angle,index)=>{',
+    '    sample.push(angle);',
+    '    addPlayerShot(game.player.x+60,game.player.y,Math.cos(angle)*1060,Math.sin(angle)*1060,5,.38,"#ff4264",{redSpecial:true});',
+    '  }); return {outcome, count:game.bullets.length, sample};',
+    '})()'
+  ].join("\n"));
+  assert.equal(stats.outcome.completed, true);
+  assert.equal(stats.count, 250);
+  assert.equal(stats.sample.length, 250);
+  assert.ok(stats.sample.every(a=>Math.abs(a)<=Math.PI/18+1e-12));
+});
+
+test("damage reduces only stored red stars; Vanguard's absorbed hit does not", () => {
+  const app = boot();
+  app.eval('menu.selectedShip=1;game=newGame();game.state="PLAYING";game.weaponType="yellow";game.redWeapon.stars=3;game.combat.energy=100;activateOverdrive();damagePlayer()');
+  assert.equal(app.eval("game.redWeapon.stars"), 3);
+  assert.equal(app.eval("game.hp"), 4);
+  app.eval("game.invuln=0;damagePlayer()");
+  assert.equal(app.eval("game.redWeapon.stars"), 2);
+  assert.equal(app.eval("game.stats.damageTaken"), 1);
+  app.eval("damagePlayer()");
+  assert.equal(app.eval("game.redWeapon.stars"), 2);
+  app.eval("game.invuln=0;damagePlayer()");
+  assert.equal(app.eval("game.redWeapon.stars"), 1);
+  assert.equal(app.eval("game.weaponType"), "yellow");
+});
+
+test("red star HUD survives switching and original blue firing cooldown is unchanged", () => {
+  const app = boot();
+  const labels = app.eval([
+    '(() => {',
+    '  game.state="PLAYING";game.weaponType="blue";game.redWeapon.stars=4;',
+    '  const drawn=[];ctx.fillText=(...args)=>drawn.push(String(args[0]));',
+    '  drawFrame(0.016);return drawn;',
+    '})()'
+  ].join("\n"));
+  assert.ok(labels.some(text=>text.includes("RED P") && text.includes("★★★★☆")));
+  assert.equal(app.eval("getFireCooldown()"), app.eval("Math.max(.07,.115-game.weaponLevel*.014)"));
+});
