@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
+  <meta name="theme-color" content="#05070f" />
+  <title>NEON WINGS PAN · Arcade v26.1.1</title>
+  <style>
+    * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+    html, body {
+      margin: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: #000;
+      overscroll-behavior: none;
+      touch-action: none;
+    }
+    body { position: fixed; inset: 0; }
+    canvas {
+      display: block;
+      position: absolute;
+      left: 0;
+      top: 0;
+      background: #000;
+      image-rendering: pixelated;
+      touch-action: none;
+      user-select: none;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="game" width="1280" height="960"></canvas>
+
+  <script src="./src/platform.js" defer></script>
+  <script src="./src/controller.js" defer></script>
+  <script src="./src/combat.js" defer></script>
+  <script src="./src/collision.js" defer></script>
+  <script src="./src/enemy-behaviors.js" defer></script>
+  <script src="./src/worlds.js" defer></script>
+  <script src="./src/boss-parts.js" defer></script>
+  <script src="./src/modes.js" defer></script>
+  <script src="./src/records.js" defer></script>
+  <script src="./src/select-layout.js" defer></script>
+  <script src="./src/game.js" defer></script>
+</body>
+</html>

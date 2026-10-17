@@ -1,0 +1,26 @@
+# NeonWings-Pan contributor and agent guide
+
+- NeonWings-Pan is fully independent from rushairer/NeonWings at commit 5ebcb1de1adb288b41a3c5e387f747bc49271c19. Never auto-sync or write to the source repository.
+- Use neon_wings_pan_ localStorage keys to avoid clashes across GitHub Pages paths.
+- Fact source is this repository's current `main`. Read this file and ROADMAP.md before changes.
+- Target: handheld-first arcade shoot-'em-up for AYANEO AIR MINI, with web keyboard fallback.
+- Keep the logical game field at **1280 × 960 (4:3)**; use letterboxing rather than nonlinear viewport stretching.
+- Preserve all five stages, boss transitions, the two original fighters, weapon drops, bomb rewards and multiple loops unless explicitly changing gameplay.
+- Gamepad defaults: B and RT fire, A bombs, Y triggers Overdrive, Start pauses/resumes, Select toggles fullscreen. Remapping is limited to fire/bomb/Overdrive combat actions; physical B confirms menus, and Start/Select are never remapped.
+- Backgrounding or focus loss must not advance gameplay or force unexpected resume; avoid stuck firing inputs.
+- Do not make Web Audio or vibration mandatory; unsupported browser APIs must degrade gracefully.
+- Prefer dependency-free static delivery while the v23 foundation is being stabilized; new build dependencies require a documented rationale.
+- Keep game content and platform helpers separate. Do not mix UI/canvas resize calculations with combat simulation logic.
+- The 1280x960 fighter/mode selector layout is defined in `src/select-layout.js`; use it from `drawSelectScreen()` rather than hardcoding vertical positions. Protect at least 40 logical px between the mode frame and either selected ship highlight, plus separate Training hint, fighter captions, detail card and score footer. Update geometry tests if the design changes.
+- Keep scoring, graze detection, hit penalties, active timers and fighter Overdrive rules in `src/combat.js`. Do not grant more than one graze per enemy bullet or charge/combo rewards from Bomb kills; stage transitions and pause must not consume active time.
+- One Overdrive input maps to one physical button distinct from primary/secondary fire and Bomb; respect older persisted settings and preserve Start/Select/B menu actions.
+- Boss targetable weapon modules belong in `src/boss-parts.js`: route bullet/missile swept hits to surviving mounts before the Boss hull; part-break rewards are one-shot; turret destruction must change actual attack cadence.
+- Ranked local top-five records, grades and achievement definitions belong in `src/records.js`. Keep Classic and Boss Rush history separate, Training unranked (no badge farming), and protect play from corrupt/disabled localStorage. Only finalize a ranked run once at Game Over or Boss Rush clear; first Classic clear can unlock its milestone without duplicating leaderboard entries.
+- Arcade mode definitions and post-Boss routing belong in `src/modes.js`. Keep Classic default, original endless-loop semantics and Classic high-score key unchanged. Boss Rush must never enter regular enemy waves; Training must remain unranked and allow repeated stage practice, with distinct configurable starting equipment.
+- After the first five-stage clear, show a non-timed ENDING state with saved high score. Continue to Loop 2 explicitly; do not regress the infinite loop progression.
+- Stage hazards and procedural parallax belong in `src/worlds.js`: warn before damage; use the existing HP/invulnerability path; freeze outside active play; reset per stage; avoid external assets and unbounded particles.
+- Enemy special mechanics belong in `src/enemy-behaviors.js`. Shield absorption precedes hull damage; splitter/carrier children have spawn caps and cannot increase wave kills, combo, Overdrive energy or loot. Keep Stage 1 formations within Stage 1 enemy roster.
+- Collisions use `src/collision.js` swept segments for fast projectiles. Check all damaging bullet contacts before awarding any graze for that frame; rendering FX and projectile arrays have explicit per-type budgets. Do not claim FPS compliance from unit tests alone.
+- Before shipping, run `npm run check`, `npm test`, `npm run build`. Do not equate passing unit tests with actual AYANEO hardware validation.
+- Store configuration locally without secret keys; gracefully handle storage denial and corrupted data.
+- Update README/ROADMAP for user-visible changes. Use small, scoped commits to main and never force-push.
