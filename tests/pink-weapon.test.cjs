@@ -98,7 +98,7 @@ test("PINK special missile is 100 logical units across and has a bounded blast l
   assert.equal(pink.RULES.maxExplosionEffects, 12);
   assert.equal(green.RULES.radius, 360);
   assert.equal(pink.splashDamage(11.5), pink.RULES.normalDamage);
-  assert.equal(pink.splashDamage(34.5), pink.RULES.normalDamage * 3);
+  assert.ok(Math.abs(pink.splashDamage(34.5) - pink.RULES.normalDamage * 3) < 1e-10);
 });
 
 test("blast reaches the exact GREEN halo radius, including circular target hitboxes", () => {

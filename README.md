@@ -29,6 +29,16 @@ A controller-first, five-stage, side-scrolling neon arcade shooter built with br
 - **v26.2.0 NeonWings-Pan exclusive:** red P twin-line fire, a 250-projectile ±10° special fan triggered on 10% of eligible volleys, and an independent 0–5 star progression.
 - **v26.3.0 NeonWings-Pan exclusive:** green P retains starter-grade dual shots and adds a passive neon halo dealing area damage to nearby enemies once per second.
 
+## v26.7.1 — PINK P black 100-unit rocket with 360-radius blast
+
+The 5% PINK P special missile remains a guided 10× direct-damage attack, but the special now has a **black 100 × 100 logical-unit silhouette** (and 100 logical-unit circular collision diameter), visibly outlined in hot pink against the dark playfield. YELLOW missiles remain unchanged.
+
+- **On each direct missile impact:** immediately spawn a large **pink explosion centered on impact**, with the **exact 360 logical-unit radius of GREEN P's halo**, using GREEN's existing enemy-circle and Boss-hull collision geometry.
+- **Damage:** the directly struck enemy (including shielded enemies), Boss hull or Boss turret still takes the original **10× PINK bullet damage** and is explicitly excluded from explosion damage. Every other living enemy intersecting the explosion receives **exactly one ordinary PINK bullet's 1× damage**. A nearby Boss can also take one 1× explosion hull hit if it was *not* the direct missile victim. Original shields, kill rewards and Overdrive/ship scaling all remain in effect.
+- **Non-propagating:** the explosion does not bounce or chain, nor may it damage newly spawned splitter children. A one-shot nearby-target snapshot is taken before direct-hit damage. Secondary victims cannot trigger further explosions.
+- **Visual effects:** a bright pink bloom with quickly expanding rings to radius 360 fades over 0.55 seconds. A dedicated pool holds at most 12 simultaneously active explosions, with expiry on the active gameplay clock. Drawing is cosmetic only; damage happens once at detonation.
+- **Preserved:** PINK retains one tracking bullet per shot, a 0.4-second rest after every two shots, a 5% special-missile chance, tenfold direct missile damage, and homing after weapon switching.
+
 ## v26.7.0 — PINK P / SEEKER
 
 PINK P is the ninth P pickup in the regular collectible rotation, independent of the original NeonWings repository.

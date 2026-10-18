@@ -7,6 +7,16 @@ Independently maintained from NeonWings commit `5ebcb1de1adb288b41a3c5e387f747bc
 - [x] Configure standalone Pages workflow
 - [ ] Verify site deployment and controller tests on hardware
 
+## v26.7.1 — Black PINK special rocket and GREEN-sized pink explosion
+
+- [x] Give PINK special missile a black 100 × 100 logical-unit sprite and radius-50 collision, preserving homing and 10× direct damage
+- [x] Detonate at impact with GREEN P's exact radius-360 area and single 1× regular PINK bullet damage to nearby OTHER targets
+- [x] Prevent direct+AoE double damage; preserve shield and Boss turret/hull hits, plus splitter children snapshot isolation
+- [x] Add visually distinct magenta radial blast and rings fading in 0.55s, capped at 12 active FX
+- [x] Leave YELLOW missiles, PINK 5% proc, two-shot cadence, weapon swaps and Overdrive damage scaling intact
+- [x] Add missile radius, contact damage, area blast, shield, Boss, FX lifetime and non-PINK regression tests
+- [ ] Confirm black rocket silhouette and 360-radius visual performance on device
+
 ## v26.7.0 — PINK P single-seeker, burst fire, 10× special missile
 
 - [x] Add ninth P pickup with distinct pink sprite, player HUD, and regular drop/restore behavior
