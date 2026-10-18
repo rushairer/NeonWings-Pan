@@ -18,6 +18,7 @@ const limeWeapon = require("../src/lime-weapon.js");
 const skyWeapon = require("../src/sky-weapon.js");
 const darkRedWeapon = require("../src/dark-red-weapon.js");
 const rainbowWeapon = require("../src/rainbow-weapon.js");
+const magnetWeapon = require("../src/magnet-weapon.js");
 const collision = require("../src/collision.js");
 const enemyBehaviors = require("../src/enemy-behaviors.js");
 const worlds = require("../src/worlds.js");
@@ -44,7 +45,7 @@ function boot() {
   const canvas = { style: {}, getContext: () => ctx };
   const storage = new Map();
   const window = {
-    NeonPlatform: platform, NeonController: controller, NeonCombat: combat, NeonRedWeapon: redWeapon, NeonGreenWeapon: greenWeapon, NeonBlackWeapon: blackWeapon, NeonWhiteWeapon: whiteWeapon, NeonGrayWeapon: grayWeapon, NeonPinkWeapon: pinkWeapon, NeonOrangeWeapon: orangeWeapon, NeonBrownWeapon: brownWeapon, NeonLimeWeapon: limeWeapon, NeonSkyWeapon: skyWeapon, NeonDarkRedWeapon: darkRedWeapon, NeonRainbowWeapon: rainbowWeapon, NeonCollision: collision, NeonEnemyBehaviors: enemyBehaviors, NeonWorlds: worlds, NeonBossParts: bossParts, NeonModes: modes, NeonRecords: records, NeonSelectLayout: selectLayout,
+    NeonPlatform: platform, NeonController: controller, NeonCombat: combat, NeonRedWeapon: redWeapon, NeonGreenWeapon: greenWeapon, NeonBlackWeapon: blackWeapon, NeonWhiteWeapon: whiteWeapon, NeonGrayWeapon: grayWeapon, NeonPinkWeapon: pinkWeapon, NeonOrangeWeapon: orangeWeapon, NeonBrownWeapon: brownWeapon, NeonLimeWeapon: limeWeapon, NeonSkyWeapon: skyWeapon, NeonDarkRedWeapon: darkRedWeapon, NeonRainbowWeapon: rainbowWeapon, NeonMagnetWeapon: magnetWeapon, NeonCollision: collision, NeonEnemyBehaviors: enemyBehaviors, NeonWorlds: worlds, NeonBossParts: bossParts, NeonModes: modes, NeonRecords: records, NeonSelectLayout: selectLayout,
     innerWidth: 1280, innerHeight: 960,
     addEventListener: (name, fn) => events.set(name, fn)
   };
@@ -813,7 +814,7 @@ test("green P pickup fires precisely the unupgraded starter bullets at every wea
   app.eval('game.combat.energy=100;activateOverdrive();game.bullets=[];firePlayerWeapons()');
   assert.equal(app.eval('game.bullets.length'), 2);
   assert.equal(app.eval('game.bullets.some(b=>b.lance)'), false);
-  app.eval('Math.random=()=>0.32');
+  app.eval('Math.random=()=>.28');
   assert.equal(app.eval('randomPowerType()'), "P_GREEN");
 });
 
@@ -991,7 +992,7 @@ test("BLACK P drop is discoverable and its twin dark shots never inherit blue up
   assert.equal(app.eval("game.bullets.some(b=>b.lance)"), false);
   assert.equal(app.eval("game.missiles.length"), 0);
   assert.ok(Math.abs(app.eval("getFireCooldown()") - 0.101) < 1e-10);
-  app.eval("Math.random=()=>0.38");
+  app.eval("Math.random=()=>.34");
   assert.equal(app.eval("randomPowerType()"), "P_BLACK");
   app.eval("game.weaponLevel=3;game.powerups=[];dropPlayerPowerOnHit()");
   assert.equal(app.eval('game.powerups.at(-1).type'), "P_BLACK");
@@ -1165,7 +1166,7 @@ test("WHITE P is the seventh drop, fires paired unlimited-penetration bolts and 
   assert.equal(app.eval("game.bullets.every(b=>!b.dead && !b.whiteBossHit)"), true);
   assert.equal(app.eval("game.missiles.length"), 0);
   assert.ok(Math.abs(app.eval("getFireCooldown()") - 0.101) < 1e-10);
-  app.eval("Math.random=()=>0.46");
+  app.eval("Math.random=()=>.40");
   assert.equal(app.eval("randomPowerType()"), "P_WHITE");
   app.eval('game.weaponLevel=3;game.powerups=[];dropPlayerPowerOnHit()');
   assert.equal(app.eval("game.powerups.at(-1).type"), "P_WHITE");
@@ -1328,7 +1329,7 @@ test("GRAY P joins eighth-color drops and fires only baseline paired bullets", (
   assert.equal(app.eval('JSON.stringify(game.bullets.map(b=>({vx:b.vx,vy:b.vy,r:b.r,power:b.power})))'),baseline);
   assert.equal(app.eval("game.missiles.length"),0);
   assert.ok(Math.abs(app.eval("getFireCooldown()")-.101)<1e-10);
-  app.eval("Math.random=()=>.53");
+  app.eval("Math.random=()=>.46");
   assert.equal(app.eval("randomPowerType()"),"P_GRAY");
   app.eval("game.powerups=[];dropPlayerPowerOnHit()");
   assert.equal(app.eval("game.powerups.at(-1).type"),"P_GRAY");
@@ -1650,7 +1651,7 @@ test("PINK P is the ninth pickup: one guided bolt at every level, with distinct 
   assert.equal(app.eval("game.bullets[0].life"), pinkWeapon.RULES.bulletLifetimeSeconds);
   assert.equal(app.eval("game.missiles.length"), 0);
   assert.ok(Math.abs(app.eval("getFireCooldown()") - 0.101) < 1e-10);
-  app.eval("Math.random=()=>.57");
+  app.eval("Math.random=()=>.53");
   assert.equal(app.eval("randomPowerType()"), "P_PINK");
   app.eval("game.powerups=[];dropPlayerPowerOnHit()");
   assert.equal(app.eval("game.powerups.at(-1).type"), "P_PINK");
@@ -2028,7 +2029,7 @@ test("ORANGE P is the tenth pickup; two starter-grade shots and its HUD survive 
   assert.equal(app.eval('JSON.stringify(game.bullets.map(b=>({vx:b.vx,vy:b.vy,r:b.r,power:b.power})))'),blue);
   assert.ok(Math.abs(app.eval("getFireCooldown()")-.101)<1e-10);
   assert.equal(app.eval("game.missiles.length"),0);
-  app.eval("Math.random=()=>.63");
+  app.eval("Math.random=()=>.59");
   assert.equal(app.eval("randomPowerType()"),"P_ORANGE");
   app.eval('game.powerups=[];dropPlayerPowerOnHit()');
   assert.equal(app.eval('game.powerups.at(-1).type'),"P_ORANGE");
@@ -2244,7 +2245,7 @@ test("BROWN P is a recoverable eleventh pickup and never spawns ordinary bullets
   app.eval('game.weaponLevel=3;firePlayerWeapons()');
   assert.equal(app.eval("game.bullets.length"),0);
   assert.ok(Math.abs(app.eval("getFireCooldown()")-0.101)<1e-10);
-  app.eval('Math.random=()=>.70');
+  app.eval('Math.random=()=>.66');
   assert.equal(app.eval("randomPowerType()"),"P_BROWN");
   app.eval('game.powerups=[];dropPlayerPowerOnHit()');
   assert.equal(app.eval("game.powerups.at(-1).type"),"P_BROWN");
@@ -2381,7 +2382,7 @@ test("LIME P fires two ordinary twin-lane bullets from the muzzle, not prepositi
   assert.equal(app.eval("game.bullets[0].vx"),1100);
   assert.equal(app.eval("game.bullets[1].vx"),1100);
   assert.equal(app.eval("game.bullets.every(b=>b.r===9 && b.power===1.15 && b.orbitRadius<360)"),true);
-  app.eval("Math.random=()=>.77");
+  app.eval("Math.random=()=>.72");
   assert.equal(app.eval("randomPowerType()"),"P_LIME");
   app.eval("game.powerups=[];dropPlayerPowerOnHit()");
   assert.equal(app.eval("game.powerups.at(-1).type"),"P_LIME");
@@ -2644,7 +2645,7 @@ test("SKY P is the 13th collectible and switches damage/homing/slow at actual ga
   assert.ok(low.includes("SKY SEEK  BLACK SLOW"));
   app.eval('game.hp=2;game.bullets=[];firePlayerWeapons()');
   assert.equal(app.eval("game.bullets.every(b=>b.skyHoming&&b.blackSlow)"),true);
-  app.eval('Math.random=()=>.84');
+  app.eval('Math.random=()=>.79');
   assert.equal(app.eval("randomPowerType()"),"P_SKY");
   app.eval('game.weaponLevel=3;game.powerups=[];dropPlayerPowerOnHit()');
   assert.equal(app.eval("game.powerups.at(-1).type"),"P_SKY");
@@ -2798,7 +2799,7 @@ test("DARK RED is the fourteenth pickup with distinct twin 1x bullets and no RED
   assert.equal(app.eval("game.redWeapon.stars"),3);
   assert.equal(app.eval("game.redWeapon.volleys"),0);
   assert.ok(Math.abs(app.eval("getFireCooldown()")-.101)<1e-10);
-  app.eval("Math.random=()=>.90");
+  app.eval("Math.random=()=>.84");
   assert.equal(app.eval("randomPowerType()"),"P_DARK_RED");
   app.eval("game.powerups=[];dropPlayerPowerOnHit()");
   assert.equal(app.eval("game.powerups.at(-1).type"),"P_DARK_RED");
@@ -2811,11 +2812,11 @@ test("DARK RED is the fourteenth pickup with distinct twin 1x bullets and no RED
     "DARK RED must never expose ordinary RED star HUD");
 });
 
-test("RAINBOW 15-color pool shares each P color fairly at bucket centers",()=>{
+test("MAGNET joins a uniform 16-color P pool and keeps old colors accessible",()=>{
   const app=boot();
   const expected=[
     "P_BLUE","P_PURPLE","P_YELLOW","P_RED","P_GREEN","P_BLACK","P_WHITE",
-    "P_GRAY","P_PINK","P_ORANGE","P_BROWN","P_LIME","P_SKY","P_DARK_RED","P_RAINBOW"
+    "P_GRAY","P_PINK","P_ORANGE","P_BROWN","P_LIME","P_SKY","P_DARK_RED","P_RAINBOW","P_MAGNET"
   ];
   for(let i=0;i<expected.length;i++){
     const roll=(i+.5)/expected.length;
@@ -3190,7 +3191,7 @@ test("RAINBOW P is the 15th collectible, recoverable, with a distinct 8-color ic
   assert.equal(app.eval("game.bullets.every(b=>b.grayImpact)"),true);
   assert.equal(app.eval("game.redWeapon.stars"),3);
   assert.equal(app.eval("getFireCooldown()"),.4);
-  app.eval('Math.random=()=>.99');
+  app.eval('Math.random=()=>.90');
   assert.equal(app.eval("randomPowerType()"),"P_RAINBOW");
   app.eval('game.powerups=[];dropPlayerPowerOnHit()');
   assert.equal(app.eval("game.powerups.at(-1).type"),"P_RAINBOW");
@@ -3453,4 +3454,235 @@ test("RAINBOW missile projectile choice never adds ordinary or DARK RED bonus mi
   assert.equal(app.eval("game.bullets.length"),0);
   assert.equal(app.eval("game.missiles.every(m=>m.pinkSpecial&&!m.darkRedSpecial)"),true);
   assert.equal(app.eval("game.missiles.every(m=>Math.abs(m.power-28.75)<1e-8&&m.r===50)"),true);
+});
+
+
+test("MAGNET is the 16th P, keeps starter dual-shot cadence and gradient UI",()=>{
+  const app=boot();
+  app.eval([
+    'game.state="PLAYING";game.weaponType="blue";game.redWeapon.stars=4;',
+    'collectPowerup({type:"P_MAGNET",x:200,y:400,life:1});',
+    'game.weaponLevel=3;firePlayerWeapons();'
+  ].join("\n"));
+  assert.equal(app.eval("game.weaponType"),"magnet");
+  assert.equal(app.eval("weaponMeta().name"),"MAGNET");
+  assert.equal(app.eval("game.bullets.length"),2);
+  assert.equal(app.eval("game.bullets.every(b=>b.magneticShot && b.power===1.15)"),true);
+  assert.equal(app.eval("game.redWeapon.stars"),4);
+  assert.ok(Math.abs(app.eval("getFireCooldown()")-.101)<1e-10);
+  const colors=app.eval([
+    '(()=>{const colors=[];',
+    'ctx.createLinearGradient=()=>({addColorStop:(p,c)=>colors.push(c)});',
+    'game.powerups=[{type:"P_MAGNET",x:500,y:460,t:0,life:10}];',
+    'drawPowerups();drawPlayerBullets();',
+    'return colors;})()'
+  ].join("\n"));
+  assert.ok(colors.includes("#ff4568"));
+  assert.ok(colors.includes("#a9e8ff"));
+  assert.ok(colors.includes("#ff4267"));
+  const labels=app.eval([
+    '(()=>{const labels=[];ctx.fillText=s=>labels.push(String(s));',
+    'drawHud();return labels;})()'
+  ].join("\n"));
+  assert.ok(labels.includes("MAGNET 10%  R360  2.0S"));
+  app.eval('game.powerups=[];dropPlayerPowerOnHit()');
+  assert.equal(app.eval("game.powerups.at(-1).type"),"P_MAGNET");
+});
+
+test("MAGNET 10% procs exactly once on real swept enemy hit and not on launch",()=>{
+  const app=boot();
+  app.eval([
+    'game.state="PLAYING";game.weaponType="magnet";Math.random=()=>.099999;',
+    'game.enemies=[{kind:"scout",x:400,y:470,r:25,hp:100,maxHp:100,',
+    'score:20,color:"#fff",core:"#eee"}];',
+    'firePlayerWeapons();game.bullets=game.bullets.slice(0,1);'
+  ].join("\n"));
+  assert.equal(app.eval("game.magneticFields.length"),0);
+  app.eval("updatePlayerBullets(.16)");
+  assert.equal(app.eval("game.magneticFields.length"),1);
+  assert.ok(Math.abs(app.eval("game.enemies[0].hp")-98.85)<1e-8);
+  assert.ok(app.eval("game.magneticFields[0].x")>360 &&
+    app.eval("game.magneticFields[0].x")<400);
+  assert.equal(app.eval("game.magneticFields[0].y"),470);
+  assert.equal(app.eval("game.magneticFields[0].remaining"),2);
+  app.eval([
+    'game.magneticFields=[];game.bullets=[];',
+    'game.enemies[0].hp=100;Math.random=()=>.1;',
+    'firePlayerWeapons();game.bullets=game.bullets.slice(0,1);',
+    'updatePlayerBullets(.16);'
+  ].join("\n"));
+  assert.equal(app.eval("game.magneticFields.length"),0);
+  assert.ok(Math.abs(app.eval("game.enemies[0].hp")-98.85)<1e-8);
+});
+
+test("MAGNET shot still procs on fully shield-absorbed enemy contact",()=>{
+  const app=boot();
+  app.eval([
+    'game.state="PLAYING";game.weaponType="magnet";Math.random=()=>0;',
+    'game.enemies=[enemyBehaviors.initializeEnemy({kind:"shield",',
+    'x:415,y:470,r:39,hp:100,maxHp:100,score:20,color:"#aaf",core:"#fff"})];',
+    'game.enemies[0].shieldHp=30;game.enemies[0].shieldMax=30;',
+    'firePlayerWeapons();game.bullets=game.bullets.slice(0,1);',
+    'updatePlayerBullets(.18);'
+  ].join("\n"));
+  assert.equal(app.eval("game.magneticFields.length"),1);
+  assert.equal(app.eval("game.enemies[0].hp"),100);
+  assert.ok(app.eval("game.enemies[0].shieldHp")<30);
+});
+
+test("MAGNET works on living Boss turret or hull without double triggering",()=>{
+  for (const part of [true,false]) {
+    const app=boot();
+    app.eval([
+      'game.state="PLAYING";game.stageMode="BOSS";',
+      'game.weaponType="magnet";Math.random=()=>0;',
+      'game.boss={active:true,x:510,y:470,rx:85,ry:75,hp:150,',
+      'maxHp:150,parts:'+ (part?'[{id:"TURRET",x:-147,y:0,r:24,hp:50,maxHp:50}]':'[]')+',',
+      'color:"#ff7"};',
+      'firePlayerWeapons();game.bullets=game.bullets.slice(0,1);',
+      'updatePlayerBullets(.29);'
+    ].join("\n"));
+    assert.equal(app.eval("game.magneticFields.length"),1);
+    assert.ok(app.eval("game.magneticFields[0].x")>300);
+    if (part) assert.ok(app.eval("game.boss.parts[0].hp")<50);
+    else assert.ok(app.eval("game.boss.hp")<150);
+  }
+});
+
+test("MAGNET pulls distant enemies at 100/s rather than stacking natural enemy speed",()=>{
+  const app=boot();
+  app.eval([
+    'game.state="PLAYING";game.stageMode="WAVE";',
+    'game.spawnTimer=999;game.formationTimer=999;game.invuln=999;',
+    'game.enemies=[{kind:"scout",x:1000,y:500,r:24,hp:50,maxHp:50,',
+    'vx:-300,vy:0,t:0,wave:0,shootCd:999,shootBase:999,',
+    'score:10,color:"#fff",core:"#fff"}];',
+    'game.magneticFields=[magnetRules.createField(200,500,1.15)];',
+    'updatePlaying(.5);'
+  ].join("\n"));
+  assert.ok(Math.abs(app.eval("game.enemies[0].x")-950)<1e-8);
+  assert.equal(app.eval("game.magneticFields[0].remaining"),1.5);
+  app.eval('game.state="PAUSED";updatePlaying(10)');
+  assert.equal(app.eval("game.enemies[0].x"),950);
+  assert.equal(app.eval("game.magneticFields[0].remaining"),1.5);
+  app.eval('game.state="PLAYING";updatePlaying(.5)');
+  assert.ok(Math.abs(app.eval("game.enemies[0].x")-900)<1e-8);
+  assert.equal(app.eval("game.magneticFields[0].remaining"),1);
+});
+
+test("MAGNET attraction respects BLACK 50% slow and GRAY stun, including zigzag recovery",()=>{
+  const app=boot();
+  app.eval([
+    'game.state="PLAYING";game.stageMode="WAVE";',
+    'game.enemies=[{kind:"zigzag",x:800,y:480,baseY:480,r:20,',
+    'hp:100,maxHp:100,vx:-300,vy:0,t:0,wave:0,',
+    'shootCd:999,shootBase:999,slowRemaining:5,',
+    'score:10,color:"#fff",core:"#fff"}];',
+    'game.magneticFields=[magnetRules.createField(200,480,1.15)];',
+    'updateEnemies(1);'
+  ].join("\n"));
+  assert.ok(Math.abs(app.eval("game.enemies[0].x")-750)<1e-8);
+  assert.ok(Math.abs(app.eval(
+    "game.enemies[0].baseY+Math.sin(game.enemies[0].t*5.2+game.enemies[0].wave)*120-game.enemies[0].y"
+  ))<1e-8);
+  app.eval('game.enemies[0].grayStunRemaining=.5;updateEnemies(.5)');
+  assert.equal(app.eval("game.enemies[0].x"),750);
+  app.eval('game.magneticFields=[];updateEnemies(.001)');
+  assert.ok(Math.abs(app.eval(
+    "game.enemies[0].baseY+Math.sin(game.enemies[0].t*5.2+game.enemies[0].wave)*120-game.enemies[0].y"
+  ))<1e-8);
+});
+
+test("MAGNET waits two active seconds and deals N*0.6 to each in-circle enemy only",()=>{
+  const app=boot();
+  app.eval([
+    'game.state="PLAYING";game.stageMode="WAVE";',
+    'game.enemies=[',
+    ' {kind:"scout",x:520,y:480,r:20,hp:100,maxHp:100,',
+    'score:5,color:"#fff",core:"#fff"},',
+    ' {kind:"scout",x:740,y:480,r:20,hp:100,maxHp:100,',
+    'score:5,color:"#fff",core:"#fff"},',
+    ' {kind:"scout",x:1100,y:480,r:20,hp:100,maxHp:100,',
+    'score:5,color:"#fff",core:"#fff"}];',
+    'game.magneticFields=[magnetRules.createField(500,480,1.15)];',
+    'updateMagneticFields(1.999);'
+  ].join("\n"));
+  assert.equal(app.eval("game.enemies[0].hp"),100);
+  assert.equal(app.eval("game.enemies[1].hp"),100);
+  app.eval("updateMagneticFields(.001)");
+  assert.ok(Math.abs(app.eval("game.enemies[0].hp")-98.62)<1e-8);
+  assert.ok(Math.abs(app.eval("game.enemies[1].hp")-98.62)<1e-8);
+  assert.equal(app.eval("game.enemies[2].hp"),100);
+  assert.equal(app.eval("game.magneticFields.length"),0);
+  assert.equal(app.eval("game.magneticBursts.length"),1);
+  app.eval("updateMagneticFields(1)");
+  assert.equal(app.eval("game.enemies[0].hp"),app.eval("game.enemies[1].hp"));
+  assert.ok(Math.abs(app.eval("game.enemies[0].hp")-98.62)<1e-8);
+});
+
+test("MAGNET blast includes one Boss hull as one target, not its turrets",()=>{
+  const app=boot();
+  app.eval([
+    'game.state="PLAYING";game.stageMode="BOSS";',
+    'game.enemies=[{kind:"scout",x:750,y:480,r:20,hp:100,maxHp:100,',
+    'score:5,color:"#fff",core:"#fff"}];',
+    'game.boss={active:true,x:1000,y:480,rx:140,ry:100,',
+    'hp:100,maxHp:100,parts:[{id:"GUN",x:-100,y:0,r:20,hp:30,maxHp:30}],',
+    'color:"#fff",core:"#eee"};',
+    'game.magneticFields=[magnetRules.createField(730,480,1.15)];',
+    'updateMagneticFields(2);'
+  ].join("\n"));
+  assert.ok(Math.abs(app.eval("game.boss.hp")-98.62)<1e-8);
+  assert.equal(app.eval("game.boss.parts[0].hp"),30);
+  assert.ok(Math.abs(app.eval("game.enemies[0].hp")-98.62)<1e-8);
+});
+
+test("MAGNET fields survive weapon change, obey caps and never proc from blast or drawing",()=>{
+  const app=boot();
+  app.eval([
+    'game.state="PLAYING";game.stageMode="WAVE";',
+    'game.weaponType="magnet";Math.random=()=>0;',
+    'game.enemies=[{kind:"scout",x:400,y:470,r:24,hp:100,maxHp:100,',
+    'score:5,color:"#fff",core:"#fff"}];',
+    'firePlayerWeapons();game.bullets=game.bullets.slice(0,1);',
+    'updatePlayerBullets(.17);',
+    'collectPowerup({type:"P_BLUE",x:300,y:480,life:1});'
+  ].join("\n"));
+  assert.equal(app.eval("game.weaponType"),"blue");
+  assert.equal(app.eval("game.magneticFields.length"),1);
+  const old=app.eval("game.enemies[0].hp");
+  app.eval("drawMagneticFields();drawFrame(.016)");
+  assert.equal(app.eval("game.enemies[0].hp"),old);
+  app.eval("updateMagneticFields(2)");
+  assert.equal(app.eval("game.magneticFields.length"),0);
+  assert.ok(app.eval("game.enemies[0].hp")<old);
+  assert.equal(app.eval("game.magneticBursts.length"),1);
+  app.eval([
+    'game.magneticFields=Array.from({length:8},()=>magnetRules.createField(500,480,1.15));',
+    'game.weaponType="magnet";game.bullets=[];firePlayerWeapons();',
+    'game.bullets=game.bullets.slice(0,1);',
+    'updatePlayerBullets(.17);'
+  ].join("\n"));
+  assert.equal(app.eval("game.magneticFields.length"),8);
+  app.eval("spawnBoss()");
+  assert.equal(app.eval("game.magneticFields.length"),0);
+});
+
+test("MAGNET Boss attraction is capped to arena and resumes scripted movement smoothly",()=>{
+  const app=boot();
+  app.eval([
+    'game.state="PLAYING";game.stageMode="BOSS";',
+    'game.boss={active:true,x:950,y:480,targetX:950,pattern:0,',
+    'hp:500,maxHp:500,rx:130,ry:100,parts:[],',
+    'phase:0,lastPhase:0,t:0,shoot:999,warning:0,',
+    'color:"#fff",core:"#eee"};',
+    'game.magneticFields=[magnetRules.createField(900,150,1.15)];',
+    'updateBoss(1);'
+  ].join("\n"));
+  const after=app.eval("({x:game.boss.x,y:game.boss.y})");
+  assert.ok(after.x>=890 && after.x<=1155);
+  assert.ok(after.y>=145 && after.y<=815);
+  assert.ok(Math.hypot(after.x-950,after.y-480)<=100+1e-8);
+  app.eval("game.magneticFields=[];updateBoss(.016)");
+  assert.ok(Math.hypot(app.eval("game.boss.x")-after.x,app.eval("game.boss.y")-after.y)<30);
 });

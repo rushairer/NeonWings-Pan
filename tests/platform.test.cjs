@@ -18,6 +18,7 @@ const limeWeapon = require("../src/lime-weapon.js");
 const skyWeapon = require("../src/sky-weapon.js");
 const darkRedWeapon = require("../src/dark-red-weapon.js");
 const rainbowWeapon = require("../src/rainbow-weapon.js");
+const magnetWeapon = require("../src/magnet-weapon.js");
 const collision = require("../src/collision.js");
 const enemyBehaviors = require("../src/enemy-behaviors.js");
 const worlds = require("../src/worlds.js");
@@ -49,7 +50,7 @@ function boot(options = {}) {
     NeonCombat: combat,
     NeonRedWeapon: redWeapon,
     NeonGreenWeapon: greenWeapon,
-    NeonBlackWeapon: blackWeapon, NeonWhiteWeapon: whiteWeapon, NeonGrayWeapon: grayWeapon, NeonPinkWeapon: pinkWeapon, NeonOrangeWeapon: orangeWeapon, NeonBrownWeapon: brownWeapon, NeonLimeWeapon: limeWeapon, NeonSkyWeapon: skyWeapon, NeonDarkRedWeapon: darkRedWeapon, NeonRainbowWeapon: rainbowWeapon,
+    NeonBlackWeapon: blackWeapon, NeonWhiteWeapon: whiteWeapon, NeonGrayWeapon: grayWeapon, NeonPinkWeapon: pinkWeapon, NeonOrangeWeapon: orangeWeapon, NeonBrownWeapon: brownWeapon, NeonLimeWeapon: limeWeapon, NeonSkyWeapon: skyWeapon, NeonDarkRedWeapon: darkRedWeapon, NeonRainbowWeapon: rainbowWeapon, NeonMagnetWeapon: magnetWeapon,
     NeonCollision: collision,
     NeonEnemyBehaviors: enemyBehaviors,
     NeonWorlds: worlds,
@@ -148,7 +149,8 @@ test("static HTML loads platform before game and doesn't embed legacy code", () 
   assert.ok(html.indexOf('src="./src/lime-weapon.js?') < html.indexOf('src="./src/sky-weapon.js?'));
   assert.ok(html.indexOf('src="./src/sky-weapon.js?') < html.indexOf('src="./src/dark-red-weapon.js?'));
   assert.ok(html.indexOf('src="./src/dark-red-weapon.js?') < html.indexOf('src="./src/rainbow-weapon.js?'));
-  assert.ok(html.indexOf('src="./src/rainbow-weapon.js?') < html.indexOf('src="./src/collision.js"'));
+  assert.ok(html.indexOf('src="./src/rainbow-weapon.js?') < html.indexOf('src="./src/magnet-weapon.js?'));
+  assert.ok(html.indexOf('src="./src/magnet-weapon.js?') < html.indexOf('src="./src/collision.js"'));
   assert.ok(html.indexOf('src="./src/collision.js"') < html.indexOf('src="./src/enemy-behaviors.js"'));
   assert.ok(html.indexOf('src="./src/enemy-behaviors.js"') < html.indexOf('src="./src/worlds.js"'));
   assert.ok(html.indexOf('src="./src/worlds.js"') < html.indexOf('src="./src/boss-parts.js"'));
@@ -198,10 +200,25 @@ test("RAINBOW browser module is versioned, copied to Pages, and syntax checked",
   const html=fs.readFileSync(path.join(__dirname,"../index.html"),"utf8");
   const build=fs.readFileSync(path.join(__dirname,"../scripts/build.mjs"),"utf8");
   const pkg=require("../package.json");
-  assert.equal(pkg.version,"26.12.1");
+  assert.match(pkg.version,/^\d+\.\d+\.\d+$/);
   assert.ok(html.includes('src="./src/rainbow-weapon.js?v='+pkg.version+'"'));
   assert.ok(html.indexOf('src="./src/dark-red-weapon.js?')<html.indexOf('src="./src/rainbow-weapon.js?'));
   assert.ok(html.indexOf('src="./src/rainbow-weapon.js?')<html.indexOf('src="./src/game.js?'));
   assert.ok(build.includes('"src/rainbow-weapon.js"'));
   assert.ok(pkg.scripts.check.includes("node --check src/rainbow-weapon.js"));
+});
+
+test("MAGNET P module is browser-versioned, ordered and included in Pages",()=>{
+  const html=fs.readFileSync(path.join(__dirname,"../index.html"),"utf8");
+  const build=fs.readFileSync(path.join(__dirname,"../scripts/build.mjs"),"utf8");
+  const pkg=require("../package.json");
+  assert.ok(html.includes('src="./src/magnet-weapon.js?v='+pkg.version+'"'));
+  assert.ok(html.includes('src="./src/game.js?v='+pkg.version+'"'));
+  assert.ok(html.indexOf('src="./src/rainbow-weapon.js?') <
+    html.indexOf('src="./src/magnet-weapon.js?'));
+  assert.ok(html.indexOf('src="./src/magnet-weapon.js?') <
+    html.indexOf('src="./src/game.js?'));
+  assert.ok(build.includes('"src/magnet-weapon.js"'));
+  assert.ok(pkg.scripts.check.includes('node --check src/magnet-weapon.js'));
+  assert.equal(magnetWeapon.RULES.radius,greenWeapon.RULES.radius);
 });
