@@ -26,6 +26,8 @@ const W = 1280;
     if (!limeRules) throw new Error("NeonWings-Pan lime P runtime missing");
     const skyRules = window.NeonSkyWeapon;
     if (!skyRules) throw new Error("NeonWings-Pan sky P runtime missing");
+    const darkRedRules = window.NeonDarkRedWeapon;
+    if (!darkRedRules) throw new Error("NeonWings-Pan dark red P runtime missing");
     const collision = window.NeonCollision;
     if (!collision) throw new Error("NeonWings collision runtime missing");
     const enemyBehaviors = window.NeonEnemyBehaviors;
@@ -1803,19 +1805,20 @@ const W = 1280;
 
     function randomPowerType() {
       const r = Math.random();
-      if (r < 1 / 13) return "P_BLUE";
-      if (r < 2 / 13) return "P_PURPLE";
-      if (r < 3 / 13) return "P_YELLOW";
-      if (r < 4 / 13) return "P_RED";
-      if (r < 5 / 13) return "P_GREEN";
-      if (r < 6 / 13) return "P_BLACK";
-      if (r < 7 / 13) return "P_WHITE";
-      if (r < 8 / 13) return "P_GRAY";
-      if (r < 9 / 13) return "P_PINK";
-      if (r < 10 / 13) return "P_ORANGE";
-      if (r < 11 / 13) return "P_BROWN";
-      if (r < 12 / 13) return "P_LIME";
-      return "P_SKY";
+      if (r < 1 / 14) return "P_BLUE";
+      if (r < 2 / 14) return "P_PURPLE";
+      if (r < 3 / 14) return "P_YELLOW";
+      if (r < 4 / 14) return "P_RED";
+      if (r < 5 / 14) return "P_GREEN";
+      if (r < 6 / 14) return "P_BLACK";
+      if (r < 7 / 14) return "P_WHITE";
+      if (r < 8 / 14) return "P_GRAY";
+      if (r < 9 / 14) return "P_PINK";
+      if (r < 10 / 14) return "P_ORANGE";
+      if (r < 11 / 14) return "P_BROWN";
+      if (r < 12 / 14) return "P_LIME";
+      if (r < 13 / 14) return "P_SKY";
+      return "P_DARK_RED";
     }
 
     function weaponMeta(type = game.weaponType) {
@@ -1831,6 +1834,7 @@ const W = 1280;
       if (type === "brown") return { name: "LOCK LASER", short: "BROWN", color: "#9a6042", core: "#ffe3c4" };
       if (type === "lime") return { name: "ORBIT", short: "LIME", color: "#c7f542", core: "#fbffd4" };
       if (type === "sky") return { name: "ADAPT", short: "SKY", color: "#86d9ff", core: "#e7f9ff" };
+      if (type === "darkred") return { name: "CHAIN", short: "DARK RED", color: "#981332", core: "#ffe0e8" };
       return { name: "LINE", short: "BLUE", color: "#38e8ff", core: "#e8fdff" };
     }
 
@@ -1847,6 +1851,7 @@ const W = 1280;
       if (powerupType === "P_BROWN") return "brown";
       if (powerupType === "P_LIME") return "lime";
       if (powerupType === "P_SKY") return "sky";
+      if (powerupType === "P_DARK_RED") return "darkred";
       return "blue";
     }
 
@@ -1863,6 +1868,7 @@ const W = 1280;
       if (game.weaponType === "brown") return "P_BROWN";
       if (game.weaponType === "lime") return "P_LIME";
       if (game.weaponType === "sky") return "P_SKY";
+      if (game.weaponType === "darkred") return "P_DARK_RED";
       return "P_BLUE";
     }
 
@@ -2051,11 +2057,24 @@ const W = 1280;
             rect(-8, 23, 6, 6, meta.core);
             rect(2, 23, 6, 6, meta.core);
           } else if (wt === "red") {
-            // Four short side fins make the crimson P pickup easy to distinguish.
+            // Four short side fins mark standard RED P and its star system.
             for (const offset of [-11, 5]) {
               rect(-29, offset, 6, 6, meta.core);
               rect(23, offset, 6, 6, meta.core);
             }
+          } else if (wt === "darkred") {
+            // Three nested deep-crimson strikes distinguish chained hits from
+            // ordinary RED P's four fins and star progression.
+            ctx.strokeStyle = "#ffc2d0";
+            ctx.lineWidth = 3;
+            for (const x of [-12, 0, 12]) {
+              ctx.beginPath();
+              ctx.moveTo(x - 5, -23);
+              ctx.lineTo(x + 5, -11);
+              ctx.lineTo(x - 5, 1);
+              ctx.stroke();
+            }
+            rect(-5, 23, 10, 7, "#fff0f3");
           } else if (wt === "green") {
             // Four light points and a tiny circular halo identify the aura pickup.
             rect(-4, -30, 8, 6, meta.core);
@@ -2419,6 +2438,14 @@ const W = 1280;
           orangeRules.RULES.normalDamage, "#ff932e", { orangeBlast: true });
         addPlayerShot(muzzleX, baseY + 12, 1100, 0, 9,
           orangeRules.RULES.normalDamage, "#ff932e", { orangeBlast: true });
+      } else if (type === "darkred") {
+        // Twin baseline projectiles. Every *landed bullet* can independently
+        // re-hit its original victim up to 10 total full-strength events.
+        // No RED P stars, fan or volley timing apply to DARK RED P.
+        for (const lane of [-10, 12]) {
+          addPlayerShot(muzzleX, baseY + lane, 1100, 0, 9,
+            darkRedRules.RULES.normalDamage, "#981332", { darkRedChain: true });
+        }
       } else if (type === "gray") {
         // Each actual gray bullet contact independently chooses one effect.
         addPlayerShot(muzzleX, baseY - 10, 1100, 0, 9, 1.15, "#abb3c0", { grayImpact: true });
@@ -2474,7 +2501,7 @@ const W = 1280;
       if (game.weaponType === "red") return redRules.RULES.volleySeconds;
       if (game.weaponType === "yellow") return Math.max(0.17, 0.25 - game.weaponLevel * 0.025);
       if (game.weaponType === "purple") return Math.max(0.10, 0.145 - game.weaponLevel * 0.012);
-      return Math.max(0.07, 0.115 - (game.weaponType === "green" || game.weaponType === "black" || game.weaponType === "white" || game.weaponType === "gray" || game.weaponType === "pink" || game.weaponType === "orange" || game.weaponType === "lime" || game.weaponType === "brown" || game.weaponType === "sky" ? 1 : game.weaponLevel) * 0.014);
+      return Math.max(0.07, 0.115 - (game.weaponType === "green" || game.weaponType === "black" || game.weaponType === "white" || game.weaponType === "gray" || game.weaponType === "pink" || game.weaponType === "orange" || game.weaponType === "lime" || game.weaponType === "brown" || game.weaponType === "sky" || game.weaponType === "darkred" ? 1 : game.weaponLevel) * 0.014);
     }
 
     function findMissileTarget(m) {
@@ -3276,7 +3303,17 @@ const W = 1280;
           const grayOutcome = b.grayImpact ? grayRules.apply(e, Math.random(), {
             direction: Math.sign(b.vx), minX: -120, maxX: W + 120
           }) : null;
-          damageEnemy(e, damage * grayRules.damageMultiplier(grayOutcome), b.x, b.y, b.c);
+          if (b.darkRedChain) {
+            // Each repeat goes through the exact ordinary damage/shield/kill
+            // path. Stop immediately when THIS victim dies; never transfer
+            // to new splitter children or the next target.
+            darkRedRules.resolveHits(() => {
+              damageEnemy(e, damage, b.x, b.y, b.c);
+              return e.hp > 0;
+            }, Math.random);
+          } else {
+            damageEnemy(e, damage * grayRules.damageMultiplier(grayOutcome), b.x, b.y, b.c);
+          }
           if (b.dead) break;
         }
 
@@ -3293,7 +3330,16 @@ const W = 1280;
             const grayOutcome = b.grayImpact ? grayRules.apply(boss, Math.random(), {
               boss: true, direction: Math.sign(b.vx), minX: W - 390, maxX: W - 125
             }) : null;
-            damageBoss(damage * grayRules.damageMultiplier(grayOutcome), b.x, b.y, b.c, part);
+            if (b.darkRedChain) {
+              // Resolve only the ORIGINAL turret. If destroyed, the chain ends
+              // here: no subsequent hits spill into the Boss hull.
+              darkRedRules.resolveHits(() => {
+                damageBoss(damage, b.x, b.y, b.c, part);
+                return game.boss === boss && boss.active && boss.hp > 0 && part.hp > 0;
+              }, Math.random);
+            } else {
+              damageBoss(damage * grayRules.damageMultiplier(grayOutcome), b.x, b.y, b.c, part);
+            }
           } else if (collision.sweptAabbHit(
             b.previousX, b.previousY, b.x, b.y,
             boss.x - boss.rx - b.r, boss.x + boss.rx + b.r,
@@ -3304,7 +3350,14 @@ const W = 1280;
             const grayOutcome = b.grayImpact ? grayRules.apply(boss, Math.random(), {
               boss: true, direction: Math.sign(b.vx), minX: W - 390, maxX: W - 125
             }) : null;
-            damageBoss(damage * grayRules.damageMultiplier(grayOutcome), b.x, b.y, b.c);
+            if (b.darkRedChain) {
+              darkRedRules.resolveHits(() => {
+                damageBoss(damage, b.x, b.y, b.c);
+                return game.boss === boss && boss.active && boss.hp > 0;
+              }, Math.random);
+            } else {
+              damageBoss(damage * grayRules.damageMultiplier(grayOutcome), b.x, b.y, b.c);
+            }
           }
         }
       }
@@ -3906,6 +3959,15 @@ const W = 1280;
           ctx.restore();
           continue;
         }
+        if (b.darkRedChain) {
+          ctx.shadowColor = "#d52958";
+          ctx.shadowBlur = 18;
+          rect(-6, -7, 38, 14, "#6b0929");
+          rect(-2, -5, 34, 10, "#ad1e40");
+          rect(10, -2, 21, 4, "#ffe0e8");
+          ctx.restore();
+          continue;
+        }
         if (b.skyShot) {
           // SKY keeps its distinct light-blue projectile in BOTH HP modes.
           // The low-HP shot separately carries the BLACK slow-on-hit marker.
@@ -4152,6 +4214,8 @@ const W = 1280;
         ? "LIME ORBIT  R360"
         : game.weaponType === "sky"
         ? (game.hp > skyRules.RULES.thresholdHp ? "SKY BOOST  2.5X" : "SKY SEEK  BLACK SLOW")
+        : game.weaponType === "darkred"
+        ? "DARK RED  10% CHAIN  x10"
         : `${meta.short} WEAPON  LV.${game.weaponLevel}`, 656, 80, 21, "left",
         game.weaponType === "black" ? "#9cccff" : meta.color);
 
@@ -4311,7 +4375,7 @@ const W = 1280;
       ctx.fillRect(0, 0, W, H);
 
       drawText("NEON WINGS", W / 2, 195, 86, "center", "#e7fbff");
-      drawText("NEONWINGS PAN  /  v26.10.0", W / 2, 270, 28, "center", "#98f5ff");
+      drawText("NEONWINGS PAN  /  v26.11.0", W / 2, 270, 28, "center", "#98f5ff");
       drawText(`HIGH SCORE ${String(highScore()).padStart(6, "0")}`, W / 2, 318, 24, "center", "#fff4b7");
 
       drawPlayerShip(W / 2 - 170, 492, -0.20, false, ships[0]);
