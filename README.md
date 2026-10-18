@@ -13,7 +13,7 @@ A controller-first, five-stage, side-scrolling neon arcade shooter built with br
 ## Currently playable
 
 - Five themed stages and five multi-phase bosses; higher-difficulty loops after stage five
-- 11 enemy types, formations, ten weapon families, collectible power-ups and BOMB
+- 11 enemy types, formations, twelve weapon families, collectible power-ups and BOMB
 - Gamepad rumble where browser/device supports it, Web Audio synthesis, volume and vibration options
 - Pause, fullscreen, local high score, end-of-run statistics
 - v23 foundation: 4:3 letterbox sizing; auto-pause on background/focus loss or controller disconnection; browser-storage fallback
@@ -28,6 +28,16 @@ A controller-first, five-stage, side-scrolling neon arcade shooter built with br
 - v26.1.1 UI fix: fighter/mode selector uses explicit non-overlapping layout geometry; selected fighter frame, Training hint, ship descriptions and score footer retain safe spacing.
 - **v26.2.0 NeonWings-Pan exclusive:** red P twin-line fire, a 250-projectile ±10° special fan triggered on 10% of eligible volleys, and an independent 0–5 star progression.
 - **v26.3.0 NeonWings-Pan exclusive:** green P retains starter-grade dual shots and adds a passive neon halo dealing area damage to nearby enemies once per second.
+
+## v26.9.0 — BROWN P auto-lock laser and LIME P radius-360 orbital shots
+
+Two independently implemented P power-ups join the existing ten (now **12 P colors**, each with equal conditional P-drop chance). Both share the same normal hit/shield/Boss scoring pipeline, and leave the original NeonWings repository unchanged.
+
+**BROWN P / LOCK LASER**: while holding FIRE, fire a visually continuous copper/amber laser from the ship, **not individual bullets**. Automatically aim toward the closest living enemy in front of the muzzle, or a viable active Boss turret/hull. The beam is **clipped to its first geometric obstruction**; it never pierces another enemy, a turret, or the Boss hull. It deals a single-target **1.15 normal-weapon damage every 0.101 active combat seconds** while its lock survives, using ordinary fighter/Overdrive damage scaling and honoring frontal shields, weak-point mounts, kills and scores. Switching guns, releasing FIRE, losing all targets, pause and stage transitions stop damage. With no forward targets the laser has no visible hit beam. The lock refreshes automatically as enemies move, die or spawn; a visible amber beam ends at the actual collision surface (max forward range 1300 logical units).
+
+**LIME P / ORBIT** (黄绿色 P): each normal firing action emits **two lime bullets** starting on the player's **radius-360 circle, opposite each other**. The bullets rotate in a clockwise screen direction at **2.8 radians/second**, maintaining exactly 360 logical units from the player's current position as it moves. Each orbital bullet has base 1.15 direct damage, independently scaled by ship/Overdrive; it **hits only one enemy or Boss part/hull and then disappears**, with shield absorption and Boss weak points intact. Bullets can orbit for up to **3.2 seconds**, with a maximum of **32 simultaneously active**. Large-frame arc segments are subdivided for accurate collision testing. A faint yellow-green circular guide shows the orbit track without passive damage; actual damage requires an orbiting projectile collision. Shots retain their orbital behavior after switching weapon colors; offscreen arc portions survive until returning on-screen or expiry.
+
+Both get unique P pickups, distinct sprite/HUD, regular P drops and recoverable weapon drops. The original PINK 15%/25× special missile, GREEN 360 aura, GRAY burst, RED stars and every prior weapon retain their behavior. Computer/browser CI tests cover laser first-target clipping, Boss turret priority, orbit geometry, lifetime, shield and cross-weapon regressions; handheld real-FPS and balance acceptance remains open.
 
 ## v26.8.1 — PINK P special chance 15% and 25× direct missile damage
 

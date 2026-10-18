@@ -7,6 +7,17 @@ Independently maintained from NeonWings commit `5ebcb1de1adb288b41a3c5e387f747bc
 - [x] Configure standalone Pages workflow
 - [ ] Verify site deployment and controller tests on hardware
 
+## v26.9.0 — BROWN P targeting laser + LIME P orbital shots
+
+- [x] Add BROWN P and LIME P as 11th/12th regular drop colors, with distinct sprites and HUD
+- [x] BROWN P: hold FIRE for continuous auto-targeting laser; emit no ordinary bullets
+- [x] BROWN laser locks a forward live enemy/Boss turret or hull, stops at first obstruction, never penetrates, deals base 1.15 per 0.101s active combat
+- [x] LIME P: two orbiting bullets per shot at fixed radius 360 about moving player, 2.8 rad/s, 3.2s lifetime, 32-bullet cap
+- [x] Orbit collision uses small arc segments and one victim per bullet; shield, Boss weak points and other P remain unaffected
+- [x] Isolate lock targeting and orbital geometry into independent, testable browser/Node modules
+- [x] Update HTML/Pages assets, agent invariants, drop odds, controller+combat fixtures and current release notes
+- [ ] Real-device performance, beam tracking feel and orbit damage tuning
+
 ## v26.8.1 — PINK P 15% chance / 25× direct missile damage
 
 - [x] Increase independent per-shot PINK homing missile chance from 10% to 15%
