@@ -1676,7 +1676,7 @@ test("PINK 5% proc adds exactly one 10x homing missile to one regular shot", () 
   assert.equal(app.eval("game.missiles[0].pinkSpecial"), true);
   assert.equal(app.eval("game.missiles[0].power/game.bullets[0].power"), 10);
   assert.equal(app.eval("game.missiles[0].r"), 14);
-  assert.equal(app.eval("game.missiles[0].life"), 4.6);
+  assert.ok(Math.abs(app.eval("game.missiles[0].life") - 4.599) < 1e-9); // Same frame advances the missile by 0.001s.
   assert.equal(app.eval("game.pinkWeapon.volleys"), 1);
   app.eval("Math.random=()=>.05;game.fireCooldown=0;updatePlaying(.001)");
   assert.equal(app.eval("game.bullets.length"), 2);
