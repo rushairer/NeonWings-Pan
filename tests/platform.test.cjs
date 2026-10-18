@@ -182,7 +182,9 @@ test("DARK RED runtime is copied and versioned before game for GitHub Pages",()=
   const html=fs.readFileSync(path.join(__dirname,"../index.html"),"utf8");
   const build=fs.readFileSync(path.join(__dirname,"../scripts/build.mjs"),"utf8");
   const pkg=require("../package.json");
-  assert.equal(pkg.version,"26.11.0");
+  // Drive all script-version assertions from package.json; releases must not
+  // fail merely because this test still contains the previous patch number.
+  assert.match(pkg.version, /^\\d+\\.\\d+\\.\\d+$/);
   assert.ok(html.includes('src="./src/dark-red-weapon.js?v='+pkg.version+'"'));
   assert.ok(html.includes('src="./src/game.js?v='+pkg.version+'"'));
   assert.ok(build.includes('"src/dark-red-weapon.js"'));
