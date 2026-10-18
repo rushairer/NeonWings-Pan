@@ -29,6 +29,12 @@ A controller-first, five-stage, side-scrolling neon arcade shooter built with br
 - **v26.2.0 NeonWings-Pan exclusive:** red P twin-line fire, a 250-projectile ±10° special fan triggered on 10% of eligible volleys, and an independent 0–5 star progression.
 - **v26.3.0 NeonWings-Pan exclusive:** green P retains starter-grade dual shots and adds a passive neon halo dealing area damage to nearby enemies once per second.
 
+## v26.12.1 — 彩色武器逐发射击与 0.4 秒间隔
+
+RAINBOW / PRISM now fires **exactly ONE projectile (or ONE replacing PINK special missile) per firing action**, centered on the fighter's muzzle, followed by **0.4 seconds of active-combat cooldown** before the next shot while FIRE is held. The cooldown does not advance during pause. This applies at every weapon level. Each emission independently chooses one of the same eight abilities at the original **7 × 13% + 9% = 100%** distribution. No other weapon's fire cadence or special effect is changed.
+
+**Play:** https://rushairer.github.io/NeonWings-Pan/?v=26.12.1
+
 ## v26.12.0 — RAINBOW P / PRISM (彩色随机弹)
 
 The FIFTEENTH P color is RAINBOW / PRISM, obtainable through the normal power-up drops, recoverable after taking a hit, and independently available in Classic, Boss Rush and Training modes. Its pickup has an eight-color perimeter. It fires at the **starter dual-shot cadence** (approximately 0.101s per firing action); **each of the TWO projectile slots independently rolls one mutually exclusive effect**. It NEVER fires all eight at once and never quietly makes an extra DARK RED or PINK proc on top of the selected projectile.

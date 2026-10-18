@@ -3186,10 +3186,10 @@ test("RAINBOW P is the 15th collectible, recoverable, with a distinct 8-color ic
   ].join("\n"));
   assert.equal(app.eval("game.weaponType"),"rainbow");
   assert.equal(app.eval("weaponMeta().name"),"PRISM");
-  assert.equal(app.eval("game.bullets.length"),2);
+  assert.equal(app.eval("game.bullets.length"),1);
   assert.equal(app.eval("game.bullets.every(b=>b.grayImpact)"),true);
   assert.equal(app.eval("game.redWeapon.stars"),3);
-  assert.ok(Math.abs(app.eval("getFireCooldown()")-.101)<1e-10);
+  assert.equal(app.eval("getFireCooldown()"),.4);
   app.eval('Math.random=()=>.99');
   assert.equal(app.eval("randomPowerType()"),"P_RAINBOW");
   app.eval('game.powerups=[];dropPlayerPowerOnHit()');
@@ -3208,19 +3208,61 @@ test("RAINBOW P is the 15th collectible, recoverable, with a distinct 8-color ic
     "#65e9cf","#6bb7ff","#997bff","#f878dc"]) assert.ok(ui.colors.includes(color),color);
 });
 
-test("RAINBOW chooses independently for its two physical bullet slots",()=>{
+
+test("RAINBOW draws one independent effect per single-bullet firing action",()=>{
   const app=boot();
   app.eval([
-    'game.weaponType="rainbow";const sequence=[.10,.20];let index=0;',
-    'Math.random=()=>sequence[index++]??.99;',
-    'firePlayerWeapons();'
+    'game.weaponType="rainbow";Math.random=()=>.10;firePlayerWeapons();',
+    'Math.random=()=>.20;firePlayerWeapons();'
   ].join("\n"));
   assert.equal(app.eval("game.bullets.length"),2);
   assert.equal(app.eval("game.bullets[0].rainbowKind"),"homing");
   assert.equal(app.eval("game.bullets[1].rainbowKind"),"slow");
   assert.equal(app.eval("game.bullets[0].rainbowHoming"),true);
   assert.equal(app.eval("game.bullets[1].blackSlow"),true);
+  assert.equal(app.eval("game.bullets.every(b=>b.y===game.player.y)"),true);
   assert.equal(app.eval("game.missiles.length"),0);
+});
+
+test("RAINBOW held fire emits exactly one bullet every 0.4 active seconds, freezing while paused",()=>{
+  const app=boot();
+  app.eval([
+    'game.state="PLAYING";game.stageMode="WAVE";game.weaponType="rainbow";',
+    'game.spawnTimer=999;game.formationTimer=999;game.stageIntro=0;',
+    'game.invuln=999;keys.Space=true;Math.random=()=>.20;updatePlaying(.001);'
+  ].join("\n"));
+  assert.equal(app.eval("game.bullets.length"),1);
+  assert.equal(app.eval("game.fireCooldown"),.4);
+  app.eval("updatePlaying(.2);updatePlaying(.199)");
+  assert.equal(app.eval("game.bullets.length"),1);
+  app.eval("updatePlaying(.002)");
+  assert.equal(app.eval("game.bullets.length"),2);
+  assert.equal(app.eval("game.fireCooldown"),.4);
+  app.eval('game.state="PAUSED";updatePlaying(5)');
+  assert.equal(app.eval("game.fireCooldown"),.4);
+  assert.equal(app.eval("game.bullets.length"),2);
+  app.eval('game.state="PLAYING";updatePlaying(.2);updatePlaying(.199)');
+  assert.equal(app.eval("game.bullets.length"),2);
+  app.eval("updatePlaying(.002)");
+  assert.equal(app.eval("game.bullets.length"),3);
+  assert.equal(app.eval("game.fireCooldown"),.4);
+});
+
+test("RAINBOW guided missile replaces its only shot and observes the same 0.4s interval",()=>{
+  const app=boot();
+  app.eval([
+    'game.state="PLAYING";game.stageMode="WAVE";game.weaponType="rainbow";',
+    'game.spawnTimer=999;game.formationTimer=999;game.invuln=999;',
+    'keys.Space=true;Math.random=()=>.30;updatePlaying(.001);'
+  ].join("\n"));
+  assert.equal(app.eval("game.bullets.length"),0);
+  assert.equal(app.eval("game.missiles.length"),1);
+  assert.equal(app.eval("game.fireCooldown"),.4);
+  app.eval("updatePlaying(.399)");
+  assert.equal(app.eval("game.missiles.length"),1);
+  app.eval("updatePlaying(.002)");
+  assert.equal(app.eval("game.missiles.length"),2);
+  assert.equal(app.eval("game.bullets.length"),0);
 });
 
 test("all eight RAINBOW probability bands create exactly the inherited shot types",()=>{
@@ -3238,7 +3280,7 @@ test("all eight RAINBOW probability bands create exactly the inherited shot type
     const app=boot();
     app.eval('game.state="PLAYING";game.weaponType="rainbow";Math.random=()=>'+roll+';firePlayerWeapons()');
     const array=kind==="missile"?"game.missiles":"game.bullets";
-    assert.equal(app.eval(array+".length"),2,kind);
+    assert.equal(app.eval(array+".length"),1,kind);
     assert.equal(app.eval(array+'.every(s=>s.rainbowKind==="'+kind+'" && s.'+flag+')'),true,kind);
     assert.equal(app.eval(kind==="missile"?"game.bullets.length":"game.missiles.length"),0,kind);
     if(kind==="missile"){
@@ -3247,8 +3289,7 @@ test("all eight RAINBOW probability bands create exactly the inherited shot type
     }
     if(kind==="orbit"){
       assert.equal(app.eval("game.bullets[0].x"),237);
-      assert.equal(app.eval("game.bullets[0].y"),470);
-      assert.equal(app.eval("game.bullets[1].y"),492);
+      assert.equal(app.eval("game.bullets[0].y"),480);
     }
   }
 });
@@ -3408,7 +3449,7 @@ test("RAINBOW source projectiles retain original damage/target effects after swi
 test("RAINBOW missile projectile choice never adds ordinary or DARK RED bonus missiles",()=>{
   const app=boot();
   app.eval('game.weaponType="rainbow";Math.random=()=>.30;firePlayerWeapons()');
-  assert.equal(app.eval("game.missiles.length"),2);
+  assert.equal(app.eval("game.missiles.length"),1);
   assert.equal(app.eval("game.bullets.length"),0);
   assert.equal(app.eval("game.missiles.every(m=>m.pinkSpecial&&!m.darkRedSpecial)"),true);
   assert.equal(app.eval("game.missiles.every(m=>Math.abs(m.power-28.75)<1e-8&&m.r===50)"),true);

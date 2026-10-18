@@ -2468,63 +2468,59 @@ const W = 1280;
         addPlayerShot(muzzleX, baseY + 12, 1100, 0, 9,
           orangeRules.RULES.normalDamage, "#ff932e", { orangeBlast: true });
       } else if (type === "rainbow") {
-        // Each of the TWO baseline firing positions independently rolls one
-        // of eight MUTUALLY EXCLUSIVE source-weapon projectiles. Seven have
-        // 13% chance, the actual PINK special missile replaces a shot at 9%.
-        // No separate DARK RED 5% missile roll can occur in this weapon.
-        const lanes = [-10, 12];
-        for (let i = 0; i < rainbowRules.RULES.bulletsPerVolley; i++) {
-          const lane = lanes[i];
-          const choice = rainbowRules.fire(Math.random);
-          const tag = { rainbowKind: choice };
-          if (choice === "homing") {
-            // Yellow tracking bullet (guided flight, not a second missile).
-            addPlayerShot(muzzleX, baseY + lane,
-              pinkRules.RULES.bulletSpeed, 0, 9,
-              rainbowRules.RULES.normalDamage, "#ffe071", {
-                ...tag, rainbowHoming: true,
-                life: pinkRules.RULES.bulletLifetimeSeconds
-              });
-          } else if (choice === "slow") {
-            addPlayerShot(muzzleX, baseY + lane, 1100, 0, 9,
-              rainbowRules.RULES.normalDamage, "#121522", {
-                ...tag, blackSlow: true
-              });
-          } else if (choice === "missile") {
-            // Identical PINK 100-unit guided rocket: 25x direct + 1x 360
-            // splash to OTHER victims; no normal bullet in this lane.
-            addMissile(game.player.x + 36, baseY + lane, i ? 1 : -1,
-              pinkRules.RULES.normalDamage * pinkRules.RULES.missileDamageMultiplier,
-              { ...tag, pinkSpecial: true });
-          } else if (choice === "chain") {
-            addPlayerShot(muzzleX, baseY + lane, 1100, 0, 9,
-              darkRedRules.RULES.normalDamage, "#981332", {
-                ...tag, darkRedChain: true
-              });
-          } else if (choice === "gray") {
-            addPlayerShot(muzzleX, baseY + lane, 1100, 0, 9,
-              rainbowRules.RULES.normalDamage, "#abb3c0", {
-                ...tag, grayImpact: true
-              });
-          } else if (choice === "conductive") {
-            addPlayerShot(muzzleX, baseY + lane, 1120, 0, 9,
-              rainbowRules.RULES.normalDamage, "#f3fcff", {
-                ...tag, ...whiteRules.createShot()
-              });
-          } else if (choice === "orbit") {
-            // LIME behavior is a normal muzzle bullet that curves onto a
-            // moving-player 360-radius orbit; no satellite teleport.
-            const orb = limeRules.createShot(game.player, lane);
-            addPlayerShot(orb.x, orb.y, orb.vx, orb.vy, orb.r,
-              limeRules.RULES.normalDamage, "#d1f74c", {
-                ...tag, ...orb
-              });
-          } else if (choice === "blast") {
-            addPlayerShot(muzzleX, baseY + lane, 1100, 0, 9,
-              orangeRules.RULES.normalDamage, "#ff932e", {
-                ...tag, orangeBlast: true
-              });
-          }
+        // One centered projectile per action, then 0.4s of active-combat rest.
+        // A 9% PINK missile REPLACES the bullet; never fire a bonus missile.
+        // Each action makes exactly one of the original eight effect rolls.
+        const lane = 0;
+        const choice = rainbowRules.fire(Math.random);
+        const tag = { rainbowKind: choice };
+        if (choice === "homing") {
+          // Yellow tracking bullet (guided flight, not a second missile).
+          addPlayerShot(muzzleX, baseY + lane,
+            pinkRules.RULES.bulletSpeed, 0, 9,
+            rainbowRules.RULES.normalDamage, "#ffe071", {
+              ...tag, rainbowHoming: true,
+              life: pinkRules.RULES.bulletLifetimeSeconds
+            });
+        } else if (choice === "slow") {
+          addPlayerShot(muzzleX, baseY + lane, 1100, 0, 9,
+            rainbowRules.RULES.normalDamage, "#121522", {
+              ...tag, blackSlow: true
+            });
+        } else if (choice === "missile") {
+          // Identical PINK 100-unit guided rocket: 25x direct + 1x 360
+          // splash to OTHER victims; no normal bullet in this lane.
+          addMissile(game.player.x + 36, baseY + lane, -1,
+            pinkRules.RULES.normalDamage * pinkRules.RULES.missileDamageMultiplier,
+            { ...tag, pinkSpecial: true });
+        } else if (choice === "chain") {
+          addPlayerShot(muzzleX, baseY + lane, 1100, 0, 9,
+            darkRedRules.RULES.normalDamage, "#981332", {
+              ...tag, darkRedChain: true
+            });
+        } else if (choice === "gray") {
+          addPlayerShot(muzzleX, baseY + lane, 1100, 0, 9,
+            rainbowRules.RULES.normalDamage, "#abb3c0", {
+              ...tag, grayImpact: true
+            });
+        } else if (choice === "conductive") {
+          addPlayerShot(muzzleX, baseY + lane, 1120, 0, 9,
+            rainbowRules.RULES.normalDamage, "#f3fcff", {
+              ...tag, ...whiteRules.createShot()
+            });
+        } else if (choice === "orbit") {
+          // LIME behavior is a normal muzzle bullet that curves onto a
+          // moving-player 360-radius orbit; no satellite teleport.
+          const orb = limeRules.createShot(game.player, lane);
+          addPlayerShot(orb.x, orb.y, orb.vx, orb.vy, orb.r,
+            limeRules.RULES.normalDamage, "#d1f74c", {
+              ...tag, ...orb
+            });
+        } else if (choice === "blast") {
+          addPlayerShot(muzzleX, baseY + lane, 1100, 0, 9,
+            orangeRules.RULES.normalDamage, "#ff932e", {
+              ...tag, orangeBlast: true
+            });
         }
       } else if (type === "darkred") {
         // Each regular dual-shot action independently rolls ONE 5% bonus
@@ -2593,9 +2589,10 @@ const W = 1280;
 
     function getFireCooldown() {
       if (game.weaponType === "red") return redRules.RULES.volleySeconds;
+      if (game.weaponType === "rainbow") return rainbowRules.RULES.shotCooldownSeconds;
       if (game.weaponType === "yellow") return Math.max(0.17, 0.25 - game.weaponLevel * 0.025);
       if (game.weaponType === "purple") return Math.max(0.10, 0.145 - game.weaponLevel * 0.012);
-      return Math.max(0.07, 0.115 - (game.weaponType === "green" || game.weaponType === "black" || game.weaponType === "white" || game.weaponType === "gray" || game.weaponType === "pink" || game.weaponType === "orange" || game.weaponType === "lime" || game.weaponType === "brown" || game.weaponType === "sky" || game.weaponType === "darkred" || game.weaponType === "rainbow" ? 1 : game.weaponLevel) * 0.014);
+      return Math.max(0.07, 0.115 - (game.weaponType === "green" || game.weaponType === "black" || game.weaponType === "white" || game.weaponType === "gray" || game.weaponType === "pink" || game.weaponType === "orange" || game.weaponType === "lime" || game.weaponType === "brown" || game.weaponType === "sky" || game.weaponType === "darkred" ? 1 : game.weaponLevel) * 0.014);
     }
 
     function findMissileTarget(m) {

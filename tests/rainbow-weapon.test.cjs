@@ -3,7 +3,8 @@ const assert=require("node:assert/strict");
 const rainbow=require("../src/rainbow-weapon.js");
 
 test("RAINBOW eight mutually exclusive outcomes sum to exactly 100%",()=>{
-  assert.equal(rainbow.RULES.bulletsPerVolley,2);
+  assert.equal(rainbow.RULES.bulletsPerVolley,1);
+  assert.equal(rainbow.RULES.shotCooldownSeconds,0.4);
   assert.equal(rainbow.RULES.normalDamage,1.15);
   const chances=rainbow.RULES.outcomeChances;
   assert.equal(Object.keys(chances).length,8);
