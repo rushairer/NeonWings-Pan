@@ -2195,12 +2195,14 @@ const W = 1280;
 
     // Every special PINK missile draws a single, bounded 360-radius visual
     // effect; only detonatePinkMissile applies damage (never draw functions).
-    function addPinkExplosion(x, y) {
+    function addPinkExplosion(x, y, darkRed = false) {
+      // Reuse the original bounded 360-radius explosion renderer, with
+      // DARK RED color data stored per effect (never per current weapon).
       if (game.pinkExplosions.length >= LIMITS.pinkExplosions) {
         game.pinkExplosions.shift();
       }
       game.pinkExplosions.push({
-        x, y, life: pinkRules.RULES.explosionLifetimeSeconds
+        x, y, life: pinkRules.RULES.explosionLifetimeSeconds, darkRed
       });
     }
 
@@ -2248,22 +2250,26 @@ const W = 1280;
         ctx.translate(blast.x, blast.y);
         ctx.globalAlpha = alpha;
         const glow = ctx.createRadialGradient(0, 0, 0, 0, 0, radius);
-        glow.addColorStop(0, "rgba(255,208,240,.37)");
-        glow.addColorStop(0.45, "rgba(255,89,176,.19)");
-        glow.addColorStop(0.85, "rgba(255,45,158,.08)");
-        glow.addColorStop(1, "rgba(255,45,158,0)");
+        glow.addColorStop(0, blast.darkRed
+          ? "rgba(255,166,185,.42)" : "rgba(255,208,240,.37)");
+        glow.addColorStop(0.45, blast.darkRed
+          ? "rgba(179,18,58,.30)" : "rgba(255,89,176,.19)");
+        glow.addColorStop(0.85, blast.darkRed
+          ? "rgba(105,5,33,.16)" : "rgba(255,45,158,.08)");
+        glow.addColorStop(1, blast.darkRed
+          ? "rgba(105,5,33,0)" : "rgba(255,45,158,0)");
         ctx.fillStyle = glow;
         ctx.beginPath();
         ctx.arc(0, 0, radius, 0, Math.PI * 2);
         ctx.fill();
-        ctx.shadowColor = "#ff44ad";
+        ctx.shadowColor = blast.darkRed ? "#b9123f" : "#ff44ad";
         ctx.shadowBlur = 30;
-        ctx.strokeStyle = "#ff82ce";
+        ctx.strokeStyle = blast.darkRed ? "#ed466e" : "#ff82ce";
         ctx.lineWidth = 8 + (1 - progress) * 5;
         ctx.beginPath();
         ctx.arc(0, 0, ringRadius, 0, Math.PI * 2);
         ctx.stroke();
-        ctx.strokeStyle = "#ffe0f5";
+        ctx.strokeStyle = blast.darkRed ? "#ffb0bd" : "#ffe0f5";
         ctx.lineWidth = 3;
         ctx.beginPath();
         ctx.arc(0, 0, ringRadius * 0.72, 0, Math.PI * 2);
@@ -2355,7 +2361,8 @@ const W = 1280;
       const overdrive = combatRules.isActive(game.combat);
       game.missiles.push({
         x, y, vx: 520, vy: vySign * 160,
-        r: extra.pinkSpecial ? pinkRules.RULES.specialMissileSize / 2 : 14,
+        r: extra.darkRedSpecial ? darkRedRules.RULES.specialMissileSize / 2
+          : extra.pinkSpecial ? pinkRules.RULES.specialMissileSize / 2 : 14,
         power: power * combatRules.weaponDamageScale(game.combat, selectedShip().id),
         life: 4.6, turn: overdrive ? 5.8 : 4.2, trail: 0,
         overdrive, targetSlot: (game.missileSequence++) % 3,
@@ -2439,12 +2446,18 @@ const W = 1280;
         addPlayerShot(muzzleX, baseY + 12, 1100, 0, 9,
           orangeRules.RULES.normalDamage, "#ff932e", { orangeBlast: true });
       } else if (type === "darkred") {
-        // Twin baseline projectiles. Every *landed bullet* can independently
-        // re-hit its original victim up to 10 total full-strength events.
-        // No RED P stars, fan or volley timing apply to DARK RED P.
+        // Each regular dual-shot action independently rolls ONE 5% bonus
+        // guided missile. Chain RNG is ONLY evaluated after real impacts.
+        // Up to 30 complete 1x bullet hits or 10x missile hits per victim.
         for (const lane of [-10, 12]) {
           addPlayerShot(muzzleX, baseY + lane, 1100, 0, 9,
             darkRedRules.RULES.normalDamage, "#981332", { darkRedChain: true });
+        }
+        if (darkRedRules.rollMissile(Math.random)) {
+          addMissile(game.player.x + 36, baseY - 18, -1,
+            darkRedRules.RULES.normalDamage *
+              darkRedRules.RULES.missileDamageMultiplier,
+            { darkRedSpecial: true });
         }
       } else if (type === "gray") {
         // Each actual gray bullet contact independently chooses one effect.
@@ -2960,18 +2973,49 @@ const W = 1280;
       }
     }
 
-    // Special rocket: 25x damage is already applied to the direct victim.
-    // Other pre-existing enemies / a different Boss within GREEN's 360 radius
-    // each receive 1x PINK bolt power (including common ship/Overdrive scaling).
-    // No chain propagation and no duplicate hit on the direct victim.
+    // Dark red missile chains its ORIGINAL full 10x impact into the same
+    // target (max 30), with the original turret/hull kill boundary preserved.
+    // Already-fired missiles retain this marker even after a weapon switch.
+    function damageDarkRedMissileTarget(m, target, part = null) {
+      if (target === game.boss) {
+        darkRedRules.resolveHits(() => {
+          damageBoss(m.power, m.x, m.y, "#cf325a", part);
+          return game.boss === target && target.active && target.hp > 0 &&
+            (!part || part.hp > 0);
+        }, Math.random);
+      } else {
+        darkRedRules.resolveHits(() => {
+          damageEnemy(target, m.power, m.x, m.y, "#cf325a");
+          return target.hp > 0;
+        }, Math.random);
+      }
+    }
+
+    function damageMissileTarget(m, target, part = null) {
+      if (m.darkRedSpecial) {
+        damageDarkRedMissileTarget(m, target, part);
+      } else if (target === game.boss) {
+        damageBoss(m.power, m.x, m.y, m.pinkSpecial ? "#ff82d0" : "#ffd76b", part);
+      } else {
+        damageEnemy(target, m.power, m.x, m.y, m.pinkSpecial ? "#ff82d0" : "#ffd76b");
+      }
+    }
+
+    // PINK and DARK RED guided specials detonate at their one direct target.
+    // Only that target gets full missile damage (25x PINK / 10x DARK RED with
+    // up to 30 dark-red chain events). Nearby OTHER targets each receive
+    // ONE 1x normal-bullet splash at the same GREEN radius-360 boundary.
+    // Splash callbacks do not chain or transfer to freshly spawned minions.
     function detonatePinkMissile(m, directTarget, nearbyEnemies, nearbyBoss) {
-      if (!m.pinkSpecial) return;
-      addPinkExplosion(m.x, m.y);
-      const splashPower = pinkRules.splashDamage(m.power);
+      if (!m.pinkSpecial && !m.darkRedSpecial) return;
+      addPinkExplosion(m.x, m.y, Boolean(m.darkRedSpecial));
+      const splashPower = m.darkRedSpecial
+        ? darkRedRules.splashDamage(m.power) : pinkRules.splashDamage(m.power);
+      const color = m.darkRedSpecial ? "#b3294d" : "#ff74ca";
       pinkRules.splash({ x: m.x, y: m.y }, nearbyEnemies, nearbyBoss,
         directTarget, greenRules,
-        e => damageEnemy(e, splashPower, e.x, e.y, "#ff74ca"),
-        b => damageBoss(splashPower, m.x, m.y, "#ff74ca")
+        e => damageEnemy(e, splashPower, e.x, e.y, color),
+        b => damageBoss(splashPower, m.x, m.y, color)
       );
     }
 
@@ -3001,8 +3045,10 @@ const W = 1280;
         if (m.trail <= 0) {
           m.trail = 0.035;
           const a = Math.atan2(m.vy, m.vx);
-          const trailA = m.pinkSpecial ? "#ffa1e4" : "#ffd76b";
-          const trailB = m.pinkSpecial ? "#ff4da9" : "#ff8f5f";
+          const trailA = m.darkRedSpecial ? "#d85b79"
+            : m.pinkSpecial ? "#ffa1e4" : "#ffd76b";
+          const trailB = m.darkRedSpecial ? "#7c0b30"
+            : m.pinkSpecial ? "#ff4da9" : "#ff8f5f";
           addParticle(m.x - Math.cos(a) * 18, m.y - Math.sin(a) * 18,
             rand(-45, 20), rand(-45, 45), rand(0.16, 0.34),
             Math.random() < 0.5 ? trailA : trailB);
@@ -3010,15 +3056,16 @@ const W = 1280;
 
         // Snapshot BEFORE direct damage: splitter child spawns and newly
         // activated Bosses may not be affected by this same explosion.
-        const nearbyEnemies = m.pinkSpecial ? game.enemies.slice() : null;
-        const nearbyBoss = m.pinkSpecial && game.boss?.active && game.boss.hp > 0
+        const isSpecial = m.pinkSpecial || m.darkRedSpecial;
+        const nearbyEnemies = isSpecial ? game.enemies.slice() : null;
+        const nearbyBoss = isSpecial && game.boss?.active && game.boss.hp > 0
           ? game.boss : null;
         for (const e of game.enemies) {
           if (e.hp <= 0) continue;
           if (collision.sweptCircleHit(fromX, fromY, m.x, m.y, e.x, e.y, m.r + e.r)) {
             m.life = 0;
-            damageEnemy(e, m.power, m.x, m.y, m.pinkSpecial ? "#ff82d0" : "#ffd76b");
-            if (m.pinkSpecial) detonatePinkMissile(m, e, nearbyEnemies, nearbyBoss);
+            damageMissileTarget(m, e);
+            if (isSpecial) detonatePinkMissile(m, e, nearbyEnemies, nearbyBoss);
             break;
           }
         }
@@ -3028,15 +3075,15 @@ const W = 1280;
           const targetPart = bossParts.findHit(b, fromX, fromY, m.x, m.y, m.r);
           if (targetPart) {
             m.life = 0;
-            damageBoss(m.power, m.x, m.y, m.pinkSpecial ? "#ff82d0" : "#ffd76b", targetPart);
-            if (m.pinkSpecial) detonatePinkMissile(m, b, nearbyEnemies, nearbyBoss);
+            damageMissileTarget(m, b, targetPart);
+            if (isSpecial) detonatePinkMissile(m, b, nearbyEnemies, nearbyBoss);
           } else if (collision.sweptAabbHit(
             fromX, fromY, m.x, m.y,
             b.x - b.rx - m.r, b.x + b.rx + m.r, b.y - b.ry - m.r, b.y + b.ry + m.r
           )) {
             m.life = 0;
-            damageBoss(m.power, m.x, m.y, m.pinkSpecial ? "#ff82d0" : "#ffd76b");
-            if (m.pinkSpecial) detonatePinkMissile(m, b, nearbyEnemies, nearbyBoss);
+            damageMissileTarget(m, b);
+            if (isSpecial) detonatePinkMissile(m, b, nearbyEnemies, nearbyBoss);
           }
         }
       }
@@ -4006,19 +4053,20 @@ const W = 1280;
         ctx.save();
         ctx.translate(m.x, m.y);
         ctx.rotate(Math.atan2(m.vy, m.vx));
-        if (m.pinkSpecial) {
-          // 100 x 100 logical-unit silhouette (including fins). BLACK body
-          // with pink-outline contrast so it remains readable in dark arenas.
+        if (m.pinkSpecial || m.darkRedSpecial) {
+          // Identical 100-unit homing missile geometry. PINK keeps its BLACK
+          // shell; DARK RED has a burgundy shell, crimson fins and red glow.
           const half = pinkRules.RULES.specialMissileSize / 2;
+          const crimson = Boolean(m.darkRedSpecial);
           ctx.shadowBlur = 24;
-          ctx.shadowColor = "#ff61ba";
-          rect(-half + 6, -half, 24, 28, "#050509");
-          rect(-half + 6, half - 28, 24, 28, "#050509");
-          ctx.strokeStyle = "#ff89d2";
+          ctx.shadowColor = crimson ? "#c81b4d" : "#ff61ba";
+          rect(-half + 6, -half, 24, 28, crimson ? "#4b0720" : "#050509");
+          rect(-half + 6, half - 28, 24, 28, crimson ? "#4b0720" : "#050509");
+          ctx.strokeStyle = crimson ? "#ed5175" : "#ff89d2";
           ctx.lineWidth = 3;
           ctx.strokeRect(-half + 6, -half, 24, 28);
           ctx.strokeRect(-half + 6, half - 28, 24, 28);
-          ctx.fillStyle = "#030306";
+          ctx.fillStyle = crimson ? "#6b102e" : "#030306";
           ctx.beginPath();
           ctx.moveTo(-half, -18);
           ctx.lineTo(-half + 12, -25);
@@ -4030,9 +4078,9 @@ const W = 1280;
           ctx.closePath();
           ctx.fill();
           ctx.stroke();
-          rect(-half + 23, -6, 52, 12, "#16121b");
-          rect(-half + 40, -3, 24, 6, "#ff69bf");
-          rect(-half + 2, -6, 12, 12, "#ffb5e4");
+          rect(-half + 23, -6, 52, 12, crimson ? "#97163b" : "#16121b");
+          rect(-half + 40, -3, 24, 6, crimson ? "#f25a7b" : "#ff69bf");
+          rect(-half + 2, -6, 12, 12, crimson ? "#ffc3cd" : "#ffb5e4");
         } else {
           rect(-18, -6, 34, 12, "#ffd76b");
           rect(-8, -4, 18, 8, "#fff4b7");
@@ -4215,7 +4263,7 @@ const W = 1280;
         : game.weaponType === "sky"
         ? (game.hp > skyRules.RULES.thresholdHp ? "SKY BOOST  2.5X" : "SKY SEEK  BLACK SLOW")
         : game.weaponType === "darkred"
-        ? "DARK RED  10% CHAIN  x10"
+        ? "DARK RED  50%x30  M5%x10"
         : `${meta.short} WEAPON  LV.${game.weaponLevel}`, 656, 80, 21, "left",
         game.weaponType === "black" ? "#9cccff" : meta.color);
 
@@ -4375,7 +4423,7 @@ const W = 1280;
       ctx.fillRect(0, 0, W, H);
 
       drawText("NEON WINGS", W / 2, 195, 86, "center", "#e7fbff");
-      drawText("NEONWINGS PAN  /  v26.11.0", W / 2, 270, 28, "center", "#98f5ff");
+      drawText("NEONWINGS PAN  /  v26.11.1", W / 2, 270, 28, "center", "#98f5ff");
       drawText(`HIGH SCORE ${String(highScore()).padStart(6, "0")}`, W / 2, 318, 24, "center", "#fff4b7");
 
       drawPlayerShip(W / 2 - 170, 492, -0.20, false, ships[0]);
