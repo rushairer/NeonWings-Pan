@@ -2209,3 +2209,299 @@ test("PINK 15% bonus special retains 25x power and tracking after switching to O
   assert.equal(app.eval("game.missiles.length"), 0);
   assert.ok(Math.abs(app.eval("game.enemies[0].hp") - 71.25) < 1e-8);
 });
+
+
+test("BROWN P is a recoverable eleventh pickup and never spawns ordinary bullets", () => {
+  const app=boot();
+  app.eval('game.state="PLAYING";game.weaponType="blue";game.bullets=[]');
+  app.eval('collectPowerup({type:"P_BROWN",x:350,y:480,life:1});firePlayerWeapons()');
+  assert.equal(app.eval("game.weaponType"),"brown");
+  assert.equal(app.eval("weaponMeta().name"),"LOCK LASER");
+  assert.equal(app.eval("game.bullets.length"),0);
+  assert.equal(app.eval("game.missiles.length"),0);
+  app.eval('game.weaponLevel=3;firePlayerWeapons()');
+  assert.equal(app.eval("game.bullets.length"),0);
+  assert.ok(Math.abs(app.eval("getFireCooldown()")-0.101)<1e-10);
+  app.eval('Math.random=()=>.89');
+  assert.equal(app.eval("randomPowerType()"),"P_BROWN");
+  app.eval('game.powerups=[];dropPlayerPowerOnHit()');
+  assert.equal(app.eval("game.powerups.at(-1).type"),"P_BROWN");
+  const labels=app.eval('(() => {const labels=[];ctx.fillText=t=>labels.push(String(t));drawHud();drawPowerups();return labels;})()');
+  assert.ok(labels.includes("BROWN LOCK LASER"));
+});
+
+test("BROWN laser auto-locks first enemy without penetrating a second enemy",()=>{
+  const app=boot();
+  app.eval([
+    'game.state="PLAYING";game.stageMode="WAVE";game.weaponType="brown";',
+    'game.player.x=175;game.player.y=480;',
+    'game.enemies=[',
+    ' {kind:"scout",x:460,y:480,r:25,hp:100,maxHp:100,score:30,color:"#fff",core:"#fff"},',
+    ' {kind:"scout",x:740,y:480,r:25,hp:100,maxHp:100,score:30,color:"#fff",core:"#fff"}',
+    '];updateBrownLaser(.101,true);'
+  ].join("\n"));
+  assert.equal(app.eval("game.bullets.length"),0);
+  assert.equal(app.eval("game.brownBeam.kind"),"enemy");
+  assert.equal(app.eval("game.brownBeam.x"),435);
+  assert.equal(app.eval("game.brownBeam.startX"),235);
+  assert.ok(Math.abs(app.eval("game.enemies[0].hp")-98.85)<1e-9);
+  assert.equal(app.eval("game.enemies[1].hp"),100);
+  app.eval("updateBrownLaser(.202,true)");
+  assert.ok(Math.abs(app.eval("game.enemies[0].hp")-96.55)<1e-8);
+  assert.equal(app.eval("game.enemies[1].hp"),100);
+});
+
+test("BROWN laser can retarget after the nearest enemy dies and clears on FIRE release",()=>{
+  const app=boot();
+  app.eval([
+    'game.state="PLAYING";game.stageMode="WAVE";game.weaponType="brown";',
+    'game.enemies=[',
+    ' {kind:"scout",x:460,y:480,r:20,hp:1,maxHp:1,score:30,color:"#fff",core:"#fff"},',
+    ' {kind:"scout",x:740,y:480,r:20,hp:50,maxHp:50,score:30,color:"#fff",core:"#fff"}',
+    '];updateBrownLaser(.101,true);'
+  ].join("\n"));
+  assert.equal(app.eval("game.enemies[0].hp")<=0,true);
+  app.eval("updateBrownLaser(.101,true)");
+  assert.ok(Math.abs(app.eval("game.enemies[1].hp")-48.85)<1e-8);
+  assert.equal(app.eval("game.brownBeam.target"),app.eval("game.enemies[1]"));
+  app.eval("updateBrownLaser(.101,false)");
+  assert.equal(app.eval("game.brownBeam"),null);
+  assert.equal(app.eval("game.brownWeapon.elapsed"),0);
+  assert.ok(Math.abs(app.eval("game.enemies[1].hp")-48.85)<1e-8);
+});
+
+test("BROWN laser is genuinely continuous while FIRE held and deals no damage paused",()=>{
+  const app=boot();
+  app.eval([
+    'game.state="PLAYING";game.stageMode="WAVE";game.weaponType="brown";',
+    'game.spawnTimer=999;game.formationTimer=999;',
+    'game.enemies=[{kind:"scout",x:540,y:480,r:30,hp:100,maxHp:100,',
+    'score:30,color:"#fff",core:"#fff",vx:0,vy:0,shootCd:99}];',
+    'keys.Space=true;updatePlaying(.06);updatePlaying(.05);'
+  ].join("\n"));
+  assert.equal(app.eval("game.bullets.length"),0);
+  assert.equal(app.eval("game.missiles.length"),0);
+  assert.ok(Math.abs(app.eval("game.enemies[0].hp")-98.85)<1e-8);
+  const hp=app.eval("game.enemies[0].hp");
+  app.eval('game.state="PAUSED";updatePlaying(2)');
+  assert.equal(app.eval("game.enemies[0].hp"),hp);
+  app.eval('game.state="PLAYING";game.stageMode="TRANSITION";updatePlaying(.5)');
+  assert.equal(app.eval("game.enemies[0].hp"),hp);
+});
+
+test("BROWN laser hits frontal shield normally rather than bypassing the shield",()=>{
+  const app=boot();
+  app.eval([
+    'game.state="PLAYING";game.weaponType="brown";',
+    'game.enemies=[enemyBehaviors.initializeEnemy({kind:"shield",x:460,y:480,',
+    'r:39,hp:40,maxHp:40,score:30,color:"#fff",core:"#fff"})];',
+    'updateBrownLaser(.101,true);'
+  ].join("\n"));
+  assert.ok(Math.abs(app.eval("game.enemies[0].shieldMax-game.enemies[0].shieldHp")-1.15)<1e-9);
+  assert.equal(app.eval("game.enemies[0].hp"),40);
+  assert.equal(app.eval("game.brownBeam.target"),app.eval("game.enemies[0]"));
+});
+
+test("BROWN laser prioritizes intact Boss turrets, then auto-locks the exposed hull",()=>{
+  const app=boot();
+  app.eval([
+    'game.state="PLAYING";game.stageMode="BOSS";game.weaponType="brown";',
+    'game.player.x=175;game.player.y=420;',
+    'spawnBoss();game.boss.active=true;game.boss.x=1010;game.boss.y=480;',
+    'game.boss.parts[0].hp=100;game.boss.parts[0].maxHp=100;',
+    'updateBrownLaser(.101,true);'
+  ].join("\n"));
+  assert.equal(app.eval("game.brownBeam.kind"),"turret");
+  assert.ok(Math.abs(app.eval("game.boss.parts[0].hp")-
+    (100-1.15*bossParts.BALANCE.weakPointDamageScale))<1e-8);
+  const full=app.eval("game.boss.hp");
+  assert.equal(app.eval("game.boss.hp"),full);
+  app.eval('game.boss.parts.forEach(p=>p.hp=0);updateBrownLaser(.101,true)');
+  assert.equal(app.eval("game.brownBeam.kind"),"boss");
+  assert.ok(Math.abs(app.eval("game.boss.hp")-(full-1.15))<1e-8);
+});
+
+test("BROWN visual line stops at the first hit surface and is absent when targeting stops",()=>{
+  const app=boot();
+  const visual=app.eval([
+    '(() => {',
+    'game.state="PLAYING";game.stageMode="WAVE";game.weaponType="brown";',
+    'game.enemies=[{kind:"scout",x:520,y:480,r:25,hp:20,maxHp:20}];',
+    'const ends=[];ctx.lineTo=(x,y)=>ends.push([x,y]);',
+    'updateBrownLaser(.05,true);drawBrownLaser();',
+    'const hit=game.brownBeam;',
+    'updateBrownLaser(.05,false);drawBrownLaser();',
+    'return {ends,hitEndX:hit.x,cleared:game.brownBeam===null};',
+    '})()'
+  ].join("\n"));
+  assert.ok(visual.ends.length>=3);
+  assert.ok(visual.ends.every(v=>Math.abs(v[0]-visual.hitEndX)<1e-8));
+  assert.equal(visual.cleared,true);
+});
+
+test("LIME P is the twelfth pickup and fires two opposite orbital bullets per action",()=>{
+  const app=boot();
+  app.eval([
+    'game.state="PLAYING";game.player.x=175;game.player.y=480;',
+    'collectPowerup({type:"P_LIME",x:400,y:480,life:1});',
+    'game.weaponLevel=3;firePlayerWeapons();'
+  ].join("\n"));
+  assert.equal(app.eval("game.weaponType"),"lime");
+  assert.equal(app.eval("weaponMeta().name"),"ORBIT");
+  assert.equal(app.eval("game.bullets.length"),2);
+  assert.equal(app.eval("game.bullets.every(b=>b.orbiting)"),true);
+  assert.equal(app.eval("game.missiles.length"),0);
+  assert.ok(Math.abs(app.eval("getFireCooldown()")-.101)<1e-10);
+  assert.ok(Math.abs(app.eval("game.bullets[0].x")-535)<1e-8);
+  assert.ok(Math.abs(app.eval("game.bullets[1].x")-(-185))<1e-8);
+  assert.equal(app.eval("game.bullets[0].power"),1.15);
+  assert.equal(app.eval("game.bullets[1].power"),1.15);
+  app.eval("Math.random=()=>.99");
+  assert.equal(app.eval("randomPowerType()"),"P_LIME");
+  app.eval("game.powerups=[];dropPlayerPowerOnHit()");
+  assert.equal(app.eval("game.powerups.at(-1).type"),"P_LIME");
+  const labels=app.eval('(() => {const values=[];ctx.fillText=t=>values.push(String(t));drawHud();drawPowerups();return values;})()');
+  assert.ok(labels.includes("LIME ORBIT  R360"));
+});
+
+test("LIME bullets stay at radius 360 while player moves, with no forward drift",()=>{
+  const app=boot();
+  app.eval([
+    'game.state="PLAYING";game.weaponType="lime";',
+    'game.player.x=175;game.player.y=480;firePlayerWeapons();',
+    'game.player.x=270;game.player.y=550;updatePlayerBullets(.1);'
+  ].join("\n"));
+  assert.equal(app.eval("game.bullets.length"),2);
+  assert.equal(app.eval("game.bullets.every(b=>Math.abs(Math.hypot(b.x-game.player.x,b.y-game.player.y)-360)<1e-8)"),true);
+  assert.ok(app.eval("game.bullets[0].y")>550);
+  assert.equal(app.eval("game.bullets[0].vx"),0);
+});
+
+test("LIME offscreen orbiters remain alive, unlike ordinary offscreen projectiles",()=>{
+  const app=boot();
+  app.eval([
+    'game.state="PLAYING";game.weaponType="lime";game.player.x=175;',
+    'firePlayerWeapons();updatePlayerBullets(.02);'
+  ].join("\n"));
+  assert.equal(app.eval("game.bullets.length"),2);
+  assert.ok(app.eval("game.bullets[1].x")<0);
+  assert.equal(app.eval("game.bullets.every(b=>b.life>0)"),true);
+  app.eval('updatePlayerBullets(3.3)');
+  assert.equal(app.eval("game.bullets.length"),0);
+});
+
+test("LIME normal orbital bullets hit one enemy and disappear without piercing another",()=>{
+  const app=boot();
+  app.eval([
+    'game.state="PLAYING";game.weaponType="lime";game.player.x=175;game.player.y=480;',
+    'game.enemies=[',
+    ' {kind:"scout",x:535,y:502,r:10,hp:50,maxHp:50,score:20,color:"#fff",core:"#fff"},',
+    ' {kind:"scout",x:535,y:525,r:10,hp:50,maxHp:50,score:20,color:"#fff",core:"#fff"}',
+    '];firePlayerWeapons();game.bullets=game.bullets.slice(0,1);',
+    'updatePlayerBullets(.06);'
+  ].join("\n"));
+  assert.equal(app.eval("game.bullets.length"),0);
+  assert.ok(Math.abs(app.eval("game.enemies[0].hp")-48.85)<1e-8);
+  assert.equal(app.eval("game.enemies[1].hp"),50);
+});
+
+test("LIME orbital bullets use the usual frontal shield damage path",()=>{
+  const app=boot();
+  app.eval([
+    'game.state="PLAYING";game.weaponType="lime";game.player.x=175;game.player.y=480;',
+    'game.enemies=[enemyBehaviors.initializeEnemy({kind:"shield",',
+    'x:535,y:516,r:34,hp:40,maxHp:40,score:50,color:"#fff",core:"#fff"})];',
+    'firePlayerWeapons();game.bullets=game.bullets.slice(0,1);updatePlayerBullets(.07);'
+  ].join("\n"));
+  assert.equal(app.eval("game.bullets.length"),0);
+  assert.ok(Math.abs(app.eval("game.enemies[0].shieldMax-game.enemies[0].shieldHp")-1.15)<1e-8);
+  assert.equal(app.eval("game.enemies[0].hp"),40);
+});
+
+test("LIME orbiting bullet hits Boss turret with weak-point multiplier, not hull",()=>{
+  const app=boot();
+  app.eval([
+    'game.state="PLAYING";game.stageMode="BOSS";game.weaponType="lime";',
+    'game.player.x=175;game.player.y=480;',
+    'game.boss={active:true,x:650,y:535,rx:70,ry:80,hp:100,maxHp:100,',
+    'parts:[{id:"UPPER TURRET",x:-115,y:0,r:22,hp:100,maxHp:100}],color:"#fff"};',
+    'firePlayerWeapons();game.bullets=game.bullets.slice(0,1);updatePlayerBullets(.07);'
+  ].join("\n"));
+  assert.equal(app.eval("game.bullets.length"),0);
+  assert.ok(Math.abs(app.eval("game.boss.parts[0].hp")- (100-1.15*bossParts.BALANCE.weakPointDamageScale))<1e-8);
+  assert.equal(app.eval("game.boss.hp"),100);
+});
+
+test("LIME orbital bullet can collide with Boss hull in absence of turrets",()=>{
+  const app=boot();
+  app.eval([
+    'game.state="PLAYING";game.stageMode="BOSS";game.weaponType="lime";',
+    'game.player.x=175;game.player.y=480;',
+    'game.boss={active:true,x:535,y:560,rx:70,ry:65,hp:100,maxHp:100,parts:[],color:"#fff"};',
+    'firePlayerWeapons();game.bullets=game.bullets.slice(0,1);updatePlayerBullets(.07);'
+  ].join("\n"));
+  assert.equal(app.eval("game.bullets.length"),0);
+  assert.ok(Math.abs(app.eval("game.boss.hp")-98.85)<1e-8);
+});
+
+test("LIME orbital bullets respect 32-cap without deleting bullets from other weapons",()=>{
+  const app=boot();
+  app.eval([
+    'game.state="PLAYING";game.weaponType="blue";',
+    'addPlayerShot(300,480,1100,0,9,1.15,"#38e8ff");',
+    'game.weaponType="lime";for(let i=0;i<40;i++)firePlayerWeapons();'
+  ].join("\n"));
+  assert.equal(app.eval("game.bullets.filter(b=>b.orbiting).length"),limeWeapon.RULES.maxOrbitingBullets);
+  assert.equal(app.eval("game.bullets.filter(b=>!b.orbiting).length"),1);
+});
+
+test("LIME ring HUD and orbit guide are visual-only, unlike GREEN passive area damage",()=>{
+  const app=boot();
+  const visual=app.eval([
+    '(() => {',
+    'game.state="PLAYING";game.stageMode="WAVE";game.weaponType="lime";',
+    'game.player.x=175;game.player.y=480;',
+    'game.enemies=[{kind:"scout",x:535,y:480,r:25,hp:50,maxHp:50}];',
+    'const r=[];ctx.arc=(x,y,radius)=>r.push(radius);',
+    'drawLimeOrbitRing();return {r,hp:game.enemies[0].hp};',
+    '})()'
+  ].join("\n"));
+  assert.ok(visual.r.includes(limeWeapon.RULES.radius));
+  assert.equal(visual.hp,50);
+});
+
+test("LIME already-launched bullets retain orbit path after weapon switching and pause",()=>{
+  const app=boot();
+  app.eval([
+    'game.state="PLAYING";game.weaponType="lime";game.player.x=175;game.player.y=480;',
+    'firePlayerWeapons();collectPowerup({type:"P_BLUE",x:300,y:480,life:1});'
+  ].join("\n"));
+  assert.equal(app.eval("game.weaponType"),"blue");
+  assert.equal(app.eval("game.bullets.filter(b=>b.orbiting).length"),2);
+  const angle=app.eval("game.bullets[0].orbitAngle"),life=app.eval("game.bullets[0].life");
+  app.eval('game.state="PAUSED";updatePlaying(2)');
+  assert.equal(app.eval("game.bullets[0].orbitAngle"),angle);
+  assert.equal(app.eval("game.bullets[0].life"),life);
+  app.eval('game.state="PLAYING";game.player.x=225;updatePlayerBullets(.1)');
+  assert.ok(app.eval("game.bullets[0].orbitAngle")>angle);
+  assert.equal(app.eval("game.bullets[0].orbiting"),true);
+  assert.ok(Math.abs(app.eval("Math.hypot(game.bullets[0].x-game.player.x,game.bullets[0].y-game.player.y)")-360)<1e-8);
+});
+
+test("BROWN and LIME respect existing fighter Overdrive damage scaling",()=>{
+  const app=boot();
+  app.eval([
+    'game.state="PLAYING";game.player.x=175;',
+    'game.weaponType="lime";game.combat.energy=100;activateOverdrive();',
+    'firePlayerWeapons();'
+  ].join("\n"));
+  const scale=app.eval("combatRules.weaponDamageScale(game.combat,selectedShip().id)");
+  assert.ok(scale>1);
+  assert.ok(Math.abs(app.eval("game.bullets[0].power")-1.15*scale)<1e-8);
+  app.eval([
+    'game.weaponType="brown";',
+    'game.enemies=[{kind:"scout",x:460,y:480,r:25,hp:100,maxHp:100,color:"#fff",core:"#fff"}];',
+    'updateBrownLaser(.101,true);'
+  ].join("\n"));
+  assert.ok(Math.abs(app.eval("game.enemies[0].hp")-(100-1.15*scale))<1e-8);
+});
