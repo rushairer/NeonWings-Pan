@@ -1,6 +1,6 @@
 {
   "name": "neonwings-pan",
-  "version": "26.9.0",
+  "version": "26.9.1",
   "private": true,
   "description": "Handheld-first static Canvas arcade shooter",
   "scripts": {

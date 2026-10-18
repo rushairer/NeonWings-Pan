@@ -2339,7 +2339,7 @@ test("BROWN visual line stops at the first hit surface and is absent when target
   assert.equal(visual.cleared,true);
 });
 
-test("LIME P is the twelfth pickup and fires two opposite orbital bullets per action",()=>{
+test("LIME P fires two ordinary twin-lane bullets from the muzzle, not prepositioned satellites", () => {
   const app=boot();
   app.eval([
     'game.state="PLAYING";game.player.x=175;game.player.y=480;',
@@ -2352,10 +2352,13 @@ test("LIME P is the twelfth pickup and fires two opposite orbital bullets per ac
   assert.equal(app.eval("game.bullets.every(b=>b.orbiting)"),true);
   assert.equal(app.eval("game.missiles.length"),0);
   assert.ok(Math.abs(app.eval("getFireCooldown()")-.101)<1e-10);
-  assert.ok(Math.abs(app.eval("game.bullets[0].x")-535)<1e-8);
-  assert.ok(Math.abs(app.eval("game.bullets[1].x")-(-185))<1e-8);
-  assert.equal(app.eval("game.bullets[0].power"),1.15);
-  assert.equal(app.eval("game.bullets[1].power"),1.15);
+  assert.equal(app.eval("game.bullets[0].x"),237);
+  assert.equal(app.eval("game.bullets[1].x"),237);
+  assert.equal(app.eval("game.bullets[0].y"),470);
+  assert.equal(app.eval("game.bullets[1].y"),492);
+  assert.equal(app.eval("game.bullets[0].vx"),1100);
+  assert.equal(app.eval("game.bullets[1].vx"),1100);
+  assert.equal(app.eval("game.bullets.every(b=>b.r===9 && b.power===1.15 && b.orbitRadius<360)"),true);
   app.eval("Math.random=()=>.99");
   assert.equal(app.eval("randomPowerType()"),"P_LIME");
   app.eval("game.powerups=[];dropPlayerPowerOnHit()");
@@ -2364,7 +2367,21 @@ test("LIME P is the twelfth pickup and fires two opposite orbital bullets per ac
   assert.ok(labels.includes("LIME ORBIT  R360"));
 });
 
-test("LIME bullets stay at radius 360 while player moves, with no forward drift",()=>{
+test("LIME is rendered as the SAME normal rectangular projectile as BLUE, not a diamond orb", () => {
+  const app=boot();
+  const rects=app.eval([
+    '(() => {',
+    'game.weaponType="lime";firePlayerWeapons();',
+    'const drawn=[];',
+    'ctx.fillRect=(x,y,w,h)=>drawn.push({x,y,w,h,c:ctx.fillStyle});',
+    'drawPlayerBullets();return drawn;',
+    '})()'
+  ].join("\n"));
+  assert.equal(rects.filter(r=>r.c==="#eefcff"&&r.w===34&&r.h===10).length,2);
+  assert.equal(rects.filter(r=>r.c==="#d1f74c"&&r.h===4).length,2);
+});
+
+test("LIME normal shots curve outward and only subsequently join radius 360 while following player", () => {
   const app=boot();
   app.eval([
     'game.state="PLAYING";game.weaponType="lime";',
@@ -2372,79 +2389,103 @@ test("LIME bullets stay at radius 360 while player moves, with no forward drift"
     'game.player.x=270;game.player.y=550;updatePlayerBullets(.1);'
   ].join("\n"));
   assert.equal(app.eval("game.bullets.length"),2);
-  assert.equal(app.eval("game.bullets.every(b=>Math.abs(Math.hypot(b.x-game.player.x,b.y-game.player.y)-360)<1e-8)"),true);
+  assert.equal(app.eval("game.bullets.every(b=>b.orbitRadius>150&&b.orbitRadius<360)"),true);
+  assert.equal(app.eval("game.bullets.every(b=>Math.abs(Math.hypot(b.x-game.player.x,b.y-game.player.y)-b.orbitRadius)<1e-8)"),true);
   assert.ok(app.eval("game.bullets[0].y")>550);
-  assert.equal(app.eval("game.bullets[0].vx"),0);
+  assert.ok(app.eval("game.bullets[0].vx")>0);
+  assert.ok(app.eval("game.bullets[0].vy")>0);
+  app.eval('updatePlayerBullets(.4)');
+  assert.equal(app.eval("game.bullets.every(b=>Math.abs(Math.hypot(b.x-game.player.x,b.y-game.player.y)-360)<1e-8)"),true);
 });
 
-test("LIME offscreen orbiters remain alive, unlike ordinary offscreen projectiles",()=>{
-  const app=boot();
-  app.eval([
-    'game.state="PLAYING";game.weaponType="lime";game.player.x=175;',
-    'firePlayerWeapons();updatePlayerBullets(.02);'
-  ].join("\n"));
-  assert.equal(app.eval("game.bullets.length"),2);
-  assert.ok(app.eval("game.bullets[1].x")<0);
-  assert.equal(app.eval("game.bullets.every(b=>b.life>0)"),true);
-  app.eval('updatePlayerBullets(3.3)');
-  assert.equal(app.eval("game.bullets.length"),0);
-});
-
-test("LIME normal orbital bullets hit one enemy and disappear without piercing another",()=>{
+test("LIME first frame does not damage an enemy by spawning directly on the distant ring", () => {
   const app=boot();
   app.eval([
     'game.state="PLAYING";game.weaponType="lime";game.player.x=175;game.player.y=480;',
+    'game.enemies=[{kind:"scout",x:535,y:480,r:28,hp:50,maxHp:50,score:20,color:"#fff",core:"#fff"}];',
+    'firePlayerWeapons();updatePlayerBullets(.01);'
+  ].join("\n"));
+  assert.equal(app.eval("game.bullets.length"),2);
+  assert.equal(app.eval("game.enemies[0].hp"),50);
+  assert.equal(app.eval("game.bullets.every(b=>b.x<300)"),true);
+});
+
+test("LIME offscreen orbiters stay alive on their flight path and expire by active time only", () => {
+  const app=boot();
+  app.eval([
+    'game.state="PLAYING";game.weaponType="lime";game.player.x=175;',
+    'firePlayerWeapons();updatePlayerBullets(1.0);'
+  ].join("\n"));
+  assert.equal(app.eval("game.bullets.length"),2);
+  assert.equal(app.eval("game.bullets.every(b=>b.x<0&&b.life>0)"),true);
+  app.eval("updatePlayerBullets(3.3)");
+  assert.equal(app.eval("game.bullets.length"),0);
+});
+
+test("LIME curving normal bullet hits first swept enemy before reaching orbit, never piercing another", () => {
+  const app=boot();
+  app.eval([
+    'game.state="PLAYING";game.weaponType="lime";game.player.x=175;game.player.y=480;',
+    'firePlayerWeapons();game.bullets=game.bullets.slice(0,1);',
+    'const path=limeRules.step({...game.bullets[0]},game.player,.1);',
+    'const earlier=path[1],later=path.at(-1);',
     'game.enemies=[',
-    ' {kind:"scout",x:535,y:502,r:10,hp:50,maxHp:50,score:20,color:"#fff",core:"#fff"},',
-    ' {kind:"scout",x:535,y:525,r:10,hp:50,maxHp:50,score:20,color:"#fff",core:"#fff"}',
-    '];firePlayerWeapons();game.bullets=game.bullets.slice(0,1);',
-    'updatePlayerBullets(.06);'
+    ' {kind:"scout",x:earlier.toX,y:earlier.toY,r:10,hp:50,maxHp:50,score:20,color:"#fff",core:"#fff"},',
+    ' {kind:"scout",x:later.toX,y:later.toY,r:10,hp:50,maxHp:50,score:20,color:"#fff",core:"#fff"}',
+    '];updatePlayerBullets(.1);'
   ].join("\n"));
   assert.equal(app.eval("game.bullets.length"),0);
   assert.ok(Math.abs(app.eval("game.enemies[0].hp")-48.85)<1e-8);
   assert.equal(app.eval("game.enemies[1].hp"),50);
 });
 
-test("LIME orbital bullets use the usual frontal shield damage path",()=>{
+test("LIME curving normal bullet routes damage through frontal shield", () => {
   const app=boot();
   app.eval([
     'game.state="PLAYING";game.weaponType="lime";game.player.x=175;game.player.y=480;',
+    'firePlayerWeapons();game.bullets=game.bullets.slice(0,1);',
+    'const path=limeRules.step({...game.bullets[0]},game.player,.1);',
     'game.enemies=[enemyBehaviors.initializeEnemy({kind:"shield",',
-    'x:535,y:516,r:34,hp:40,maxHp:40,score:50,color:"#fff",core:"#fff"})];',
-    'firePlayerWeapons();game.bullets=game.bullets.slice(0,1);updatePlayerBullets(.07);'
+    'x:path[2].toX,y:path[2].toY,r:30,hp:40,maxHp:40,score:50,color:"#fff",core:"#fff"})];',
+    'updatePlayerBullets(.1);'
   ].join("\n"));
   assert.equal(app.eval("game.bullets.length"),0);
   assert.ok(Math.abs(app.eval("game.enemies[0].shieldMax-game.enemies[0].shieldHp")-1.15)<1e-8);
   assert.equal(app.eval("game.enemies[0].hp"),40);
 });
 
-test("LIME orbiting bullet hits Boss turret with weak-point multiplier, not hull",()=>{
+test("LIME normal bullet hits Boss turret via weak point before hull", () => {
   const app=boot();
   app.eval([
     'game.state="PLAYING";game.stageMode="BOSS";game.weaponType="lime";',
     'game.player.x=175;game.player.y=480;',
-    'game.boss={active:true,x:650,y:535,rx:70,ry:80,hp:100,maxHp:100,',
+    'firePlayerWeapons();game.bullets=game.bullets.slice(0,1);',
+    'const path=limeRules.step({...game.bullets[0]},game.player,.1),p=path.at(-1);',
+    'game.boss={active:true,x:p.toX+115,y:p.toY,rx:70,ry:80,hp:100,maxHp:100,',
     'parts:[{id:"UPPER TURRET",x:-115,y:0,r:22,hp:100,maxHp:100}],color:"#fff"};',
-    'firePlayerWeapons();game.bullets=game.bullets.slice(0,1);updatePlayerBullets(.07);'
+    'updatePlayerBullets(.1);'
   ].join("\n"));
   assert.equal(app.eval("game.bullets.length"),0);
-  assert.ok(Math.abs(app.eval("game.boss.parts[0].hp")- (100-1.15*bossParts.BALANCE.weakPointDamageScale))<1e-8);
+  assert.ok(Math.abs(app.eval("game.boss.parts[0].hp")-
+    (100-1.15*bossParts.BALANCE.weakPointDamageScale))<1e-8);
   assert.equal(app.eval("game.boss.hp"),100);
 });
 
-test("LIME orbital bullet can collide with Boss hull in absence of turrets",()=>{
+test("LIME normal bullet can hit Boss hull during outward curve before rim", () => {
   const app=boot();
   app.eval([
     'game.state="PLAYING";game.stageMode="BOSS";game.weaponType="lime";',
     'game.player.x=175;game.player.y=480;',
-    'game.boss={active:true,x:535,y:560,rx:70,ry:65,hp:100,maxHp:100,parts:[],color:"#fff"};',
-    'firePlayerWeapons();game.bullets=game.bullets.slice(0,1);updatePlayerBullets(.07);'
+    'firePlayerWeapons();game.bullets=game.bullets.slice(0,1);',
+    'const path=limeRules.step({...game.bullets[0]},game.player,.1),p=path.at(-1);',
+    'game.boss={active:true,x:p.toX+40,y:p.toY,rx:65,ry:60,hp:100,maxHp:100,parts:[],color:"#fff"};',
+    'updatePlayerBullets(.1);'
   ].join("\n"));
   assert.equal(app.eval("game.bullets.length"),0);
   assert.ok(Math.abs(app.eval("game.boss.hp")-98.85)<1e-8);
 });
 
-test("LIME orbital bullets respect 32-cap without deleting bullets from other weapons",()=>{
+test("LIME normal bullets keep a 32-orbit cap without touching other weapon projectiles", () => {
   const app=boot();
   app.eval([
     'game.state="PLAYING";game.weaponType="blue";',
@@ -2455,7 +2496,7 @@ test("LIME orbital bullets respect 32-cap without deleting bullets from other we
   assert.equal(app.eval("game.bullets.filter(b=>!b.orbiting).length"),1);
 });
 
-test("LIME ring HUD and orbit guide are visual-only, unlike GREEN passive area damage",()=>{
+test("LIME ring guide is cosmetic only; the normal bullets, not a passive aura, deal damage", () => {
   const app=boot();
   const visual=app.eval([
     '(() => {',
@@ -2470,7 +2511,7 @@ test("LIME ring HUD and orbit guide are visual-only, unlike GREEN passive area d
   assert.equal(visual.hp,50);
 });
 
-test("LIME already-launched bullets retain orbit path after weapon switching and pause",()=>{
+test("already-fired LIME normal bullets continue orbiting after a color switch; pause freezes flight", () => {
   const app=boot();
   app.eval([
     'game.state="PLAYING";game.weaponType="lime";game.player.x=175;game.player.y=480;',
@@ -2482,7 +2523,7 @@ test("LIME already-launched bullets retain orbit path after weapon switching and
   app.eval('game.state="PAUSED";updatePlaying(2)');
   assert.equal(app.eval("game.bullets[0].orbitAngle"),angle);
   assert.equal(app.eval("game.bullets[0].life"),life);
-  app.eval('game.state="PLAYING";game.player.x=225;updatePlayerBullets(.1)');
+  app.eval('game.state="PLAYING";game.player.x=225;updatePlayerBullets(.5)');
   assert.ok(app.eval("game.bullets[0].orbitAngle")>angle);
   assert.equal(app.eval("game.bullets[0].orbiting"),true);
   assert.ok(Math.abs(app.eval("Math.hypot(game.bullets[0].x-game.player.x,game.bullets[0].y-game.player.y)")-360)<1e-8);

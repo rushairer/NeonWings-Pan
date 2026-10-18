@@ -2336,8 +2336,9 @@ const W = 1280;
             { pinkSpecial: true });
         }
       } else if (type === "lime") {
-        // Two tangential orbiting projectiles, NOT forward-going blue bullets.
-        // Caps apply to orbiting shots only; other weapons' shots stay intact.
+        // Emit two NORMAL starter-grade bullets at the fighter's muzzle.
+        // Their trajectory curves outward onto the radius-360 orbit; nothing
+        // is teleported onto the ring at the moment of firing.
         for (let i = 0; i < limeRules.RULES.bulletsPerVolley; i++) {
           if (game.bullets.length >= LIMITS.playerBullets) break;
           const active = game.bullets.filter(b => b.orbiting).length;
@@ -2345,9 +2346,9 @@ const W = 1280;
             const oldest = game.bullets.findIndex(b => b.orbiting);
             if (oldest >= 0) game.bullets.splice(oldest, 1);
           }
-          const angle = game.t * limeRules.RULES.radiansPerSecond + i * Math.PI;
-          const orbit = limeRules.createShot(game.player, angle);
-          addPlayerShot(orbit.x, orbit.y, 0, 0, orbit.r,
+          const orbit = limeRules.createShot(game.player,
+            limeRules.RULES.muzzleLaneOffsets[i]);
+          addPlayerShot(orbit.x, orbit.y, orbit.vx, orbit.vy, orbit.r,
             limeRules.RULES.normalDamage, "#d1f74c", orbit);
         }
       } else if (type === "brown") {
@@ -3108,12 +3109,14 @@ const W = 1280;
       });
     }
 
-    // Orbiting LIME bullets follow the player's CURRENT center. Arc subdivision
-    // prevents tunnels on long dt, while each shot only damages its first
-    // actual contact (enemy, intact Boss turret or Boss hull).
+    // LIME normal bullets curve outward from the muzzle before circling the
+    // moving player's 360-radius path. Swept sub-segments prevent tunneling
+    // both during their outward flight and after reaching the ring.
     function updateLimeProjectile(b, dt) {
       const segments = limeRules.step(b, game.player, dt);
-      if (b.dead) return;
+      if (!segments.length) return;
+      // A bullet may expire at the end of this update. Its last LIVE swept
+      // segment must still be allowed to collide before it is removed.
       for (const seg of segments) {
         const candidates = [];
         const shot = {
@@ -3801,22 +3804,9 @@ const W = 1280;
         ctx.translate(b.x, b.y);
         ctx.rotate(Math.atan2(b.vy || 0, b.vx || 1));
         const core = b.c || "#5ae8ff";
-        if (b.orbiting) {
-          ctx.shadowColor = "#d8ff4a";
-          ctx.shadowBlur = 22;
-          ctx.rotate(b.orbitAngle + Math.PI/2);
-          ctx.fillStyle = "#cbef3e";
-          ctx.beginPath();
-          ctx.moveTo(0,-14);
-          ctx.lineTo(12,0);
-          ctx.lineTo(0,14);
-          ctx.lineTo(-12,0);
-          ctx.closePath();
-          ctx.fill();
-          rect(-4,-9,8,18,"#f7ffc5");
-          ctx.restore();
-          continue;
-        }
+        // LIME uses the SAME ordinary rectangular bullet sprite as BLUE.
+        // Its only visual difference is the lime-colored core; the *path*,
+        // not the projectile model, curves into an orbit.
         if (b.pinkHoming) {
           ctx.shadowColor = "#ff5dbf";
           ctx.shadowBlur = 18;
@@ -4245,7 +4235,7 @@ const W = 1280;
       ctx.fillRect(0, 0, W, H);
 
       drawText("NEON WINGS", W / 2, 195, 86, "center", "#e7fbff");
-      drawText("NEONWINGS PAN  /  v26.9.0", W / 2, 270, 28, "center", "#98f5ff");
+      drawText("NEONWINGS PAN  /  v26.9.1", W / 2, 270, 28, "center", "#98f5ff");
       drawText(`HIGH SCORE ${String(highScore()).padStart(6, "0")}`, W / 2, 318, 24, "center", "#fff4b7");
 
       drawPlayerShip(W / 2 - 170, 492, -0.20, false, ships[0]);

@@ -7,6 +7,16 @@ Independently maintained from NeonWings commit `5ebcb1de1adb288b41a3c5e387f747bc
 - [x] Configure standalone Pages workflow
 - [ ] Verify site deployment and controller tests on hardware
 
+## v26.9.1 — LIME P normal-bullet launch and smooth orbital trajectory
+
+- [x] Replace instant radius-360 spawned satellite/dia­mond projectile with normal two-lane muzzle bullets
+- [x] Retain normal bullet rendering, hitbox and damage while changing only the flight path
+- [x] Curve smoothly outward from the muzzle onto radius-360 clockwise orbit over 0.48 active seconds
+- [x] Follow the moving player continuously; subdivide both outward motion and circular flight for swept collisions
+- [x] Retain 3.2s flight TTL, 32 orbiting-bullet cap, offscreen return, pause and in-flight weapon-switch behavior
+- [x] Add unit and engine tests for no teleport/no instantaneous perimeter hit, normal sprite, shield/Boss and moving-center trajectory
+- [ ] Real-device review of the curved trajectory, orbit readability and sustained FPS
+
 ## v26.9.0 — BROWN P targeting laser + LIME P orbital shots
 
 - [x] Add BROWN P and LIME P as 11th/12th regular drop colors, with distinct sprites and HUD

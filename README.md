@@ -29,6 +29,17 @@ A controller-first, five-stage, side-scrolling neon arcade shooter built with br
 - **v26.2.0 NeonWings-Pan exclusive:** red P twin-line fire, a 250-projectile ±10° special fan triggered on 10% of eligible volleys, and an independent 0–5 star progression.
 - **v26.3.0 NeonWings-Pan exclusive:** green P retains starter-grade dual shots and adds a passive neon halo dealing area damage to nearby enemies once per second.
 
+## v26.9.1 — LIME P fires NORMAL bullets with curved orbital flight
+
+Fixed the yellow-green (LIME P) weapon's projectile behavior: it now fires **ordinary twin-lane bullets from the player's muzzle** at exactly the same initial positions and base power as starter-grade BLUE P, rather than spawning diamond-shaped orbiting satellites instantly 360 units away. The yellow-green bullet's **flight path** is the special effect, not the bullet model.
+
+- **Launch:** two normal rectangular 9-radius player bullets emerge at `player.x + 62`, `player.y − 10` and `player.y + 12`, facing forward and moving immediately. They keep the normal bullet damage **1.15** before ship/Overdrive scaling and the existing basic twin-shot cadence.
+- **Curved trajectory:** each flying bullet turns clockwise while its distance from the player grows smoothly and continuously. After **0.48 seconds**, it reaches an exact **360-unit radius** around the player's current position and continues circular flight at **2.8 radians/second**. No projectile jumps or teleports to the outer ring upon firing.
+- **Player movement:** interpolate the bullet's tracking center during fighter movement to maintain continuous swept flight; switching weapon colors keeps already-fired LIME bullets in motion. No damage is dealt merely by the orbit guide/ring itself.
+- **Normal collisions:** ordinary bullet geometry, single impact per projectile, shields, Boss hull/turret priorities, kill scoring and Overdrive remain unchanged. Arc segments include the outward curve and full circular portion; the final live path segment remains eligible to hit even when bullet lifetime expires.
+- **Budgets:** preserve 3.2 seconds of active bullet lifetime, maximum 32 simultaneous LIME bullets, and offscreen bullets returning from the circular path. Pause and stage transitions still freeze bullet motion.
+- All other P guns, including the BROWN laser, GREEN passive aura, PINK missile and ORANGE blast, remain unchanged.
+
 ## v26.9.0 — BROWN P auto-lock laser and LIME P radius-360 orbital shots
 
 Two independently implemented P power-ups join the existing ten (now **12 P colors**, each with equal conditional P-drop chance). Both share the same normal hit/shield/Boss scoring pipeline, and leave the original NeonWings repository unchanged.
