@@ -20,6 +20,10 @@ const W = 1280;
     if (!pinkRules) throw new Error("NeonWings-Pan pink P runtime missing");
     const orangeRules = window.NeonOrangeWeapon;
     if (!orangeRules) throw new Error("NeonWings-Pan orange P runtime missing");
+    const brownRules = window.NeonBrownWeapon;
+    if (!brownRules) throw new Error("NeonWings-Pan brown P runtime missing");
+    const limeRules = window.NeonLimeWeapon;
+    if (!limeRules) throw new Error("NeonWings-Pan lime P runtime missing");
     const collision = window.NeonCollision;
     if (!collision) throw new Error("NeonWings collision runtime missing");
     const enemyBehaviors = window.NeonEnemyBehaviors;
@@ -1026,6 +1030,8 @@ const W = 1280;
         redWeapon: redRules.createState(),
         grayWeapon: grayRules.createState(),
         pinkWeapon: pinkRules.createState(),
+        brownWeapon: brownRules.createState(),
+        brownBeam: null,
         greenAura: greenRules.createState(),
         missileSequence: 0,
         enemySequence: 0,
@@ -1766,16 +1772,18 @@ const W = 1280;
 
     function randomPowerType() {
       const r = Math.random();
-      if (r < 1 / 10) return "P_BLUE";
-      if (r < 2 / 10) return "P_PURPLE";
-      if (r < 3 / 10) return "P_YELLOW";
-      if (r < 4 / 10) return "P_RED";
-      if (r < 5 / 10) return "P_GREEN";
-      if (r < 6 / 10) return "P_BLACK";
-      if (r < 7 / 10) return "P_WHITE";
-      if (r < 8 / 10) return "P_GRAY";
-      if (r < 9 / 10) return "P_PINK";
-      return "P_ORANGE";
+      if (r < 1 / 12) return "P_BLUE";
+      if (r < 2 / 12) return "P_PURPLE";
+      if (r < 3 / 12) return "P_YELLOW";
+      if (r < 4 / 12) return "P_RED";
+      if (r < 5 / 12) return "P_GREEN";
+      if (r < 6 / 12) return "P_BLACK";
+      if (r < 7 / 12) return "P_WHITE";
+      if (r < 8 / 12) return "P_GRAY";
+      if (r < 9 / 12) return "P_PINK";
+      if (r < 10 / 12) return "P_ORANGE";
+      if (r < 11 / 12) return "P_BROWN";
+      return "P_LIME";
     }
 
     function weaponMeta(type = game.weaponType) {
@@ -1788,6 +1796,8 @@ const W = 1280;
       if (type === "gray") return { name: "IMPACT", short: "GRAY", color: "#929ba9", core: "#f0f3ff" };
       if (type === "pink") return { name: "SEEKER", short: "PINK", color: "#ff79c8", core: "#fff1fb" };
       if (type === "orange") return { name: "BURST", short: "ORANGE", color: "#ff922e", core: "#fff0d3" };
+      if (type === "brown") return { name: "LOCK LASER", short: "BROWN", color: "#9a6042", core: "#ffe3c4" };
+      if (type === "lime") return { name: "ORBIT", short: "LIME", color: "#c7f542", core: "#fbffd4" };
       return { name: "LINE", short: "BLUE", color: "#38e8ff", core: "#e8fdff" };
     }
 
@@ -1801,6 +1811,8 @@ const W = 1280;
       if (powerupType === "P_GRAY") return "gray";
       if (powerupType === "P_PINK") return "pink";
       if (powerupType === "P_ORANGE") return "orange";
+      if (powerupType === "P_BROWN") return "brown";
+      if (powerupType === "P_LIME") return "lime";
       return "blue";
     }
 
@@ -1814,6 +1826,8 @@ const W = 1280;
       if (game.weaponType === "gray") return "P_GRAY";
       if (game.weaponType === "pink") return "P_PINK";
       if (game.weaponType === "orange") return "P_ORANGE";
+      if (game.weaponType === "brown") return "P_BROWN";
+      if (game.weaponType === "lime") return "P_LIME";
       return "P_BLUE";
     }
 
@@ -1901,6 +1915,8 @@ const W = 1280;
           redRules.switchWeapon(game.redWeapon);
           grayRules.switchWeapon(game.grayWeapon);
           pinkRules.switchWeapon(game.pinkWeapon);
+          brownRules.reset(game.brownWeapon);
+          game.brownBeam = null;
           greenRules.switchWeapon(game.greenAura);
           game.fireCooldown = 0;
         }
@@ -2055,6 +2071,23 @@ const W = 1280;
             ctx.beginPath();
             ctx.arc(0, 0, 28, 0, Math.PI * 2);
             ctx.stroke();
+          } else if (wt === "brown") {
+            // Copper reticle and horizontal beam identify locking laser.
+            ctx.strokeStyle = "#ffe3c4";
+            ctx.lineWidth = 3;
+            ctx.strokeRect(-25, -25, 50, 50);
+            rect(21, -3, 17, 6, "#fff2df");
+            rect(-36, -3, 14, 6, "#bc8865");
+          } else if (wt === "lime") {
+            // Four small orbit markers distinguish this from GREEN's aura P.
+            ctx.strokeStyle = "#f3ffac";
+            ctx.lineWidth = 2.5;
+            ctx.beginPath();
+            ctx.arc(0, 0, 29, 0, Math.PI * 2);
+            ctx.stroke();
+            for (const a of [0, Math.PI / 2, Math.PI, Math.PI * 1.5]) {
+              rect(Math.cos(a) * 29 - 4, Math.sin(a) * 29 - 4, 8, 8, "#efff83");
+            }
           }
         } else if (p.type === "BOMB") {
           // Cyan-white bomb pickup.
@@ -2302,6 +2335,24 @@ const W = 1280;
             pinkRules.RULES.normalDamage * pinkRules.RULES.missileDamageMultiplier,
             { pinkSpecial: true });
         }
+      } else if (type === "lime") {
+        // Two tangential orbiting projectiles, NOT forward-going blue bullets.
+        // Caps apply to orbiting shots only; other weapons' shots stay intact.
+        for (let i = 0; i < limeRules.RULES.bulletsPerVolley; i++) {
+          if (game.bullets.length >= LIMITS.playerBullets) break;
+          const active = game.bullets.filter(b => b.orbiting).length;
+          if (active >= limeRules.RULES.maxOrbitingBullets) {
+            const oldest = game.bullets.findIndex(b => b.orbiting);
+            if (oldest >= 0) game.bullets.splice(oldest, 1);
+          }
+          const angle = game.t * limeRules.RULES.radiansPerSecond + i * Math.PI;
+          const orbit = limeRules.createShot(game.player, angle);
+          addPlayerShot(orbit.x, orbit.y, 0, 0, orbit.r,
+            limeRules.RULES.normalDamage, "#d1f74c", orbit);
+        }
+      } else if (type === "brown") {
+        // Brown laser is continuous while held; no projectile is generated.
+        // Laser targeting/damage lives in updateBrownLaser(), not here.
       } else if (type === "orange") {
         // Starter-grade twin lanes. Every orange bullet detonates on its FIRST
         // swept target contact; the 3x area damage replaces separate direct hit.
@@ -2364,7 +2415,7 @@ const W = 1280;
       if (game.weaponType === "red") return redRules.RULES.volleySeconds;
       if (game.weaponType === "yellow") return Math.max(0.17, 0.25 - game.weaponLevel * 0.025);
       if (game.weaponType === "purple") return Math.max(0.10, 0.145 - game.weaponLevel * 0.012);
-      return Math.max(0.07, 0.115 - (game.weaponType === "green" || game.weaponType === "black" || game.weaponType === "white" || game.weaponType === "gray" || game.weaponType === "pink" || game.weaponType === "orange" ? 1 : game.weaponLevel) * 0.014);
+      return Math.max(0.07, 0.115 - (game.weaponType === "green" || game.weaponType === "black" || game.weaponType === "white" || game.weaponType === "gray" || game.weaponType === "pink" || game.weaponType === "orange" || game.weaponType === "lime" || game.weaponType === "brown" ? 1 : game.weaponLevel) * 0.014);
     }
 
     function findMissileTarget(m) {
@@ -3025,9 +3076,93 @@ const W = 1280;
       );
     }
 
+    // Each BROWN laser tick strikes ONLY the first ray obstruction (an enemy,
+    // intact turret or hull); never a target behind that object.
+    function updateBrownLaser(dt, firing) {
+      const active = firing && game.weaponType === "brown" &&
+        game.state === "PLAYING" &&
+        (game.stageMode === "WAVE" || game.stageMode === "BOSS");
+      if (!active) {
+        game.brownBeam = null;
+        brownRules.reset(game.brownWeapon);
+        return;
+      }
+      const from = {
+        x: game.player.x + brownRules.RULES.muzzleOffset,
+        y: game.player.y
+      };
+      const lock = brownRules.acquire(from, game.enemies, game.boss);
+      game.brownBeam = lock;
+      brownRules.tick(game.brownWeapon, dt, Boolean(lock), () => {
+        if (lock.kind === "enemy") {
+          if (lock.target.hp > 0)
+            damageEnemy(lock.target, brownRules.RULES.normalDamage *
+              combatRules.weaponDamageScale(game.combat, selectedShip().id),
+              lock.x, lock.y, "#c48a5a");
+        } else if (lock.target.hp > 0 && lock.target.active &&
+            (!lock.part || lock.part.hp > 0)) {
+          damageBoss(brownRules.RULES.normalDamage *
+            combatRules.weaponDamageScale(game.combat, selectedShip().id),
+            lock.x, lock.y, "#c48a5a", lock.part);
+        }
+      });
+    }
+
+    // Orbiting LIME bullets follow the player's CURRENT center. Arc subdivision
+    // prevents tunnels on long dt, while each shot only damages its first
+    // actual contact (enemy, intact Boss turret or Boss hull).
+    function updateLimeProjectile(b, dt) {
+      const segments = limeRules.step(b, game.player, dt);
+      if (b.dead) return;
+      for (const seg of segments) {
+        const candidates = [];
+        const shot = {
+          previousX: seg.fromX, previousY: seg.fromY,
+          x: seg.toX, y: seg.toY
+        };
+        for (const e of game.enemies) {
+          if (e.hp <= 0 || !collision.sweptCircleHit(
+            seg.fromX, seg.fromY, seg.toX, seg.toY, e.x, e.y, b.r + e.r
+          )) continue;
+          candidates.push({target:e,part:null,
+            impact:orangeRules.circleImpact(shot,e,b.r+e.r)});
+        }
+        const boss = game.boss;
+        if (boss?.active && boss.hp > 0) {
+          const part = bossParts.findHit(
+            boss, seg.fromX, seg.fromY, seg.toX, seg.toY, b.r
+          );
+          if (part) {
+            candidates.push({target:boss,part,
+              impact:orangeRules.circleImpact(shot,
+                {x:boss.x+part.x,y:boss.y+part.y},b.r+part.r)});
+          } else if (collision.sweptAabbHit(
+            seg.fromX, seg.fromY, seg.toX, seg.toY,
+            boss.x-boss.rx-b.r,boss.x+boss.rx+b.r,
+            boss.y-boss.ry-b.r,boss.y+boss.ry+b.r
+          )) {
+            const impact=orangeRules.bossImpact(shot,boss,b.r);
+            if (impact) candidates.push({target:boss,part:null,impact});
+          }
+        }
+        if (!candidates.length) continue;
+        candidates.sort((a,c)=>a.impact.t-c.impact.t);
+        const hit=candidates[0];
+        b.dead=true;
+        b.x=hit.impact.x;b.y=hit.impact.y;
+        if (hit.target === boss) {
+          damageBoss(b.power,b.x,b.y,b.c,hit.part);
+        } else {
+          damageEnemy(hit.target,b.power,b.x,b.y,b.c);
+        }
+        return;
+      }
+    }
+
     function updatePlayerBullets(dt) {
       for (const b of game.bullets) {
         if (b.dead) continue;
+        if (b.orbiting) continue; // Orbit moves by angular step, not vx * dt.
         b.previousX = b.x;
         b.previousY = b.y;
         if (b.pinkHoming) {
@@ -3043,6 +3178,10 @@ const W = 1280;
 
       for (const b of game.bullets) {
         if (b.dead) continue;
+        if (b.orbiting) {
+          updateLimeProjectile(b, dt);
+          continue;
+        }
         if (b.whiteConductive) {
           updateWhiteProjectile(b);
           continue;
@@ -3104,7 +3243,7 @@ const W = 1280;
         }
       }
 
-      game.bullets = game.bullets.filter(b => !b.dead && b.x < W + 80 && b.y > -90 && b.y < H + 90);
+      game.bullets = game.bullets.filter(b => !b.dead && (b.orbiting ? b.life > 0 : b.x < W + 80 && b.y > -90 && b.y < H + 90));
     }
 
     function updateEnemyBullets(dt) {
@@ -3351,6 +3490,8 @@ const W = 1280;
         game.weaponLevel = 3;
         grayRules.switchWeapon(game.grayWeapon);
         pinkRules.switchWeapon(game.pinkWeapon);
+        brownRules.reset(game.brownWeapon);
+        game.brownBeam = null;
         game.weaponType = "blue";
         game.invuln = 2.5;
         game.combat = combatRules.createState();
@@ -3476,7 +3617,7 @@ const W = 1280;
       }
 
       const firing = readInput(dt);
-      if (firing && game.fireCooldown <= 0) {
+      if (firing && game.weaponType !== "brown" && game.fireCooldown <= 0) {
         // A PINK firing action always emits one guided bolt. The extra guided
         // missile is a 15% independent proc on THAT action, not on hit/frame.
         const pinkVolley = game.weaponType === "pink"
@@ -3534,6 +3675,7 @@ const W = 1280;
 
       updateEnemies(dt);
       updateBoss(dt);
+      updateBrownLaser(dt, firing);
       updatePlayerBullets(dt);
       updateMissiles(dt);
       updateEnemyBullets(dt);
@@ -3601,12 +3743,80 @@ const W = 1280;
       return `rgba(${r},${g},${b},${alpha})`;
     }
 
+    function drawBrownLaser() {
+      const beam = game.brownBeam;
+      if (!beam || game.state !== "PLAYING" ||
+          game.weaponType !== "brown" ||
+          (game.stageMode !== "WAVE" && game.stageMode !== "BOSS")) return;
+      ctx.save();
+      ctx.lineCap = "round";
+      ctx.shadowColor = "#ffcd90";
+      ctx.shadowBlur = 25;
+      ctx.strokeStyle = "rgba(174,103,52,.55)";
+      ctx.lineWidth = 18;
+      ctx.beginPath();
+      ctx.moveTo(beam.startX,beam.startY);
+      ctx.lineTo(beam.x,beam.y);
+      ctx.stroke();
+      ctx.shadowBlur = 12;
+      ctx.strokeStyle = "#f8cb8c";
+      ctx.lineWidth = 7;
+      ctx.beginPath();
+      ctx.moveTo(beam.startX,beam.startY);
+      ctx.lineTo(beam.x,beam.y);
+      ctx.stroke();
+      ctx.shadowBlur = 0;
+      ctx.strokeStyle = "#fff2d8";
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      ctx.moveTo(beam.startX,beam.startY);
+      ctx.lineTo(beam.x,beam.y);
+      ctx.stroke();
+      ctx.fillStyle = "#ffdeac";
+      ctx.beginPath();
+      ctx.arc(beam.x,beam.y,9+Math.sin(game.t*24)*2,0,Math.PI*2);
+      ctx.fill();
+      ctx.restore();
+    }
+
+    function drawLimeOrbitRing() {
+      if (game.weaponType !== "lime" ||
+          (game.stageMode !== "WAVE" && game.stageMode !== "BOSS")) return;
+      ctx.save();
+      ctx.globalAlpha = 0.30 + Math.sin(game.t*4)*0.05;
+      ctx.strokeStyle = "#c7f542";
+      ctx.lineWidth = 2.5;
+      ctx.setLineDash([8,20]);
+      ctx.shadowColor = "#d7ff52";
+      ctx.shadowBlur = 10;
+      ctx.beginPath();
+      ctx.arc(game.player.x,game.player.y,limeRules.RULES.radius,0,Math.PI*2);
+      ctx.stroke();
+      ctx.restore();
+    }
+
     function drawPlayerBullets() {
       for (const b of game.bullets) {
         ctx.save();
         ctx.translate(b.x, b.y);
         ctx.rotate(Math.atan2(b.vy || 0, b.vx || 1));
         const core = b.c || "#5ae8ff";
+        if (b.orbiting) {
+          ctx.shadowColor = "#d8ff4a";
+          ctx.shadowBlur = 22;
+          ctx.rotate(b.orbitAngle + Math.PI/2);
+          ctx.fillStyle = "#cbef3e";
+          ctx.beginPath();
+          ctx.moveTo(0,-14);
+          ctx.lineTo(12,0);
+          ctx.lineTo(0,14);
+          ctx.lineTo(-12,0);
+          ctx.closePath();
+          ctx.fill();
+          rect(-4,-9,8,18,"#f7ffc5");
+          ctx.restore();
+          continue;
+        }
         if (b.pinkHoming) {
           ctx.shadowColor = "#ff5dbf";
           ctx.shadowBlur = 18;
@@ -3872,6 +4082,10 @@ const W = 1280;
         ? "PINK SEEK  2/.4S  15%x25"
         : game.weaponType === "orange"
         ? "ORANGE BLAST  R100  X3"
+        : game.weaponType === "brown"
+        ? "BROWN LOCK LASER"
+        : game.weaponType === "lime"
+        ? "LIME ORBIT  R360"
         : `${meta.short} WEAPON  LV.${game.weaponLevel}`, 656, 80, 21, "left",
         game.weaponType === "black" ? "#9cccff" : meta.color);
 
@@ -4031,7 +4245,7 @@ const W = 1280;
       ctx.fillRect(0, 0, W, H);
 
       drawText("NEON WINGS", W / 2, 195, 86, "center", "#e7fbff");
-      drawText("NEONWINGS PAN  /  v26.8.1", W / 2, 270, 28, "center", "#98f5ff");
+      drawText("NEONWINGS PAN  /  v26.9.0", W / 2, 270, 28, "center", "#98f5ff");
       drawText(`HIGH SCORE ${String(highScore()).padStart(6, "0")}`, W / 2, 318, 24, "center", "#fff4b7");
 
       drawPlayerShip(W / 2 - 170, 492, -0.20, false, ships[0]);
@@ -4357,10 +4571,12 @@ const W = 1280;
       drawBackground(dt);
       worlds.drawHazard(ctx, game.world, W, H);
       drawGreenAura();
+      drawLimeOrbitRing();
       drawOverdriveAura();
       drawBombFlash();
 
       drawPlayerBullets();
+      drawBrownLaser();
       drawMissiles();
       drawEnemyBullets();
 
