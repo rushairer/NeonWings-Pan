@@ -1,4 +1,5 @@
-/* RAINBOW P / PRISM: select ONE inherited weapon behavior per shot.
+/* RAINBOW P / PRISM: launch ONE projectile every 0.4 active seconds;
+ * select ONE inherited weapon behavior per shot.
  * Seven types at exactly 13%, Pink homing missile at exactly 9%.
  * Pure deterministic distribution; combat implementation belongs in game.js.
  */
@@ -6,7 +7,8 @@
   "use strict";
   const RULES=Object.freeze({
     normalDamage:1.15,
-    bulletsPerVolley:2,
+    bulletsPerVolley:1,
+    shotCooldownSeconds:0.4,
     outcomeChances:Object.freeze({
       homing:0.13, slow:0.13, missile:0.09, chain:0.13,
       gray:0.13, conductive:0.13, orbit:0.13, blast:0.13

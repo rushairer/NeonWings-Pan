@@ -197,7 +197,7 @@ test("RAINBOW browser module is versioned, copied to Pages, and syntax checked",
   const html=fs.readFileSync(path.join(__dirname,"../index.html"),"utf8");
   const build=fs.readFileSync(path.join(__dirname,"../scripts/build.mjs"),"utf8");
   const pkg=require("../package.json");
-  assert.equal(pkg.version,"26.12.0");
+  assert.equal(pkg.version,"26.12.1");
   assert.ok(html.includes('src="./src/rainbow-weapon.js?v='+pkg.version+'"'));
   assert.ok(html.indexOf('src="./src/dark-red-weapon.js?')<html.indexOf('src="./src/rainbow-weapon.js?'));
   assert.ok(html.indexOf('src="./src/rainbow-weapon.js?')<html.indexOf('src="./src/game.js?'));

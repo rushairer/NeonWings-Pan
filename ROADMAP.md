@@ -7,6 +7,14 @@ Independently maintained from NeonWings commit `5ebcb1de1adb288b41a3c5e387f747bc
 - [x] Configure standalone Pages workflow
 - [ ] Verify site deployment and controller tests on hardware
 
+## v26.12.1 — RAINBOW P single projectile per 0.4 seconds
+
+- [x] Replace the prior 2-projectile / 0.101s volley with one centered shot every 0.4 active-combat seconds while firing is held
+- [x] Apply identical pacing when the randomized projectile is a replacement PINK missile; retain all eight effect probabilities and inherited combat behavior
+- [x] Preserve pause-safe cooldown, other weapon cadences, all 15 P drops and browser cache busting
+- [x] Cover bullet/missile held-fire cadence, pause, one-projectile emission and all eight abilities with tests
+- [ ] Verify balance and projectile readability on actual handheld/browser hardware
+
 ## v26.12.0 — RAINBOW P / eight randomly inherited projectile abilities
 
 - [x] Add fifteenth multicolor P pickup with distinct eight-color rim, HUD and normal collectible/HP-dropped re-equip behavior
