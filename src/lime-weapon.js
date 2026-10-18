@@ -19,7 +19,7 @@
     bulletsPerVolley: 2,
     // 2 bullets per 0.101 s for 3.2 s = up to 64 live bullets.
     // A cap below that evicts the oldest shots before completing a full orbit.
-    maxOrbitingBullets: 72,
+    maxOrbitingBullets: Infinity, // Unlimited quantity: TTL and hits still reclaim bullets.
     maxSegmentLength: 42,
     maxSegmentsPerStep: 128
   });
