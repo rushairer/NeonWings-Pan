@@ -24,6 +24,8 @@ const W = 1280;
     if (!brownRules) throw new Error("NeonWings-Pan brown P runtime missing");
     const limeRules = window.NeonLimeWeapon;
     if (!limeRules) throw new Error("NeonWings-Pan lime P runtime missing");
+    const skyRules = window.NeonSkyWeapon;
+    if (!skyRules) throw new Error("NeonWings-Pan sky P runtime missing");
     const collision = window.NeonCollision;
     if (!collision) throw new Error("NeonWings collision runtime missing");
     const enemyBehaviors = window.NeonEnemyBehaviors;
@@ -1604,14 +1606,43 @@ const W = 1280;
       ctx.restore();
     }
 
-    function drawGrayStun(labelY) {
-      // Visual indicator only: status damage and hitboxes are unchanged.
+    function drawGrayStun(rx, ry, remainingSeconds) {
+      // Drawn locally within enemy/Boss transforms. Cosmetic ONLY:
+      // no extra hit, timer mutations, particle arrays or control effects.
+      const progress = clamp(remainingSeconds / grayRules.RULES.stunSeconds, 0, 1);
+      if (progress <= 0) return;
+      const pulse = 0.7 + Math.sin(game.t * 20) * 0.15;
+      const ringX = rx + 12, ringY = ry + 12;
       ctx.save();
-      ctx.globalAlpha = 0.75 + Math.sin(game.t * 13) * 0.2;
-      ctx.shadowColor = "#e3ecff";
-      ctx.shadowBlur = 12;
-      drawText("STUN", 0, labelY, 17, "center", "#e9eef7");
+      ctx.globalAlpha = clamp(pulse * (0.45 + 0.55 * progress), 0.15, 1);
+      ctx.shadowColor = "#ffe382";
+      ctx.shadowBlur = 22;
+      ctx.strokeStyle = "#ffd55e";
+      ctx.lineWidth = 5;
+      ctx.beginPath();
+      ctx.ellipse(0, 0, ringX, ringY, 0,
+        -Math.PI / 2, -Math.PI / 2 + 2 * Math.PI * progress);
+      ctx.stroke();
+      ctx.strokeStyle = "#fff8c8";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.ellipse(0, 0, ringX + 6, ringY + 6, 0, 0, 2 * Math.PI);
+      ctx.stroke();
+      for (let i = 0; i < 3; i++) {
+        const angle = game.t * 7 + i * Math.PI * 2 / 3;
+        const x = Math.cos(angle) * (ringX + 8);
+        const y = Math.sin(angle) * (ringY + 8);
+        ctx.fillStyle = i === 0 ? "#ffffff" : "#ffc83e";
+        ctx.beginPath();
+        ctx.moveTo(x, y - 7);
+        ctx.lineTo(x + 5, y);
+        ctx.lineTo(x, y + 7);
+        ctx.lineTo(x - 5, y);
+        ctx.closePath();
+        ctx.fill();
+      }
       ctx.restore();
+      drawText("STUN", 0, -ringY - 26, 18, "center", "#ffeaaa");
     }
 
     function drawEnemy(e) {
@@ -1678,7 +1709,7 @@ const W = 1280;
       }
 
       if (blackRules.isSlowed(e)) drawSlowGlow(e.r + 25, e.r + 21);
-      if (grayRules.isStunned(e)) drawGrayStun(-e.r - 22);
+      if (grayRules.isStunned(e)) drawGrayStun(e.r + 9, e.r + 9, e.grayStunRemaining);
       ctx.restore();
     }
 
@@ -1772,18 +1803,19 @@ const W = 1280;
 
     function randomPowerType() {
       const r = Math.random();
-      if (r < 1 / 12) return "P_BLUE";
-      if (r < 2 / 12) return "P_PURPLE";
-      if (r < 3 / 12) return "P_YELLOW";
-      if (r < 4 / 12) return "P_RED";
-      if (r < 5 / 12) return "P_GREEN";
-      if (r < 6 / 12) return "P_BLACK";
-      if (r < 7 / 12) return "P_WHITE";
-      if (r < 8 / 12) return "P_GRAY";
-      if (r < 9 / 12) return "P_PINK";
-      if (r < 10 / 12) return "P_ORANGE";
-      if (r < 11 / 12) return "P_BROWN";
-      return "P_LIME";
+      if (r < 1 / 13) return "P_BLUE";
+      if (r < 2 / 13) return "P_PURPLE";
+      if (r < 3 / 13) return "P_YELLOW";
+      if (r < 4 / 13) return "P_RED";
+      if (r < 5 / 13) return "P_GREEN";
+      if (r < 6 / 13) return "P_BLACK";
+      if (r < 7 / 13) return "P_WHITE";
+      if (r < 8 / 13) return "P_GRAY";
+      if (r < 9 / 13) return "P_PINK";
+      if (r < 10 / 13) return "P_ORANGE";
+      if (r < 11 / 13) return "P_BROWN";
+      if (r < 12 / 13) return "P_LIME";
+      return "P_SKY";
     }
 
     function weaponMeta(type = game.weaponType) {
@@ -1798,6 +1830,7 @@ const W = 1280;
       if (type === "orange") return { name: "BURST", short: "ORANGE", color: "#ff922e", core: "#fff0d3" };
       if (type === "brown") return { name: "LOCK LASER", short: "BROWN", color: "#9a6042", core: "#ffe3c4" };
       if (type === "lime") return { name: "ORBIT", short: "LIME", color: "#c7f542", core: "#fbffd4" };
+      if (type === "sky") return { name: "ADAPT", short: "SKY", color: "#86d9ff", core: "#e7f9ff" };
       return { name: "LINE", short: "BLUE", color: "#38e8ff", core: "#e8fdff" };
     }
 
@@ -1813,6 +1846,7 @@ const W = 1280;
       if (powerupType === "P_ORANGE") return "orange";
       if (powerupType === "P_BROWN") return "brown";
       if (powerupType === "P_LIME") return "lime";
+      if (powerupType === "P_SKY") return "sky";
       return "blue";
     }
 
@@ -1828,6 +1862,7 @@ const W = 1280;
       if (game.weaponType === "orange") return "P_ORANGE";
       if (game.weaponType === "brown") return "P_BROWN";
       if (game.weaponType === "lime") return "P_LIME";
+      if (game.weaponType === "sky") return "P_SKY";
       return "P_BLUE";
     }
 
@@ -2078,6 +2113,20 @@ const W = 1280;
             ctx.strokeRect(-25, -25, 50, 50);
             rect(21, -3, 17, 6, "#fff2df");
             rect(-36, -3, 14, 6, "#bc8865");
+          } else if (wt === "sky") {
+            // Bright sky-blue chevrons signal adaptive fire vs darker BLUE P.
+            ctx.strokeStyle = "#f0fcff";
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(-28, -23);
+            ctx.lineTo(-19, -31);
+            ctx.lineTo(-9, -23);
+            ctx.moveTo(8, 23);
+            ctx.lineTo(19, 31);
+            ctx.lineTo(28, 23);
+            ctx.stroke();
+            rect(-29, -3, 9, 6, "#e8fbff");
+            rect(20, -3, 9, 6, "#e8fbff");
           } else if (wt === "lime") {
             // Four small orbit markers distinguish this from GREEN's aura P.
             ctx.strokeStyle = "#f3ffac";
@@ -2269,7 +2318,10 @@ const W = 1280;
     }
 
     function addPlayerShot(x, y, vx, vy, r = 8, power = 1, c = "#5ae8ff", extra = {}) {
-      if (game.bullets.length >= LIMITS.playerBullets) return;
+      // LIME's user-requested unlimited quantity never consumes this shared
+      // ordinary-shot cap. TTL and first impact still reclaim every orbiter.
+      if (!extra.orbiting && game.bullets.reduce((n, b) => n + (!b.orbiting ? 1 : 0), 0)
+          >= LIMITS.playerBullets) return;
       game.bullets.push({
         x, y, vx, vy, r,
         power: power * combatRules.weaponDamageScale(game.combat, selectedShip().id),
@@ -2335,17 +2387,23 @@ const W = 1280;
             pinkRules.RULES.normalDamage * pinkRules.RULES.missileDamageMultiplier,
             { pinkSpecial: true });
         }
+      } else if (type === "sky") {
+        // Use actual remaining hearts (game.hp), NOT game.player.hp.
+        // Mode is decided per firing action; already-fired shots keep theirs.
+        const profile = skyRules.mode(skyRules.readHealth(game));
+        for (const lane of skyRules.RULES.muzzleYOffsets) {
+          addPlayerShot(muzzleX, baseY + lane, skyRules.RULES.bulletSpeed, 0, 9,
+            skyRules.RULES.normalDamage * profile.multiplier, "#89dcff", {
+              skyShot: true, skyHoming: profile.homing,
+              blackSlow: profile.slow,
+              ...(profile.homing ? {life: skyRules.RULES.seekingLifetimeSeconds} : {})
+            });
+        }
       } else if (type === "lime") {
         // Emit two NORMAL starter-grade bullets at the fighter's muzzle.
         // Their trajectory curves outward onto the radius-360 orbit; nothing
         // is teleported onto the ring at the moment of firing.
         for (let i = 0; i < limeRules.RULES.bulletsPerVolley; i++) {
-          if (game.bullets.length >= LIMITS.playerBullets) break;
-          const active = game.bullets.filter(b => b.orbiting).length;
-          if (active >= limeRules.RULES.maxOrbitingBullets) {
-            const oldest = game.bullets.findIndex(b => b.orbiting);
-            if (oldest >= 0) game.bullets.splice(oldest, 1);
-          }
           const orbit = limeRules.createShot(game.player,
             limeRules.RULES.muzzleLaneOffsets[i]);
           addPlayerShot(orbit.x, orbit.y, orbit.vx, orbit.vy, orbit.r,
@@ -2861,7 +2919,7 @@ const W = 1280;
       }
 
       if (blackRules.isSlowed(b)) drawSlowGlow(b.rx + 30, b.ry + 25);
-      if (grayRules.isStunned(b)) drawGrayStun(-b.ry - 30);
+      if (grayRules.isStunned(b)) drawGrayStun(b.rx, b.ry, b.grayStunRemaining);
       ctx.restore();
 
       if (b.active) {
@@ -3168,6 +3226,11 @@ const W = 1280;
         if (b.orbiting) continue; // Orbit moves by angular step, not vx * dt.
         b.previousX = b.x;
         b.previousY = b.y;
+        if (b.skyHoming) {
+          b.life -= dt;
+          if (b.life <= 0) { b.dead = true; continue; }
+          skyRules.steer(b, game.enemies, game.boss, dt);
+        }
         if (b.pinkHoming) {
           b.life -= dt;
           if (b.life <= 0) { b.dead = true; continue; }
@@ -3655,8 +3718,9 @@ const W = 1280;
       });
       if (fan.upgraded) {
         sfx("pickupP");
-        showMessage(`RED P  STAR UP  ${game.redWeapon.stars}/5`, 1.6);
-      } else if (fan.completed) {
+        if (game.weaponType === "red")
+          showMessage(`RED P  STAR UP  ${game.redWeapon.stars}/5`, 1.6);
+      } else if (fan.completed && game.weaponType === "red") {
         showMessage("RED P  MAX 5 STARS", 1.0);
       }
 
@@ -3839,6 +3903,16 @@ const W = 1280;
           ctx.shadowBlur = 12;
           rect(-5, -6, 36, 12, "#6c7382");
           rect(-1, -4, 32, 8, "#c6cedb");
+          ctx.restore();
+          continue;
+        }
+        if (b.skyShot) {
+          // SKY keeps its distinct light-blue projectile in BOTH HP modes.
+          // The low-HP shot separately carries the BLACK slow-on-hit marker.
+          ctx.shadowColor = "#a1eaff";
+          ctx.shadowBlur = 15;
+          rect(-4, -5, 34, 10, "#f3fcff");
+          rect(10, -2, 24, 4, "#8ddcff");
           ctx.restore();
           continue;
         }
@@ -4076,6 +4150,8 @@ const W = 1280;
         ? "BROWN LOCK LASER"
         : game.weaponType === "lime"
         ? "LIME ORBIT  R360"
+        : game.weaponType === "sky"
+        ? (game.hp > skyRules.RULES.thresholdHp ? "SKY BOOST  2.5X" : "SKY SEEK  BLACK SLOW")
         : `${meta.short} WEAPON  LV.${game.weaponLevel}`, 656, 80, 21, "left",
         game.weaponType === "black" ? "#9cccff" : meta.color);
 
@@ -4118,8 +4194,8 @@ const W = 1280;
         drawText(`GRAZES ${combat.grazes}  /  BEST ${combat.maxCombo}`, W - 336, H - 37, 19, "left", "#e7fbff");
       }
 
-      // Red star progress is visible even while another weapon is equipped.
-      if (game.weaponType === "red" || game.redWeapon.stars > 0 || game.redWeapon.special) {
+      // Keep red star STATE across weapon swaps, but ONLY render its HUD on RED P.
+      if (game.weaponType === "red") {
         ctx.fillStyle = "rgba(23, 3, 16, .70)";
         ctx.fillRect(552, H - 94, 354, 72);
         const stars = "★".repeat(game.redWeapon.stars) + "☆".repeat(5 - game.redWeapon.stars);
@@ -4235,7 +4311,7 @@ const W = 1280;
       ctx.fillRect(0, 0, W, H);
 
       drawText("NEON WINGS", W / 2, 195, 86, "center", "#e7fbff");
-      drawText("NEONWINGS PAN  /  v26.9.2", W / 2, 270, 28, "center", "#98f5ff");
+      drawText("NEONWINGS PAN  /  v26.10.0", W / 2, 270, 28, "center", "#98f5ff");
       drawText(`HIGH SCORE ${String(highScore()).padStart(6, "0")}`, W / 2, 318, 24, "center", "#fff4b7");
 
       drawPlayerShip(W / 2 - 170, 492, -0.20, false, ships[0]);
