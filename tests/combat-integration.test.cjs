@@ -2276,7 +2276,7 @@ test("BROWN laser is genuinely continuous while FIRE held and deals no damage pa
     'game.state="PLAYING";game.stageMode="WAVE";game.weaponType="brown";',
     'game.spawnTimer=999;game.formationTimer=999;',
     'game.enemies=[{kind:"scout",x:540,y:480,r:30,hp:100,maxHp:100,',
-    'score:30,color:"#fff",core:"#fff",vx:0,vy:0,shootCd:99}];',
+    'score:30,color:"#fff",core:"#fff",vx:0,vy:0,t:0,wave:0,shootCd:99,shootBase:99}];',
     'keys.Space=true;updatePlaying(.06);updatePlaying(.05);'
   ].join("\n"));
   assert.equal(app.eval("game.bullets.length"),0);
@@ -2305,7 +2305,7 @@ test("BROWN laser hits frontal shield normally rather than bypassing the shield"
 test("BROWN laser prioritizes intact Boss turrets, then auto-locks the exposed hull",()=>{
   const app=boot();
   app.eval([
-    'game.state="PLAYING";game.stageMode="BOSS";game.weaponType="brown";',
+    'game.state="PLAYING";game.stageMode="WAVE";game.weaponType="brown";',
     'game.player.x=175;game.player.y=420;',
     'spawnBoss();game.boss.active=true;game.boss.x=1010;game.boss.y=480;',
     'game.boss.parts[0].hp=100;game.boss.parts[0].maxHp=100;',
