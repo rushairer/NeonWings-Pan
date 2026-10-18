@@ -1990,3 +1990,184 @@ test("non-PINK YELLOW missile keeps original 14-unit radius and causes no area b
   assert.equal(app.eval("game.enemies[1].hp"),50);
   assert.ok(Math.abs(app.eval("game.enemies[0].hp")-48)<1e-8);
 });
+
+
+test("ORANGE P is the tenth pickup; two starter-grade shots and its HUD survive any level", () => {
+  const app = boot();
+  app.eval('game.state="PLAYING";game.weaponType="blue";game.weaponLevel=1;firePlayerWeapons()');
+  const blue = app.eval('JSON.stringify(game.bullets.map(b=>({vx:b.vx,vy:b.vy,r:b.r,power:b.power})))');
+  app.eval('game.bullets=[];collectPowerup({type:"P_ORANGE",x:300,y:480,life:1});game.weaponLevel=3;firePlayerWeapons()');
+  assert.equal(app.eval("game.weaponType"),"orange");
+  assert.equal(app.eval("weaponMeta().name"),"BURST");
+  assert.equal(app.eval("game.bullets.length"),2);
+  assert.equal(app.eval('game.bullets.every(b=>b.orangeBlast && b.c==="#ff932e")'),true);
+  assert.equal(app.eval('JSON.stringify(game.bullets.map(b=>({vx:b.vx,vy:b.vy,r:b.r,power:b.power})))'),blue);
+  assert.ok(Math.abs(app.eval("getFireCooldown()")-.101)<1e-10);
+  assert.equal(app.eval("game.missiles.length"),0);
+  app.eval("Math.random=()=>.95");
+  assert.equal(app.eval("randomPowerType()"),"P_ORANGE");
+  app.eval('game.powerups=[];dropPlayerPowerOnHit()');
+  assert.equal(app.eval('game.powerups.at(-1).type'),"P_ORANGE");
+  const labels=app.eval([
+    '(() => {const values=[];ctx.fillText=(label)=>values.push(String(label));',
+    'drawHud();drawPowerups();drawPlayerBullets();return values})()'
+  ].join("\n"));
+  assert.ok(labels.includes("ORANGE BLAST  R100  X3"));
+});
+
+test("ORANGE shot detonates at first swept contact, 3x damage to direct and nearby, no 1x extra", () => {
+  const app=boot();
+  app.eval([
+    'game.state="PLAYING";game.stageMode="WAVE";game.player.x=180;',
+    'game.enemies=[',
+    '{kind:"scout",x:400,y:480,r:20,hp:50,maxHp:50,score:20,color:"#fff",core:"#eee"},',
+    '{kind:"scout",x:480,y:480,r:20,hp:50,maxHp:50,score:20,color:"#fff",core:"#eee"},',
+    '{kind:"scout",x:620,y:480,r:20,hp:50,maxHp:50,score:20,color:"#fff",core:"#eee"}',
+    '];addPlayerShot(300,480,1100,0,9,1.15,"#ff932e",{orangeBlast:true});',
+    'updatePlayerBullets(.32);'
+  ].join("\n"));
+  assert.equal(app.eval("game.bullets.length"),0);
+  assert.ok(Math.abs(app.eval("game.enemies[0].hp")-46.55)<1e-8);
+  assert.ok(Math.abs(app.eval("game.enemies[1].hp")-46.55)<1e-8);
+  assert.equal(app.eval("game.enemies[2].hp"),50);
+  assert.equal(app.eval("game.orangeExplosions.length"),1);
+  assert.ok(Math.abs(app.eval("game.orangeExplosions[0].x")-371)<1e-8);
+  assert.equal(app.eval("game.orangeExplosions[0].y"),480);
+  assert.equal(app.eval("game.orangeExplosions[0].life"),orangeWeapon.RULES.explosionLifetimeSeconds);
+});
+
+test("ORANGE explosion affects an exact-radius edge target but not a target 1 unit farther", () => {
+  const app=boot();
+  app.eval([
+    'game.state="PLAYING";game.player.x=180;',
+    'game.enemies=[',
+    '{kind:"scout",x:400,y:480,r:20,hp:50,maxHp:50,score:20,color:"#fff",core:"#eee"},',
+    '{kind:"scout",x:491,y:480,r:20,hp:50,maxHp:50,score:20,color:"#fff",core:"#eee"},',
+    '{kind:"scout",x:492,y:480,r:20,hp:50,maxHp:50,score:20,color:"#fff",core:"#eee"}',
+    '];addPlayerShot(300,480,1100,0,9,1.15,"#ff932e",{orangeBlast:true});',
+    'updatePlayerBullets(.25);'
+  ].join("\n"));
+  assert.ok(Math.abs(app.eval("game.enemies[1].hp")-46.55)<1e-8);
+  assert.equal(app.eval("game.enemies[2].hp"),50);
+});
+
+test("ORANGE splash damages a nearby Boss hull once when the direct target is another enemy", () => {
+  const app=boot();
+  app.eval([
+    'game.state="PLAYING";game.player.x=180;',
+    'game.enemies=[{kind:"scout",x:400,y:480,r:20,hp:50,maxHp:50,score:20,color:"#fff",core:"#eee"}];',
+    'game.boss={active:true,x:620,y:480,rx:150,ry:80,hp:100,maxHp:100,parts:[],color:"#fff"};',
+    'addPlayerShot(300,480,1100,0,9,1.15,"#ff932e",{orangeBlast:true});',
+    'updatePlayerBullets(.32);'
+  ].join("\n"));
+  assert.ok(Math.abs(app.eval("game.enemies[0].hp")-46.55)<1e-8);
+  assert.ok(Math.abs(app.eval("game.boss.hp")-96.55)<1e-8);
+  assert.equal(app.eval("game.orangeExplosions.length"),1);
+});
+
+test("ORANGE directly hitting Boss hull does 3x once and hits nearby off-lane enemies", () => {
+  const app=boot();
+  app.eval([
+    'game.state="PLAYING";game.player.x=180;',
+    'game.boss={active:true,x:600,y:480,rx:100,ry:80,hp:100,maxHp:100,parts:[],color:"#fff"};',
+    'game.enemies=[{kind:"scout",x:530,y:575,r:20,hp:50,maxHp:50,score:20,color:"#fff",core:"#eee"}];',
+    'addPlayerShot(300,480,1100,0,9,1.15,"#ff932e",{orangeBlast:true});',
+    'updatePlayerBullets(.32);'
+  ].join("\n"));
+  assert.ok(Math.abs(app.eval("game.boss.hp")-96.55)<1e-8);
+  assert.ok(Math.abs(app.eval("game.enemies[0].hp")-46.55)<1e-8);
+  assert.equal(app.eval("game.orangeExplosions.length"),1);
+  assert.ok(Math.abs(app.eval("game.orangeExplosions[0].x")-491)<1e-8);
+});
+
+test("ORANGE Boss turret hit uses 3x base shot damage through weak point, not Boss hull", () => {
+  const app=boot();
+  app.eval([
+    'game.state="PLAYING";game.stageMode="WAVE";game.player.x=180;',
+    'spawnBoss();game.boss.active=true;game.boss.x=1010;game.boss.y=480;',
+    'const part=game.boss.parts[0];part.hp=100;part.maxHp=100;',
+    'const tx=game.boss.x+part.x,ty=game.boss.y+part.y;',
+    'game.enemies=[{kind:"scout",x:tx,y:ty+70,r:25,hp:50,maxHp:50,score:20,color:"#fff",core:"#eee"}];',
+    'addPlayerShot(tx-160,ty,1200,0,9,1.15,"#ff932e",{orangeBlast:true});',
+    'updatePlayerBullets(.15);'
+  ].join("\n"));
+  const turretLoss=app.eval("game.boss.parts[0].maxHp-game.boss.parts[0].hp");
+  assert.ok(Math.abs(turretLoss-1.15*3*bossParts.BALANCE.weakPointDamageScale)<1e-8);
+  assert.equal(app.eval("game.boss.hp"),app.eval("game.boss.maxHp"));
+  assert.ok(Math.abs(app.eval("game.enemies[0].hp")-46.55)<1e-8);
+});
+
+test("ORANGE shield absorbs 3x explosion damage with no extra direct hit", () => {
+  const app=boot();
+  app.eval([
+    'game.state="PLAYING";game.player.x=180;',
+    'game.enemies=[enemyBehaviors.initializeEnemy({kind:"shield",',
+    'x:400,y:480,r:39,hp:20,maxHp:20,score:60,color:"#aaf",core:"#fff"}),',
+    '{kind:"scout",x:450,y:530,r:20,hp:50,maxHp:50,score:20,color:"#fff",core:"#eee"}];',
+    'addPlayerShot(280,480,1100,0,9,1.15,"#ff932e",{orangeBlast:true});',
+    'updatePlayerBullets(.22);'
+  ].join("\n"));
+  assert.ok(Math.abs(app.eval("game.enemies[0].shieldMax-game.enemies[0].shieldHp")-3.45)<1e-8);
+  assert.equal(app.eval("game.enemies[0].hp"),20);
+  assert.ok(Math.abs(app.eval("game.enemies[1].hp")-46.55)<1e-8);
+});
+
+test("ORANGE killing a splitter does not hit its newly spawned children in the same blast", () => {
+  const app=boot();
+  app.eval([
+    'game.state="PLAYING";game.stageMode="WAVE";game.player.x=180;',
+    'game.enemies=[{kind:"splitter",x:400,y:480,r:35,hp:1,maxHp:1,',
+    'score:60,color:"#fff",core:"#eee"}];',
+    'addPlayerShot(280,480,1100,0,9,1.15,"#ff932e",{orangeBlast:true});',
+    'updatePlayerBullets(.22);'
+  ].join("\n"));
+  assert.equal(app.eval("game.stats.kills"),1);
+  assert.equal(app.eval("game.enemies.filter(e=>e.minion).length"),2);
+  assert.equal(app.eval("game.enemies.filter(e=>e.minion).every(e=>e.hp===e.maxHp)"),true);
+  assert.equal(app.eval("game.orangeExplosions.length"),1);
+});
+
+test("ORANGE projectile already in flight still detonates after switching weapons", () => {
+  const app=boot();
+  app.eval([
+    'game.state="PLAYING";game.player.x=180;',
+    'game.enemies=[{kind:"scout",x:500,y:470,r:22,hp:50,maxHp:50,score:20,color:"#fff",core:"#eee"}];',
+    'game.weaponType="orange";firePlayerWeapons();game.bullets=game.bullets.slice(0,1);',
+    'collectPowerup({type:"P_BLUE",x:250,y:480,life:1});',
+    'updatePlayerBullets(.3);'
+  ].join("\n"));
+  assert.equal(app.eval("game.weaponType"),"blue");
+  assert.ok(Math.abs(app.eval("game.enemies[0].hp")-46.55)<1e-8);
+  assert.equal(app.eval("game.orangeExplosions.length"),1);
+});
+
+test("ORANGE blast FX draw at 100 radius, stay capped and expire only in active time", () => {
+  const app=boot();
+  app.eval('for(let i=0;i<75;i++)addOrangeExplosion(100+i,480)');
+  assert.equal(app.eval("game.orangeExplosions.length"),orangeWeapon.RULES.maxExplosionEffects);
+  assert.equal(app.eval("game.orangeExplosions[0].x"),127);
+  const visuals=app.eval([
+    '(() => { const radii=[],strokeColors=[];',
+    'ctx.arc=(_x,_y,r)=>radii.push(r);ctx.stroke=()=>strokeColors.push(ctx.strokeStyle);',
+    'drawOrangeExplosions();return {radii,strokeColors};})()'
+  ].join("\n"));
+  assert.ok(visuals.radii.includes(orangeWeapon.RULES.radius));
+  assert.ok(visuals.strokeColors.includes("#ff9c39"));
+  app.eval('game.state="PAUSED";updatePlaying(2)');
+  assert.equal(app.eval("game.orangeExplosions[0].life"),orangeWeapon.RULES.explosionLifetimeSeconds);
+  app.eval("updateParticles(.36)");
+  assert.equal(app.eval("game.orangeExplosions.length"),0);
+});
+
+test("ORANGE hits never trigger PINK special rockets or GREEN aura and leave other guns unchanged", () => {
+  const app=boot();
+  app.eval('game.state="PLAYING";game.weaponType="orange";game.weaponLevel=3;game.redWeapon.stars=4;firePlayerWeapons()');
+  assert.equal(app.eval("game.bullets.length"),2);
+  assert.equal(app.eval("game.missiles.length"),0);
+  assert.equal(app.eval("game.redWeapon.stars"),4);
+  assert.equal(app.eval("game.bullets.every(b=>b.orangeBlast && !b.pinkHoming && !b.blackSlow && !b.whiteConductive)"),true);
+  app.eval('collectPowerup({type:"P_GREEN",x:350,y:480,life:1})');
+  assert.equal(app.eval("game.weaponType"),"green");
+  assert.equal(app.eval("game.redWeapon.stars"),4);
+  assert.equal(app.eval("game.orangeExplosions.length"),0);
+});
