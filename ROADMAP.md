@@ -7,6 +7,14 @@ Independently maintained from NeonWings commit `5ebcb1de1adb288b41a3c5e387f747bc
 - [x] Configure standalone Pages workflow
 - [ ] Verify site deployment and controller tests on hardware
 
+## v26.7.2 — PINK missile launch probability 10%
+
+- [x] Increase per-firing-action independent special homing missile probability from 5% to 10%
+- [x] Preserve two-shot cadence and 0.4-second rest, black 100-unit missile, 10× direct hit and GREEN-sized pink splash
+- [x] Update in-game weapon HUD and release documentation to match 10%
+- [x] Lock 0.099999 triggers, 0.10 does not, plus the 0.05–0.10 newly unlocked probability range
+- [x] Keep other colors' drop and damage rules unaffected
+
 ## v26.7.1 — Black PINK special rocket and GREEN-sized pink explosion
 
 - [x] Give PINK special missile a black 100 × 100 logical-unit sprite and radius-50 collision, preserving homing and 10× direct damage

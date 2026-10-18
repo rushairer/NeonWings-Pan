@@ -17,25 +17,25 @@ test("one PINK firing action always records one shot; rest follows every two", (
     { special: false, rest: false, cooldown: 0.101 });
 });
 
-test("5% missile roll is independent from rest schedule and has exact boundary", () => {
+test("10% missile roll is independent from rest schedule and has exact boundary", () => {
   const s = pink.createState();
-  assert.equal(pink.RULES.missileChance, 0.05);
+  assert.equal(pink.RULES.missileChance, 0.10);
   assert.equal(pink.RULES.missileDamageMultiplier, 10);
   assert.equal(pink.fire(s, 0.101, () => 0).special, true);
-  assert.equal(pink.fire(s, 0.101, () => 0.049999).special, true);
+  assert.equal(pink.fire(s, 0.101, () => 0.099999).special, true);
   assert.equal(s.volleys, 0); // special proc does not change rest count
-  assert.equal(pink.fire(s, 0.101, () => 0.05).special, false);
+  assert.equal(pink.fire(s, 0.101, () => 0.10).special, false);
   assert.equal(pink.fire(s, 0.101, () => 0.99).special, false);
   assert.equal(s.volleys, 0);
 });
 
-test("10,000 deterministic roll values yield 500 specials at 5%", () => {
+test("10,000 deterministic roll values yield 1000 specials at 10%", () => {
   let count = 0;
   const s = pink.createState();
   for (let i = 0; i < 10_000; i++) {
     if (pink.fire(s, 0.101, () => i / 10_000).special) count++;
   }
-  assert.equal(count, 500);
+  assert.equal(count, 1000);
   assert.equal(s.volleys, 0);
 });
 

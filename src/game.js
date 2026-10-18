@@ -3344,7 +3344,7 @@ const W = 1280;
       const firing = readInput(dt);
       if (firing && game.fireCooldown <= 0) {
         // A PINK firing action always emits one guided bolt. The extra guided
-        // missile is a 5% independent proc on THAT action, not on hit/frame.
+        // missile is a 10% independent proc on THAT action, not on hit/frame.
         const pinkVolley = game.weaponType === "pink"
           ? pinkRules.fire(game.pinkWeapon, getFireCooldown(), Math.random)
           : null;
@@ -3726,7 +3726,7 @@ const W = 1280;
         : game.weaponType === "gray"
         ? "GRAY 20/5/75  1.5X"
         : game.weaponType === "pink"
-        ? "PINK SEEK  2/.4S  5%x10"
+        ? "PINK SEEK  2/.4S  10%x10"
         : `${meta.short} WEAPON  LV.${game.weaponLevel}`, 656, 80, 21, "left",
         game.weaponType === "black" ? "#9cccff" : meta.color);
 
@@ -3886,7 +3886,7 @@ const W = 1280;
       ctx.fillRect(0, 0, W, H);
 
       drawText("NEON WINGS", W / 2, 195, 86, "center", "#e7fbff");
-      drawText("NEONWINGS PAN  /  v26.7.1", W / 2, 270, 28, "center", "#98f5ff");
+      drawText("NEONWINGS PAN  /  v26.7.2", W / 2, 270, 28, "center", "#98f5ff");
       drawText(`HIGH SCORE ${String(highScore()).padStart(6, "0")}`, W / 2, 318, 24, "center", "#fff4b7");
 
       drawPlayerShip(W / 2 - 170, 492, -0.20, false, ships[0]);

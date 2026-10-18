@@ -1634,7 +1634,7 @@ test("PINK P is the ninth pickup: one guided bolt at every level, with distinct 
     'const text=[];ctx.fillText=(s)=>text.push(String(s));drawHud();return text;',
     '})()'
   ].join("\n"));
-  assert.ok(labels.includes("PINK SEEK  2/.4S  5%x10"));
+  assert.ok(labels.includes("PINK SEEK  2/.4S  10%x10"));
   app.eval("drawPlayerBullets(); drawPowerups()");
 });
 
@@ -1663,12 +1663,12 @@ test("PINK main-loop firing always emits one bolt and rests 0.4s after every sec
   assert.ok(Math.abs(app.eval("game.fireCooldown") - 0.101) < 1e-10);
 });
 
-test("PINK 5% proc adds exactly one 10x homing missile to one regular shot", () => {
+test("PINK 10% proc adds exactly one 10x homing missile to one regular shot", () => {
   const app = boot();
   app.eval([
     'game.state="PLAYING";game.stageMode="WAVE";game.weaponType="pink";',
     'game.invuln=100;game.spawnTimer=999;game.formationTimer=999;',
-    'keys.Space=true;Math.random=()=>.049999;',
+    'keys.Space=true;Math.random=()=>.099999;',
     'updatePlaying(.001);'
   ].join("\n"));
   assert.equal(app.eval("game.bullets.length"), 1);
@@ -1678,12 +1678,26 @@ test("PINK 5% proc adds exactly one 10x homing missile to one regular shot", () 
   assert.equal(app.eval("game.missiles[0].r"), pinkWeapon.RULES.specialMissileSize / 2);
   assert.ok(Math.abs(app.eval("game.missiles[0].life") - 4.599) < 1e-9); // Same frame advances the missile by 0.001s.
   assert.equal(app.eval("game.pinkWeapon.volleys"), 1);
-  app.eval("Math.random=()=>.05;game.fireCooldown=0;updatePlaying(.001)");
+  app.eval("Math.random=()=>.10;game.fireCooldown=0;updatePlaying(.001)");
   assert.equal(app.eval("game.bullets.length"), 2);
   assert.equal(app.eval("game.missiles.length"), 1);
   assert.equal(app.eval("game.pinkWeapon.volleys"), 0);
   assert.equal(app.eval("game.fireCooldown"), 0.4);
   app.eval("drawMissiles();drawPlayerBullets()");
+});
+
+test("PINK special missile probability upgrade triggers in the former 5%-10% band", () => {
+  const app = boot();
+  app.eval([
+    'game.state="PLAYING";game.stageMode="WAVE";game.weaponType="pink";',
+    'game.invuln=100;game.spawnTimer=999;game.formationTimer=999;',
+    'keys.Space=true;Math.random=()=>0.075;updatePlaying(.001);'
+  ].join("\n"));
+  assert.equal(app.eval("game.bullets.length"), 1);
+  assert.equal(app.eval("game.missiles.length"), 1);
+  assert.equal(app.eval("game.missiles[0].pinkSpecial"), true);
+  assert.equal(app.eval("game.missiles[0].power / game.bullets[0].power"), 10);
+  assert.equal(app.eval("game.pinkWeapon.volleys"), 1);
 });
 
 test("PINK rocket's 10x damage ratio survives Overdrive and does not become a blue lance", () => {

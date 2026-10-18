@@ -29,6 +29,12 @@ A controller-first, five-stage, side-scrolling neon arcade shooter built with br
 - **v26.2.0 NeonWings-Pan exclusive:** red P twin-line fire, a 250-projectile ±10° special fan triggered on 10% of eligible volleys, and an independent 0–5 star progression.
 - **v26.3.0 NeonWings-Pan exclusive:** green P retains starter-grade dual shots and adds a passive neon halo dealing area damage to nearby enemies once per second.
 
+## v26.7.2 — PINK P missile chance increased to 10%
+
+PINK P now rolls a **10% independent chance per firing action** to launch its additional black homing missile, increased from 5%. The chance is evaluated once for each single-bullet firing action (not on projectile hit or per frame). Each successful roll fires one extra missile, subject to the existing 48-missile pool cap.
+
+The rest of the PINK P weapon is unchanged: one guided ordinary projectile per firing action, 0.4-second rest after two actions, **10× direct missile damage**, black 100-game-unit special missile body, and a 360-radius pink blast dealing **1× ordinary bullet damage** to nearby other targets. The on-screen HUD now displays `PINK SEEK  2/.4S  10%x10`. Other weapon types are unaffected.
+
 ## v26.7.1 — PINK P black 100-unit rocket with 360-radius blast
 
 The 5% PINK P special missile remains a guided 10× direct-damage attack, but the special now has a **black 100 × 100 logical-unit silhouette** (and 100 logical-unit circular collision diameter), visibly outlined in hot pink against the dark playfield. YELLOW missiles remain unchanged.
