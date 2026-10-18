@@ -1,59 +1,139 @@
-const test=require("node:test");
-const assert=require("node:assert/strict");
-const lime=require("../src/lime-weapon.js");
-const R=lime.RULES;
-test("lime shot starts exactly radius 360 from player",()=>{
-  assert.equal(R.radius,360);
-  assert.equal(R.bulletsPerVolley,2);
-  assert.equal(R.maxOrbitingBullets,32);
-  const player={x:175,y:480};
-  for(const a of [0,Math.PI/2,Math.PI,3*Math.PI/2]){
-    const b=lime.createShot(player,a);
-    assert.equal(b.orbiting,true);
-    assert.ok(Math.abs(Math.hypot(b.x-player.x,b.y-player.y)-360)<1e-8);
-    assert.equal(b.life,R.bulletLifetimeSeconds);
-    assert.equal(b.r,R.bulletRadius);
+const test = require("node:test");
+const assert = require("node:assert/strict");
+const lime = require("../src/lime-weapon.js");
+const R = lime.RULES;
+
+function radius(shot, center) {
+  return Math.hypot(shot.x - center.x, shot.y - center.y);
+}
+
+test("LIME emits ordinary twin-lane bullets FROM the muzzle, not at radius 360", () => {
+  const player = { x: 175, y: 480 };
+  assert.equal(R.radius, 360);
+  assert.equal(R.bulletsPerVolley, 2);
+  assert.equal(R.maxOrbitingBullets, 32);
+  assert.equal(R.bulletRadius, 9);
+  for (const lane of R.muzzleLaneOffsets) {
+    const shot = lime.createShot(player, lane);
+    assert.equal(shot.x, 237);
+    assert.equal(shot.y, 480 + lane);
+    assert.equal(shot.vx, 1100);
+    assert.equal(shot.vy, 0);
+    assert.equal(shot.life, R.bulletLifetimeSeconds);
+    assert.equal(shot.orbiting, true);
+    assert.ok(radius(shot, player) < R.radius);
+    assert.equal(shot.orbitRadius, radius(shot, player));
+    assert.equal(shot.orbitAge, 0);
   }
 });
-test("lime orbits move clockwise while following player translation exactly",()=>{
-  const player={x:175,y:480};
-  const b=lime.createShot(player,0);
-  const seg=lime.step(b,player,0.1);
-  assert.ok(seg.length>=1);
-  assert.ok(b.y>480);
-  assert.ok(Math.abs(Math.hypot(b.x-175,b.y-480)-360)<1e-8);
-  const before=b.orbitAngle;
-  lime.step(b,{x:350,y:600},0.05);
-  assert.ok(b.orbitAngle>before);
-  assert.ok(Math.abs(Math.hypot(b.x-350,b.y-600)-360)<1e-8);
+
+test("normal projectile initially flies forward on a curved path, without teleporting", () => {
+  const player = { x: 175, y: 480 };
+  const bullet = lime.createShot(player, -10);
+  const original = { x: bullet.x, y: bullet.y };
+  const segments = lime.step(bullet, player, 0.05);
+  assert.ok(segments.length >= 2);
+  assert.equal(segments[0].fromX, original.x);
+  assert.equal(segments[0].fromY, original.y);
+  assert.ok(bullet.x > original.x);
+  assert.ok(bullet.y > original.y);
+  assert.ok(radius(bullet, player) > radius(original, player));
+  assert.ok(radius(bullet, player) < R.radius);
+  assert.ok(bullet.vx > 0);
+  assert.ok(bullet.vy > 0);
+  assert.ok(Math.hypot(segments[0].toX-original.x, segments[0].toY-original.y)<60);
 });
-test("each orbital arc subdivision stays short for reliable swept hit testing",()=>{
-  const b=lime.createShot({x:300,y:480},0);
-  const segments=lime.step(b,{x:300,y:480},0.3);
-  assert.ok(segments.length>=5);
+
+test("radial travel smoothly settles at exactly 360, then keeps circling", () => {
+  const player = { x: 175, y: 480 };
+  const bullet = lime.createShot(player, -10);
+  let prevRadius = radius(bullet, player);
+  for (let i = 0; i < 10; i++) {
+    lime.step(bullet, player, 0.05);
+    const current = radius(bullet, player);
+    assert.ok(current >= prevRadius - 1e-8);
+    assert.ok(current <= R.radius + 1e-8);
+    prevRadius = current;
+  }
+  assert.ok(Math.abs(radius(bullet, player)-360)<1e-8);
+  const previousAngle = bullet.orbitAngle;
+  lime.step(bullet, player, 0.16);
+  assert.ok(bullet.orbitAngle > previousAngle);
+  assert.ok(Math.abs(radius(bullet, player)-360)<1e-8);
+  assert.ok(Math.abs(bullet.orbitRadius-360)<1e-8);
+  assert.equal(lime.radiusAtAge(62,0),62);
+  assert.equal(lime.radiusAtAge(62,R.outwardSeconds),360);
+  assert.equal(lime.radiusAtAge(62,R.outwardSeconds+0.2),360);
+});
+
+test("moving the player sweeps orbit path continuously instead of teleporting", () => {
+  const player = { x: 175, y: 480 };
+  const bullet = lime.createShot(player,12);
+  lime.step(bullet, player, 0.15);
+  const start = { x: bullet.x, y: bullet.y };
+  const nextPlayer = { x: 240, y: 550 };
+  const segments = lime.step(bullet, nextPlayer, 0.1);
+  assert.equal(segments[0].fromX, start.x);
+  assert.equal(segments[0].fromY, start.y);
+  assert.equal(segments[segments.length-1].toX, bullet.x);
+  assert.equal(segments[segments.length-1].toY, bullet.y);
+  assert.ok(Math.abs(radius(bullet, nextPlayer)-bullet.orbitRadius)<1e-8);
+  assert.ok(segments.length>=3);
+  for(let i=1;i<segments.length;i++){
+    assert.equal(segments[i].fromX,segments[i-1].toX);
+    assert.equal(segments[i].fromY,segments[i-1].toY);
+  }
+  assert.ok(Math.hypot(segments[0].toX-start.x,segments[0].toY-start.y)<R.maxSegmentLength+10);
+});
+
+test("ordinary shots use short swept arc segments to prevent collision tunneling", () => {
+  const player = { x: 300, y: 480 };
+  const bullet = lime.createShot(player,-10);
+  const segments = lime.step(bullet,player,0.3);
+  assert.ok(segments.length>=10);
   for(const s of segments){
-    assert.ok(Math.hypot(s.toX-s.fromX,s.toY-s.fromY)<R.radius*R.maxRadiansPerStep+1e-8);
+    assert.ok(Math.hypot(s.toX-s.fromX,s.toY-s.fromY)<=R.maxSegmentLength+1);
   }
-  assert.ok(Math.abs(Math.hypot(b.x-300,b.y-480)-360)<1e-8);
+  assert.ok(radius(bullet,player)<R.radius);
 });
-test("orbit shots expire after 3.2 active seconds and do not advance during pauses",()=>{
-  const b=lime.createShot({x:175,y:480},0);
-  const life=b.life;
-  assert.deepEqual(lime.step(b,{x:175,y:480},0),[]);
-  assert.equal(b.life,life);
-  lime.step(b,{x:175,y:480},1.6);
-  assert.equal(b.dead,undefined);
-  lime.step(b,{x:175,y:480},1.61);
-  assert.equal(b.dead,true);
+
+test("bullets expire after active time, preserving the last live swept segment", () => {
+  const player={x:175,y:480};
+  const bullet=lime.createShot(player,-10);
+  const originalLife=bullet.life;
+  assert.deepEqual(lime.step(bullet,player,0),[]);
+  assert.equal(bullet.life,originalLife);
+  const first=lime.step(bullet,player,1.6);
+  assert.ok(first.length>0);
+  assert.equal(bullet.dead,undefined);
+  const end=lime.step(bullet,player,1.61);
+  assert.ok(end.length>0);
+  assert.equal(bullet.dead,true);
+  assert.equal(bullet.life,0);
+  assert.deepEqual(lime.step(bullet,player,0.1),[]);
 });
-test("invalid time and absent bullet cannot corrupt orbit geometry",()=>{
+
+test("invalid delta times and absent bullets cannot corrupt firing state", () => {
   const p={x:100,y:480};
-  const b=lime.createShot(p,Math.PI);
-  const x=b.x,life=b.life;
+  const bullet=lime.createShot(p,12);
+  const original={x:bullet.x,y:bullet.y,life:bullet.life};
   for(const dt of [-1,0,NaN,Infinity]){
-    assert.deepEqual(lime.step(b,p,dt),[]);
+    assert.deepEqual(lime.step(bullet,p,dt),[]);
   }
-  assert.equal(b.x,x);
-  assert.equal(b.life,life);
+  assert.deepEqual({x:bullet.x,y:bullet.y,life:bullet.life},original);
   assert.deepEqual(lime.step(null,p,0.1),[]);
+});
+
+test("bullet direction rotates with the path; speed and damage remain normal", () => {
+  const p={x:175,y:480};
+  const bullet=lime.createShot(p,-10);
+  assert.equal(R.normalDamage,1.15);
+  assert.equal(R.bulletRadius,9);
+  assert.equal(bullet.vy,0);
+  lime.step(bullet,p,0.1);
+  assert.ok(bullet.vy>0);
+  assert.ok(bullet.vx>0);
+  lime.step(bullet,p,0.7);
+  assert.ok(bullet.vx<0);
+  assert.ok(bullet.vy>0);
 });
