@@ -7,6 +7,16 @@ Independently maintained from NeonWings commit `5ebcb1de1adb288b41a3c5e387f747bc
 - [x] Configure standalone Pages workflow
 - [ ] Verify site deployment and controller tests on hardware
 
+## v26.10.0 — Live rollout: unlimited LIME, SKY adaptive, GRAY FX, RED-only stars
+
+- [x] Remove LIME's 72-bullet ceiling and exclude orbiting bullets from the ordinary shared 360 projectile quota, keeping 3.2s TTL and one-hit removal
+- [x] Add SKY as 13th P color (distinct icon, equal-share P drop, runtime asset, recoverable dropped weapon and HUD)
+- [x] Read authoritative current `game.hp`: at 4+ HP, 2.5× ordinary SKY bullets; at <=3 HP, 1× seeking SKY bullets with BLACK's exact 5s/50% slow/blue-glow visual
+- [x] Improve GRAY stun feedback with proportionate golden countdown, moving stars and STUN label for Bosses/enemies, preserving 5% chance and 0.5s timer
+- [x] Hide RED star progress and RED special completion star toasts when another weapon is equipped, preserving red star state/ongoing fans
+- [x] Version and copy SKY browser module, update every test fixture, and add health threshold, slow, Boss, orbit-limit, gray render and red HUD tests
+- [ ] Check sustained unlimited orbit visual FPS and SKY/GRAY readability on AYANEO AIR MINI
+
 ## v26.9.2 — LIME full-revolution and cache-visible fix
 
 - [x] Identify 32-bullet cap evicting real LIME shots after ~1.6 seconds during held FIRE

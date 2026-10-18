@@ -2668,7 +2668,7 @@ test("SKY low-health shots steer toward living targets and keep BLACK's exact 5s
     'game.player.x=175;game.player.y=480;',
     'game.enemies=[{kind:"scout",x:480,y:520,r:30,hp:100,maxHp:100,',
     'score:20,color:"#fff",core:"#fff"}];',
-    'firePlayerWeapons();updatePlayerBullets(.17);'
+    'firePlayerWeapons();updatePlayerBullets(.24);'
   ].join("\n"));
   assert.equal(app.eval("game.enemies[0].slowRemaining"),blackWeapon.RULES.duration);
   assert.ok(app.eval("game.enemies[0].hp")<100);

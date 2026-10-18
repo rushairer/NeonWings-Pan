@@ -13,7 +13,7 @@ A controller-first, five-stage, side-scrolling neon arcade shooter built with br
 ## Currently playable
 
 - Five themed stages and five multi-phase bosses; higher-difficulty loops after stage five
-- 11 enemy types, formations, twelve weapon families, collectible power-ups and BOMB
+- 11 enemy types, formations, thirteen weapon families, collectible power-ups and BOMB
 - Gamepad rumble where browser/device supports it, Web Audio synthesis, volume and vibration options
 - Pause, fullscreen, local high score, end-of-run statistics
 - v23 foundation: 4:3 letterbox sizing; auto-pause on background/focus loss or controller disconnection; browser-storage fallback
@@ -28,6 +28,24 @@ A controller-first, five-stage, side-scrolling neon arcade shooter built with br
 - v26.1.1 UI fix: fighter/mode selector uses explicit non-overlapping layout geometry; selected fighter frame, Training hint, ship descriptions and score footer retain safe spacing.
 - **v26.2.0 NeonWings-Pan exclusive:** red P twin-line fire, a 250-projectile ±10° special fan triggered on 10% of eligible volleys, and an independent 0–5 star progression.
 - **v26.3.0 NeonWings-Pan exclusive:** green P retains starter-grade dual shots and adds a passive neon halo dealing area damage to nearby enemies once per second.
+
+## v26.10.0 — Unlimited LIME P, adaptive SKY P, clearer GRAY stun and RED-only star UI
+
+This version integrates the previously unverified offline work into the actual `NeonWings-Pan` engine, includes automated gameplay tests and publishes all code and assets together.
+
+**LIME P (yellow-green): unlimited simultaneous bullets.** There is no hard per-weapon count cap and LIME bullets do not consume the shared 360-slot allowance for ordinary weapons. Continuous firing no longer evicts older orbiting bullets. Each one still originates from the normal twin-lane muzzle, spirals outward into the 360-radius circle, expires after **3.2 active seconds**, or disappears on its first hit. These are natural lifetime/collision rules, **not a quantity limit**. The normal game cadence limits typical live bullets, but direct/test firing is not artificially capped.
+
+**SKY P (light blue): 13th collectible.** Its mode uses the game's actual **remaining `game.hp` health cells**, checked whenever a new volley is fired:
+
+- **4 or more HP:** two standard twin-lane shots, each with **2.5× normal 1.15 damage = 2.875** before fighter/Overdrive scaling. No BLACK slow effect.
+- **3 HP or fewer, including exactly 3:** two **automatically homing** bullets with ordinary **1× damage**. Each applies BLACK P's exact **5-second, 50% movement/attack slow** on a real hit, reusing BLACK's original **blue-glow slow visual** on enemies/Bosses. A seeking bullet has a 3.6-second active-flight lifetime; its mode does not change if HP changes while it is airborne.
+- A unique bright sky-blue collectible icon, twin bullet appearance and a health-reactive HUD identify SKY mode. Every one of the 13 P colors has equal conditional selection probability, without changing the separate HP/BOMB drop logic.
+
+**GRAY P:** the existing **5% chance of a 0.5-second stun** now shows an animated **gold countdown ellipse, three revolving stars and a clear STUN label** above affected enemies/Bosses. This is entirely cosmetic; knockback, damage and CC timers are unchanged and do not advance while paused.
+
+**RED P:** its **five-star progress HUD and star-up notifications appear only while actually equipped with RED P**. Stars earned or lost and an already-started 250-projectile fan still process correctly when other weapons are active. Re-equipping RED P restores the star HUD at the retained level. No star graphics intrude while using SKY or any other P color.
+
+Versioned playable page: https://rushairer.github.io/NeonWings-Pan/?v=26.10.0 (script cache versions match the release).
 
 ## v26.9.2 — Fix LIME orbit truncation and browser script caching
 
