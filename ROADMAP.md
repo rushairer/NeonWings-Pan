@@ -7,6 +7,16 @@ Independently maintained from NeonWings commit `5ebcb1de1adb288b41a3c5e387f747bc
 - [x] Configure standalone Pages workflow
 - [ ] Verify site deployment and controller tests on hardware
 
+## v26.6.2 — GRAY P 20/5/75 and burst-rest timing
+
+- [x] Set knockback to 20%, stun to 5%, amplified damage to 75%, strictly mutually exclusive
+- [x] Shorten stun to 0.5 seconds; retain 100-unit knockback and 1.5× amplified damage
+- [x] Rest 0.4 seconds after every five gray two-bullet volleys; count volleys, not bullets
+- [x] Reset the gray streak when switching weapons; retain the streak when collecting another GRAY P
+- [x] Keep RED stars, other weapons, shield/Boss damage rules and BLACK slow interactions unchanged
+- [x] Add deterministic probability/threshold, stun expiry, burst cadence, pause and swap regression tests
+- [ ] Check real-device gray burst responsiveness and Boss difficulty balance
+
 ## v26.6.1 — GRAY P probability rebalance
 
 - [x] Reduce GRAY knockback chance from 50% to 10%, preserving 100-unit push

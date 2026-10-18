@@ -29,6 +29,16 @@ A controller-first, five-stage, side-scrolling neon arcade shooter built with br
 - **v26.2.0 NeonWings-Pan exclusive:** red P twin-line fire, a 250-projectile ±10° special fan triggered on 10% of eligible volleys, and an independent 0–5 star progression.
 - **v26.3.0 NeonWings-Pan exclusive:** green P retains starter-grade dual shots and adds a passive neon halo dealing area damage to nearby enemies once per second.
 
+## v26.6.2 — GRAY P 20/5/75 and five-volley burst
+
+GRAY P now rolls one of three **mutually exclusive** effects per actual projectile collision:
+
+- **20% knockback:** push the enemy/Boss up to 100 logical game coordinates; the projectile still deals its normal damage.
+- **5% stun:** freeze movement, enemy attacks, carrier escort launches and Boss telegraphs for **0.5 seconds** of active combat time; still deal normal damage. Subsequent stuns refresh to 0.5 seconds. Existing BLACK slow continues expiring independently.
+- **75% amplified damage:** deal **1.5× the original gray projectile's damage**, without knockback or stun. Enemy frontal shields, Boss hulls and turrets use their existing damage pipeline.
+- **Firing cadence:** one firing action emits **two gray bullets** and counts as **one volley**. After **five volleys**, impose a **0.4-second pause** before the next. Between the first four volleys the original starting-grade firing interval remains unchanged. Releasing the fire button or collecting another GRAY P does not reset the streak, but switching weapon colors does; RED P stars are unaffected. Pausing the game freezes the remaining firing cooldown.
+- **Exact probability intervals:** `[0,0.20)` knockback, `[0.20,0.25)` stun and `[0.25,1)` amplified. The gray HUD now reads `GRAY 20/5/75  1.5X`.
+
 ## v26.6.1 — GRAY P 10/10/80 damage rebalance
 
 Each GRAY P projectile now rolls **exactly one** outcome on collision:

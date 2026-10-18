@@ -1308,10 +1308,10 @@ test("GRAY P joins eighth-color drops and fires only baseline paired bullets", (
   assert.equal(app.eval("game.powerups.at(-1).type"),"P_GRAY");
 });
 
-test("GRAY hit with roll under 10% immediately knocks enemy 100 game coordinates", () => {
+test("GRAY hit with roll under 20% immediately knocks enemy 100 game coordinates", () => {
   const app=boot();
   app.eval([
-    'game.state="PLAYING";game.player.x=200;game.player.y=480;Math.random=()=>.09;',
+    'game.state="PLAYING";game.player.x=200;game.player.y=480;Math.random=()=>.19;',
     'game.enemies=[{kind:"scout",x:410,y:480,r:24,hp:40,maxHp:40,',
     'score:40,color:"#fff",core:"#eee",vx:-100,vy:0,shootCd:99,shootBase:99,t:0,wave:0}];',
     'addPlayerShot(300,480,1100,0,9,1.15,"#abb3c0",{grayImpact:true});updatePlayerBullets(.12);'
@@ -1322,16 +1322,16 @@ test("GRAY hit with roll under 10% immediately knocks enemy 100 game coordinates
   assert.equal(app.eval("game.bullets.length"),0);
 });
 
-test("GRAY hit with roll between 10% and 20% freezes movement and ready-to-fire attacks", () => {
-  const app=boot();
+test("GRAY hit with roll between 20% and 25% freezes all attacks and movement for 0.5 seconds", () => {
+  const app = boot();
   app.eval([
-    'game.state="PLAYING";game.player.x=200;game.player.y=480;Math.random=()=>.15;',
+    'game.state="PLAYING";game.player.x=200;game.player.y=480;Math.random=()=>.22;',
     'game.enemies=[{kind:"gunner",x:410,y:480,r:25,hp:40,maxHp:40,',
     'score:40,color:"#fff",core:"#eee",vx:-100,vy:0,shootCd:0,shootBase:1,t:0,wave:0}];',
     'addPlayerShot(300,480,1100,0,9,1.15,"#abb3c0",{grayImpact:true});updatePlayerBullets(.12);'
   ].join("\n"));
-  assert.equal(app.eval("game.enemies[0].grayStunRemaining"),1);
-  app.eval("updateEnemies(.5);updateEnemies(.5)");
+  assert.equal(app.eval("game.enemies[0].grayStunRemaining"),0.5);
+  app.eval("updateEnemies(.25);updateEnemies(.25)");
   assert.equal(app.eval("game.enemies[0].x"),410);
   assert.equal(app.eval("game.enemies[0].t"),0);
   assert.equal(app.eval("game.enemyBullets.length"),0);
@@ -1341,22 +1341,22 @@ test("GRAY hit with roll between 10% and 20% freezes movement and ready-to-fire 
   assert.equal(app.eval("game.enemyBullets.length"),2);
 });
 
-test("GRAY stun and BLACK slow tick independently while carrier escorts cannot spawn", () => {
+test("GRAY 0.5s stun and BLACK slow age independently while carrier escorts cannot spawn", () => {
   const app=boot();
   app.eval([
     'game.state="PLAYING";game.stageMode="WAVE";game.player.x=200;game.player.y=480;',
     'const e=spawnEnemyOfKind("carrier",700,480,{vx:-100,vy:0,shootCd:99});',
-    'e.launchCooldown=0;blackRules.apply(e);grayRules.apply(e,.15);',
-    'updateEnemies(.5);'
+    'e.launchCooldown=0;blackRules.apply(e);grayRules.apply(e,.22);',
+    'updateEnemies(.25);'
   ].join("\n"));
   assert.equal(app.eval("game.enemies.length"),1);
   assert.equal(app.eval("game.enemies[0].x"),700);
   assert.equal(app.eval("game.enemies[0].launchedEscorts"),0);
-  assert.equal(app.eval("game.enemies[0].grayStunRemaining"),0.5);
-  assert.equal(app.eval("game.enemies[0].slowRemaining"),4.5);
-  app.eval("updateEnemies(.5)");
+  assert.equal(app.eval("game.enemies[0].grayStunRemaining"),0.25);
+  assert.equal(app.eval("game.enemies[0].slowRemaining"),4.75);
+  app.eval("updateEnemies(.25)");
   assert.equal(app.eval("game.enemies[0].launchedEscorts"),0);
-  assert.equal(app.eval("game.enemies[0].slowRemaining"),4);
+  assert.equal(app.eval("game.enemies[0].slowRemaining"),4.5);
   app.eval("updateEnemies(.2)");
   assert.equal(app.eval("game.enemies[0].launchedEscorts"),1);
   assert.ok(Math.abs(app.eval("game.enemies[0].x")-690)<1e-8);
@@ -1365,14 +1365,14 @@ test("GRAY stun and BLACK slow tick independently while carrier escorts cannot s
 test("GRAY stun applies on shielded hits without bypassing frontal shield", () => {
   const app=boot();
   app.eval([
-    'game.state="PLAYING";game.player.x=180;game.player.y=480;Math.random=()=>.15;',
+    'game.state="PLAYING";game.player.x=180;game.player.y=480;Math.random=()=>.22;',
     'game.enemies=[enemyBehaviors.initializeEnemy({kind:"shield",x:400,y:480,r:39,',
     'hp:10,maxHp:10,score:50,color:"#aaf",core:"#fff"})];',
     'addPlayerShot(280,480,1100,0,9,1.15,"#abb3c0",{grayImpact:true});updatePlayerBullets(.11);'
   ].join("\n"));
   assert.equal(app.eval("game.enemies[0].hp"),10);
   assert.ok(app.eval("game.enemies[0].shieldHp < game.enemies[0].shieldMax"));
-  assert.equal(app.eval("game.enemies[0].grayStunRemaining"),1);
+  assert.equal(app.eval("game.enemies[0].grayStunRemaining"),0.5);
 });
 
 test("GRAY pushes Boss anchor within its arena or stuns a Boss with a ready attack", () => {
@@ -1380,7 +1380,7 @@ test("GRAY pushes Boss anchor within its arena or stuns a Boss with a ready atta
   push.eval([
     'game.state="PLAYING";game.stageMode="WAVE";spawnBoss();game.boss.active=true;',
     'game.boss.x=1010;game.boss.y=480;game.boss.targetX=1040;',
-    'Math.random=()=>.09;',
+    'Math.random=()=>.19;',
     'addPlayerShot(700,480,1500,0,9,1.15,"#abb3c0",{grayImpact:true});updatePlayerBullets(.25);'
   ].join("\n"));
   assert.equal(push.eval("game.boss.targetX"),1140);
@@ -1389,15 +1389,15 @@ test("GRAY pushes Boss anchor within its arena or stuns a Boss with a ready atta
   stun.eval([
     'game.state="PLAYING";game.stageMode="WAVE";spawnBoss();game.boss.active=true;',
     'game.boss.x=1010;game.boss.y=480;game.boss.targetX=1040;game.boss.shoot=0;',
-    'Math.random=()=>.15;',
+    'Math.random=()=>.22;',
     'addPlayerShot(700,480,1500,0,9,1.15,"#abb3c0",{grayImpact:true});updatePlayerBullets(.25);'
   ].join("\n"));
-  assert.equal(stun.eval("game.boss.grayStunRemaining"),1);
-  stun.eval("updateBoss(.5)");
+  assert.equal(stun.eval("game.boss.grayStunRemaining"),0.5);
+  stun.eval("updateBoss(.25)");
   assert.equal(stun.eval("game.boss.x"),1010);
   assert.equal(stun.eval("game.boss.y"),480);
   assert.equal(stun.eval("game.enemyBullets.length"),0);
-  stun.eval("updateBoss(.5)");
+  stun.eval("updateBoss(.25)");
   assert.equal(stun.eval("game.enemyBullets.length"),0);
   stun.eval("updateBoss(.1)");
   assert.ok(stun.eval("game.boss.t")>0);
@@ -1407,13 +1407,13 @@ test("GRAY bullet retains its on-hit effect after player switches to another wea
   const app=boot();
   app.eval([
     'game.state="PLAYING";game.player.x=200;game.player.y=480;',
-    'game.weaponType="gray";game.redWeapon.stars=3;Math.random=()=>.15;',
+    'game.weaponType="gray";game.redWeapon.stars=3;Math.random=()=>.22;',
     'game.enemies=[{kind:"scout",x:450,y:480,r:28,hp:30,maxHp:30,score:40,color:"#fff",core:"#eee"}];',
     'firePlayerWeapons();collectPowerup({type:"P_RED",x:250,y:480,life:1});updatePlayerBullets(.2);'
   ].join("\n"));
   assert.equal(app.eval("game.weaponType"),"red");
   assert.equal(app.eval("game.redWeapon.stars"),3);
-  assert.equal(app.eval("game.enemies[0].grayStunRemaining"),1);
+  assert.equal(app.eval("game.enemies[0].grayStunRemaining"),0.5);
 });
 
 test("WHITE conduction 60% can propagate its second hop but not repeat victims", () => {
@@ -1458,25 +1458,25 @@ test("GRAY stun label disappears on expiration and stun time freezes during paus
     'game.state="PLAYING";const e=spawnEnemyOfKind("scout",550,470,{vx:0,vy:0});',
     'const labels=[];ctx.fillText=(text)=>labels.push(String(text));',
     'drawEnemy(e);const before=labels.filter(s=>s==="STUN").length;',
-    'grayRules.apply(e,.15);drawEnemy(e);',
+    'grayRules.apply(e,.22);drawEnemy(e);',
     'return {before,after:labels.filter(s=>s==="STUN").length};',
     '})()'
   ].join("\n"));
   assert.equal(visual.before,0);
   assert.equal(visual.after,1);
   app.eval("game.state='PAUSED';updatePlaying(3)");
-  assert.equal(app.eval("game.enemies[0].grayStunRemaining"),1);
+  assert.equal(app.eval("game.enemies[0].grayStunRemaining"),0.5);
   app.eval("game.state='PLAYING';game.stageMode='TRANSITION';game.transition=20;updatePlaying(3)");
-  assert.equal(app.eval("game.enemies[0].grayStunRemaining"),1);
+  assert.equal(app.eval("game.enemies[0].grayStunRemaining"),0.5);
   app.eval("game.stageMode='WAVE';updateEnemies(1)");
   assert.equal(app.eval("game.enemies[0].grayStunRemaining"),0);
 });
 
 
-test("GRAY 80% amplified hit deals exactly 1.5x damage to a normal enemy, with no knockback or stun", () => {
+test("GRAY 75% amplified hit deals exactly 1.5x damage to a normal enemy, with no knockback or stun", () => {
   const app = boot();
   app.eval([
-    'game.state="PLAYING";game.player.x=200;game.player.y=480;Math.random=()=>.2;',
+    'game.state="PLAYING";game.player.x=200;game.player.y=480;Math.random=()=>.25;',
     'game.enemies=[{kind:"scout",x:410,y:480,r:25,hp:40,maxHp:40,',
     'score:40,color:"#fff",core:"#eee",vx:-100,vy:0,shootCd:2,shootBase:2,t:0,wave:0}];',
     'addPlayerShot(300,480,1100,0,9,1.15,"#abb3c0",{grayImpact:true});',
@@ -1544,4 +1544,67 @@ test("GRAY-only multiplier leaves untagged projectiles at normal base damage", (
   ].join("\n"));
   assert.ok(Math.abs(app.eval("game.enemies[0].hp") - (40 - 1.15)) < 1e-9);
   assert.equal(app.eval("game.enemies[0].grayStunRemaining"), undefined);
+});
+
+
+test("GRAY fires five dual-bullet volleys then rests for 0.4s before resuming", () => {
+  const app=boot();
+  app.eval('game.state="PLAYING";game.stageMode="WAVE";game.weaponType="gray";game.spawnTimer=999;game.formationTimer=999;game.invuln=99;keys.Space=true');
+  for(let i=1;i<=4;i++){
+    app.eval("game.fireCooldown=0;updatePlaying(.001)");
+    assert.equal(app.eval("game.grayWeapon.volleys"),i);
+    assert.ok(Math.abs(app.eval("game.fireCooldown-getFireCooldown()"))<1e-9);
+  }
+  app.eval("game.fireCooldown=0;updatePlaying(.001)");
+  assert.equal(app.eval("game.grayWeapon.volleys"),0);
+  assert.equal(app.eval("game.fireCooldown"),0.4);
+  assert.equal(app.eval("game.bullets.filter(b=>b.grayImpact).length"),10);
+  app.eval("updatePlaying(.2);updatePlaying(.199)");
+  assert.equal(app.eval("game.grayWeapon.volleys"),0);
+  assert.equal(app.eval("game.bullets.filter(b=>b.grayImpact).length"),10);
+  app.eval("updatePlaying(.002)");
+  assert.equal(app.eval("game.grayWeapon.volleys"),1);
+  assert.ok(Math.abs(app.eval("game.fireCooldown-getFireCooldown()"))<1e-9);
+  assert.equal(app.eval("game.bullets.filter(b=>b.grayImpact).length"),12);
+});
+
+test("GRAY 0.4s burst rest freezes during pause", () => {
+  const app=boot();
+  app.eval('game.state="PLAYING";game.stageMode="WAVE";game.weaponType="gray";game.spawnTimer=999;game.formationTimer=999;keys.Space=true');
+  for(let i=0;i<5;i++)app.eval("game.fireCooldown=0;updatePlaying(.001)");
+  assert.equal(app.eval("game.fireCooldown"),0.4);
+  app.eval('game.state="PAUSED";updatePlaying(2)');
+  assert.equal(app.eval("game.fireCooldown"),0.4);
+  assert.equal(app.eval("game.grayWeapon.volleys"),0);
+});
+
+test("recollecting GRAY keeps burst streak; switching weapons resets it without losing RED stars", () => {
+  const app=boot();
+  app.eval('game.state="PLAYING";game.stageMode="WAVE";game.weaponType="gray";game.spawnTimer=999;game.formationTimer=999;game.redWeapon.stars=4;keys.Space=true');
+  for(let i=0;i<3;i++)app.eval("game.fireCooldown=0;updatePlaying(.001)");
+  assert.equal(app.eval("game.grayWeapon.volleys"),3);
+  app.eval('collectPowerup({type:"P_GRAY",x:500,y:480,life:1})');
+  assert.equal(app.eval("game.grayWeapon.volleys"),3);
+  app.eval('collectPowerup({type:"P_BLUE",x:500,y:480,life:1})');
+  assert.equal(app.eval("game.grayWeapon.volleys"),0);
+  assert.equal(app.eval("game.redWeapon.stars"),4);
+  assert.ok(Math.abs(app.eval("getFireCooldown()")-Math.max(.07,.115-game.weaponLevel*.014))<1e-9);
+  app.eval('collectPowerup({type:"P_GRAY",x:500,y:480,life:1})');
+  assert.equal(app.eval("game.grayWeapon.volleys"),0);
+  app.eval("updatePlaying(.001)");
+  assert.equal(app.eval("game.grayWeapon.volleys"),1);
+  assert.ok(Math.abs(app.eval("game.fireCooldown-getFireCooldown()"))<1e-9);
+});
+
+test("GRAY burst counters never affect RED star progression or PURPLE shooting cadence", () => {
+  const app=boot();
+  app.eval('game.state="PLAYING";game.stageMode="WAVE";game.weaponType="gray";game.redWeapon.stars=2;game.redWeapon.volleys=3;game.spawnTimer=999;game.formationTimer=999;keys.Space=true');
+  for(let i=0;i<5;i++)app.eval("game.fireCooldown=0;updatePlaying(.001)");
+  assert.equal(app.eval("game.grayWeapon.volleys"),0);
+  assert.equal(app.eval("game.redWeapon.volleys"),3);
+  assert.equal(app.eval("game.redWeapon.stars"),2);
+  app.eval('collectPowerup({type:"P_PURPLE",x:500,y:480,life:1})');
+  assert.equal(app.eval("game.grayWeapon.volleys"),0);
+  assert.ok(Math.abs(app.eval("getFireCooldown()")-Math.max(.10,.145-game.weaponLevel*.012))<1e-9);
+  assert.equal(app.eval("game.redWeapon.stars"),2);
 });

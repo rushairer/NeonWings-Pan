@@ -5,13 +5,35 @@
   "use strict";
 
   const RULES = Object.freeze({
-    knockbackChance: 0.10,
-    stunChance: 0.10,
-    amplifiedDamageChance: 0.80,
+    knockbackChance: 0.20,
+    stunChance: 0.05,
+    amplifiedDamageChance: 0.75,
     amplifiedDamageMultiplier: 1.5,
     knockbackDistance: 100,
-    stunSeconds: 1
+    stunSeconds: 0.5,
+    volleysBeforeRest: 5,
+    restSeconds: 0.4
   });
+
+  // One firing action is a two-bullet volley. Following every fifth volley,
+  // pause for 0.4 seconds, then start a fresh five-volley sequence.
+  function createState() {
+    return { volleys: 0 };
+  }
+
+  function switchWeapon(state) {
+    if (state) state.volleys = 0;
+  }
+
+  function fire(state, regularCooldown) {
+    if (!state || !Number.isFinite(regularCooldown) || regularCooldown <= 0) {
+      throw new TypeError("Gray volley state and regular cooldown are required");
+    }
+    state.volleys += 1;
+    const rest = state.volleys >= RULES.volleysBeforeRest;
+    if (rest) state.volleys = 0;
+    return { rest, cooldown: rest ? RULES.restSeconds : regularCooldown };
+  }
 
   function clamp(value, min, max) {
     return Math.max(min, Math.min(max, value));
@@ -48,7 +70,7 @@
       target.grayStunRemaining = RULES.stunSeconds;
       return { kind: "stun", distance: 0 };
     }
-    // Remaining 80% of hits get normal impact behavior with 1.5x damage.
+    // Remaining 75% of hits get normal impact behavior with 1.5x damage.
     // No knockback or stun is attached in this outcome.
     return { kind: "amplified", distance: 0 };
   }
@@ -57,7 +79,7 @@
     return outcome?.kind === "amplified" ? RULES.amplifiedDamageMultiplier : 1;
   }
 
-  // Consume one second of REAL combat time during which neither movement nor
+  // Consume up to half a second of REAL combat time during which neither movement nor
   // attacks advance. BLACK slow's 5s countdown must still expire during stun;
   // first consume the frozen portion, then advance the remaining portion with
   // the BLACK speed multiplier. No overwriting permanent enemy base stats.
@@ -75,7 +97,7 @@
     return { movementDt: dt - stunned, attackDt: dt - stunned };
   }
 
-  const api = Object.freeze({ RULES, apply, advance, isStunned, damageMultiplier });
+  const api = Object.freeze({ RULES, createState, switchWeapon, fire, apply, advance, isStunned, damageMultiplier });
   root.NeonGrayWeapon = api;
   if (typeof module === "object" && module.exports) module.exports = api;
 })(typeof globalThis !== "undefined" ? globalThis : this);

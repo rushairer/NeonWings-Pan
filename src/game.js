@@ -1018,6 +1018,7 @@ const W = 1280;
         newBadges: [],
         combat: combatRules.createState(),
         redWeapon: redRules.createState(),
+        grayWeapon: grayRules.createState(),
         greenAura: greenRules.createState(),
         missileSequence: 0,
         enemySequence: 0,
@@ -1878,8 +1879,10 @@ const W = 1280;
 
         const nextType = powerupWeaponType(p.type);
         if (game.weaponType !== nextType) {
-          // Only the pending P volley streak resets; red stars and an active fan survive.
+          // Reset red/gray ordinary volley streaks, but preserve RED stars,
+          // active fan attacks, and already launched projectiles.
           redRules.switchWeapon(game.redWeapon);
+          grayRules.switchWeapon(game.grayWeapon);
           greenRules.switchWeapon(game.greenAura);
           game.fireCooldown = 0;
         }
@@ -3095,6 +3098,7 @@ const W = 1280;
         game.hp = game.hpMax;
         game.bomb = game.bombMax;
         game.weaponLevel = 3;
+        grayRules.switchWeapon(game.grayWeapon);
         game.weaponType = "blue";
         game.invuln = 2.5;
         game.combat = combatRules.createState();
@@ -3229,6 +3233,9 @@ const W = 1280;
             sfx("overdriveReady");
             showMessage("RED P  /  SCATTER FAN ENGAGED", 1.1);
           }
+        } else if (game.weaponType === "gray") {
+          // Count each dual-bullet firing action as ONE volley.
+          game.fireCooldown = grayRules.fire(game.grayWeapon, getFireCooldown()).cooldown;
         } else {
           game.fireCooldown = getFireCooldown();
         }
@@ -3553,7 +3560,7 @@ const W = 1280;
         : game.weaponType === "white"
         ? "WHITE ARC 60% 1-3 HOPS"
         : game.weaponType === "gray"
-        ? "GRAY 10/10/80  1.5X"
+        ? "GRAY 20/5/75  1.5X"
         : `${meta.short} WEAPON  LV.${game.weaponLevel}`, 656, 80, 21, "left",
         game.weaponType === "black" ? "#9cccff" : meta.color);
 
@@ -3713,7 +3720,7 @@ const W = 1280;
       ctx.fillRect(0, 0, W, H);
 
       drawText("NEON WINGS", W / 2, 195, 86, "center", "#e7fbff");
-      drawText("NEONWINGS PAN  /  v26.6.1", W / 2, 270, 28, "center", "#98f5ff");
+      drawText("NEONWINGS PAN  /  v26.6.2", W / 2, 270, 28, "center", "#98f5ff");
       drawText(`HIGH SCORE ${String(highScore()).padStart(6, "0")}`, W / 2, 318, 24, "center", "#fff4b7");
 
       drawPlayerShip(W / 2 - 170, 492, -0.20, false, ships[0]);
