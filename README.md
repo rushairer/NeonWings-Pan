@@ -29,6 +29,16 @@ A controller-first, five-stage, side-scrolling neon arcade shooter built with br
 - **v26.2.0 NeonWings-Pan exclusive:** red P twin-line fire, a 250-projectile ±10° special fan triggered on 10% of eligible volleys, and an independent 0–5 star progression.
 - **v26.3.0 NeonWings-Pan exclusive:** green P retains starter-grade dual shots and adds a passive neon halo dealing area damage to nearby enemies once per second.
 
+## v26.8.1 — PINK P special chance 15% and 25× direct missile damage
+
+PINK P now fires its bonus black guided missile with a **15% independent probability per ordinary firing action** (previously 10%), and each successful special deals **25× ordinary PINK bullet damage directly** (previously 10×). At base power 1.15, that is **28.75 direct damage** before normal ship/Overdrive scaling.
+
+- The regular single homing bullet always fires; the 15% special roll happens only once for each firing action, never for each hit or frame.
+- The existing **0.4-second rest after two shots**, black 100-game-unit missile, targeting/retargeting and shared missile cap are unchanged.
+- The 360-radius pink explosion remains exactly **1× ordinary PINK bullet damage** to *other* nearby enemies/Bosses. The directly struck target takes its 25× hit only, not additional 1× splash; this remains true under Overdrive scaling.
+- Existing shield, Boss turret, scoring, already-fired projectiles, other P weapons and pause semantics are unchanged.
+- HUD: `PINK SEEK  2/.4S  15%x25`.
+
 ## v26.8.0 — ORANGE P / BLAST
 
 The tenth power-up color, **ORANGE P**, joins the regular P drop rotation. Its two orange-glowing starter-grade bullets travel straight forward. Each bullet **detonates immediately on its first swept enemy or Boss/turret collision**; it never pierces or chain-reacts.

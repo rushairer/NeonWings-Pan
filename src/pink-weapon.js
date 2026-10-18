@@ -1,4 +1,4 @@
-/* PINK P: single homing bolt with a 10% bonus 10x homing missile.
+/* PINK P: single homing bolt with a 15% bonus 25x homing missile.
  * Independent two-volley burst clock and steering rules (Node/browser).
  */
 (function (root) {
@@ -6,8 +6,8 @@
 
   const RULES = Object.freeze({
     normalDamage: 1.15,
-    missileDamageMultiplier: 10,
-    missileChance: 0.10,
+    missileDamageMultiplier: 25,
+    missileChance: 0.15,
     volleysBeforeRest: 2,
     restSeconds: 0.4,
     bulletSpeed: 940,

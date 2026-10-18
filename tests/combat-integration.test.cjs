@@ -1635,7 +1635,7 @@ test("PINK P is the ninth pickup: one guided bolt at every level, with distinct 
     'const text=[];ctx.fillText=(s)=>text.push(String(s));drawHud();return text;',
     '})()'
   ].join("\n"));
-  assert.ok(labels.includes("PINK SEEK  2/.4S  10%x10"));
+  assert.ok(labels.includes("PINK SEEK  2/.4S  15%x25"));
   app.eval("drawPlayerBullets(); drawPowerups()");
 });
 
@@ -1664,22 +1664,22 @@ test("PINK main-loop firing always emits one bolt and rests 0.4s after every sec
   assert.ok(Math.abs(app.eval("game.fireCooldown") - 0.101) < 1e-10);
 });
 
-test("PINK 10% proc adds exactly one 10x homing missile to one regular shot", () => {
+test("PINK 15% proc adds exactly one 25x homing missile to one regular shot", () => {
   const app = boot();
   app.eval([
     'game.state="PLAYING";game.stageMode="WAVE";game.weaponType="pink";',
     'game.invuln=100;game.spawnTimer=999;game.formationTimer=999;',
-    'keys.Space=true;Math.random=()=>.099999;',
+    'keys.Space=true;Math.random=()=>.149999;',
     'updatePlaying(.001);'
   ].join("\n"));
   assert.equal(app.eval("game.bullets.length"), 1);
   assert.equal(app.eval("game.missiles.length"), 1);
   assert.equal(app.eval("game.missiles[0].pinkSpecial"), true);
-  assert.equal(app.eval("game.missiles[0].power/game.bullets[0].power"), 10);
+  assert.equal(app.eval("game.missiles[0].power/game.bullets[0].power"), 25);
   assert.equal(app.eval("game.missiles[0].r"), pinkWeapon.RULES.specialMissileSize / 2);
   assert.ok(Math.abs(app.eval("game.missiles[0].life") - 4.599) < 1e-9); // Same frame advances the missile by 0.001s.
   assert.equal(app.eval("game.pinkWeapon.volleys"), 1);
-  app.eval("Math.random=()=>.10;game.fireCooldown=0;updatePlaying(.001)");
+  app.eval("Math.random=()=>.15;game.fireCooldown=0;updatePlaying(.001)");
   assert.equal(app.eval("game.bullets.length"), 2);
   assert.equal(app.eval("game.missiles.length"), 1);
   assert.equal(app.eval("game.pinkWeapon.volleys"), 0);
@@ -1687,21 +1687,21 @@ test("PINK 10% proc adds exactly one 10x homing missile to one regular shot", ()
   app.eval("drawMissiles();drawPlayerBullets()");
 });
 
-test("PINK special missile probability upgrade triggers in the former 5%-10% band", () => {
+test("PINK special missile probability upgrade triggers in the former 10%-15% band", () => {
   const app = boot();
   app.eval([
     'game.state="PLAYING";game.stageMode="WAVE";game.weaponType="pink";',
     'game.invuln=100;game.spawnTimer=999;game.formationTimer=999;',
-    'keys.Space=true;Math.random=()=>0.075;updatePlaying(.001);'
+    'keys.Space=true;Math.random=()=>0.125;updatePlaying(.001);'
   ].join("\n"));
   assert.equal(app.eval("game.bullets.length"), 1);
   assert.equal(app.eval("game.missiles.length"), 1);
   assert.equal(app.eval("game.missiles[0].pinkSpecial"), true);
-  assert.equal(app.eval("game.missiles[0].power / game.bullets[0].power"), 10);
+  assert.equal(app.eval("game.missiles[0].power / game.bullets[0].power"), 25);
   assert.equal(app.eval("game.pinkWeapon.volleys"), 1);
 });
 
-test("PINK rocket's 10x damage ratio survives Overdrive and does not become a blue lance", () => {
+test("PINK rocket's 25x damage ratio survives Overdrive and does not become a blue lance", () => {
   const app = boot();
   app.eval([
     'game.state="PLAYING";game.stageMode="WAVE";game.weaponType="pink";',
@@ -1713,7 +1713,7 @@ test("PINK rocket's 10x damage ratio survives Overdrive and does not become a bl
   assert.equal(app.eval("game.bullets[0].lance"), undefined);
   assert.equal(app.eval("game.missiles.length"), 1);
   assert.ok(app.eval("game.bullets[0].power") > 1.15);
-  assert.ok(Math.abs(app.eval("game.missiles[0].power/game.bullets[0].power") - 10) < 1e-9);
+  assert.ok(Math.abs(app.eval("game.missiles[0].power/game.bullets[0].power") - 25) < 1e-9);
 });
 
 test("PINK guided bolt homes toward enemies, reacquires after destruction, and preserves swept collisions", () => {
@@ -1765,8 +1765,8 @@ test("PINK bonus missile shares missile homing, swept enemy collision and kill e
     'firePlayerWeapons(true);updateMissiles(.45);'
   ].join("\n"));
   assert.equal(app.eval("game.missiles.length"), 0);
-  assert.ok(Math.abs(app.eval("game.enemies[0].hp") - 8.5) < 1e-8);
-  assert.equal(app.eval("game.stats.kills"), 0);
+  assert.ok(Math.abs(app.eval("game.enemies[0].hp") - (-8.75)) < 1e-8);
+  assert.equal(app.eval("game.stats.kills"), 1);
 });
 
 test("PINK special missile does not bypass a shield and keeps Boss turret priority", () => {
@@ -1775,7 +1775,7 @@ test("PINK special missile does not bypass a shield and keeps Boss turret priori
     'game.state="PLAYING";game.weaponType="pink";',
     'game.enemies=[enemyBehaviors.initializeEnemy({kind:"shield",x:470,y:480,r:39,',
     'hp:50,maxHp:50,score:50,color:"#aaf",core:"#fff"})];',
-    'addMissile(350,480,1,11.5,{pinkSpecial:true});updateMissiles(.22);'
+    'addMissile(350,480,1,28.75,{pinkSpecial:true});updateMissiles(.22);'
   ].join("\n"));
   assert.ok(shield.eval("game.enemies[0].shieldHp") < shield.eval("game.enemies[0].shieldMax"));
   assert.ok(shield.eval("game.enemies[0].hp") <= 50);
@@ -1787,21 +1787,21 @@ test("PINK special missile does not bypass a shield and keeps Boss turret priori
     'game.boss.x=1010;game.boss.y=480;',
     'const turret=game.boss.parts[0];turret.hp=100;turret.maxHp=100;',
     'const tx=game.boss.x+turret.x,ty=game.boss.y+turret.y;',
-    'addMissile(tx-30,ty,1,11.5,{pinkSpecial:true});updateMissiles(.04);'
+    'addMissile(tx-30,ty,1,28.75,{pinkSpecial:true});updateMissiles(.04);'
   ].join("\n"));
-  assert.ok(Math.abs(boss.eval("game.boss.parts[0].hp") - (100 - 11.5*bossParts.BALANCE.weakPointDamageScale)) < 1e-8);
+  assert.ok(Math.abs(boss.eval("game.boss.parts[0].hp") - (100 - 28.75*bossParts.BALANCE.weakPointDamageScale)) < 1e-8);
   assert.equal(boss.eval("game.boss.hp"), boss.eval("game.boss.maxHp"));
   assert.equal(boss.eval("game.missiles.length"), 0);
 });
 
-test("PINK missile damages Boss hull at ten times direct pink bullet power", () => {
+test("PINK missile damages Boss hull at twenty-five times direct pink bullet power", () => {
   const app = boot();
   app.eval([
     'game.state="PLAYING";game.player.x=175;game.player.y=480;',
     'game.boss={active:true,x:520,y:480,rx:100,ry:80,hp:100,maxHp:100,color:"#fff",parts:[]};',
     'game.weaponType="pink";firePlayerWeapons(true);updateMissiles(.45);'
   ].join("\n"));
-  assert.ok(Math.abs(app.eval("game.boss.hp") - 88.5) < 1e-8);
+  assert.ok(Math.abs(app.eval("game.boss.hp") - 71.25) < 1e-8);
   assert.equal(app.eval("game.missiles.length"), 0);
 });
 
@@ -1851,10 +1851,10 @@ test("PINK bonus missile respects the existing 48 missile pool cap", () => {
 
 test("PINK black special missile is 100 game units across; YELLOW missiles retain their original size", () => {
   const app=boot();
-  app.eval('game.state="PLAYING";addMissile(210,480,1,11.5,{pinkSpecial:true});addMissile(220,500,1,2)');
+  app.eval('game.state="PLAYING";addMissile(210,480,1,28.75,{pinkSpecial:true});addMissile(220,500,1,2)');
   assert.equal(app.eval("game.missiles[0].r"),50);
   assert.equal(app.eval("game.missiles[1].r"),14);
-  assert.equal(app.eval("game.missiles[0].power"),11.5);
+  assert.equal(app.eval("game.missiles[0].power"),28.75);
   assert.equal(app.eval("game.missiles[1].power"),2);
   const visuals=app.eval([
     '(() => {',
@@ -1872,7 +1872,7 @@ test("PINK black special missile is 100 game units across; YELLOW missiles retai
   assert.ok(visuals.rectangles.some(r=>r[0]===-44 && r[1]===22 && r[2]===24 && r[3]===28));
 });
 
-test("PINK missile deals 10x to directly struck enemy, 1x to nearby others and nearby Boss hull", () => {
+test("PINK missile deals 25x to directly struck enemy, 1x to nearby others and nearby Boss hull", () => {
   const app=boot();
   app.eval([
     'game.state="PLAYING";game.stageMode="WAVE";game.player.x=180;game.player.y=480;',
@@ -1881,10 +1881,10 @@ test("PINK missile deals 10x to directly struck enemy, 1x to nearby others and n
     ' {kind:"scout",x:795,y:480,r:25,hp:50,maxHp:50,score:30,color:"#fff",core:"#eee"},',
     ' {kind:"scout",x:900,y:480,r:25,hp:50,maxHp:50,score:30,color:"#fff",core:"#eee"}',
     '];game.boss={active:true,x:735,y:480,rx:90,ry:85,hp:100,maxHp:100,parts:[],color:"#fff"};',
-    'addMissile(350,480,1,11.5,{pinkSpecial:true});updateMissiles(.15);'
+    'addMissile(350,480,1,28.75,{pinkSpecial:true});updateMissiles(.15);'
   ].join("\n"));
   assert.equal(app.eval("game.missiles.length"),0);
-  assert.ok(Math.abs(app.eval("game.enemies[0].hp") - 38.5) < 1e-8);
+  assert.ok(Math.abs(app.eval("game.enemies[0].hp") - 21.25) < 1e-8);
   assert.ok(Math.abs(app.eval("game.enemies[1].hp") - 48.85) < 1e-8);
   assert.equal(app.eval("game.enemies[2].hp"),50);
   assert.ok(Math.abs(app.eval("game.boss.hp") - 98.85) < 1e-8);
@@ -1901,11 +1901,11 @@ test("PINK explosion uses shield absorption for secondary hits instead of bypass
     ' {kind:"scout",x:490,y:480,r:25,hp:50,maxHp:50,score:30,color:"#fff",core:"#eee"},',
     ' enemyBehaviors.initializeEnemy({kind:"shield",x:730,y:480,r:39,hp:30,maxHp:30,',
     '  score:60,color:"#aaf",core:"#fff"})',
-    '];addMissile(350,480,1,11.5,{pinkSpecial:true});updateMissiles(.15);'
+    '];addMissile(350,480,1,28.75,{pinkSpecial:true});updateMissiles(.15);'
   ].join("\n"));
   assert.ok(Math.abs(app.eval("game.enemies[1].shieldMax - game.enemies[1].shieldHp") - 1.15)<1e-8);
   assert.equal(app.eval("game.enemies[1].hp"),30);
-  assert.equal(app.eval("game.enemies[0].hp"),38.5);
+  assert.equal(app.eval("game.enemies[0].hp"),21.25);
 });
 
 test("PINK missile directly hitting the Boss hull splashes other enemies without double-damaging Boss", () => {
@@ -1915,10 +1915,10 @@ test("PINK missile directly hitting the Boss hull splashes other enemies without
     'game.boss={active:true,x:540,y:480,rx:100,ry:80,hp:100,maxHp:100,parts:[],color:"#fff"};',
     'game.enemies=[{kind:"scout",x:750,y:640,r:25,hp:50,maxHp:50,',
     'score:30,color:"#fff",core:"#eee"}];',
-    'addMissile(350,480,1,11.5,{pinkSpecial:true});updateMissiles(.20);'
+    'addMissile(350,480,1,28.75,{pinkSpecial:true});updateMissiles(.20);'
   ].join("\n"));
   assert.equal(app.eval("game.missiles.length"),0);
-  assert.ok(Math.abs(app.eval("game.boss.hp") - 88.5) < 1e-8);
+  assert.ok(Math.abs(app.eval("game.boss.hp") - 71.25) < 1e-8);
   assert.ok(Math.abs(app.eval("game.enemies[0].hp") - 48.85) < 1e-8);
   assert.equal(app.eval("game.pinkExplosions.length"),1);
 });
@@ -1932,21 +1932,21 @@ test("PINK missile striking Boss turret maintains turret priority and only other
     'const tx=game.boss.x+turret.x,ty=game.boss.y+turret.y;',
     'game.enemies=[{kind:"scout",x:tx,y:ty+130,r:25,hp:50,maxHp:50,',
     'score:30,color:"#fff",core:"#eee"}];',
-    'addMissile(tx-30,ty,1,11.5,{pinkSpecial:true});updateMissiles(.04);'
+    'addMissile(tx-30,ty,1,28.75,{pinkSpecial:true});updateMissiles(.04);'
   ].join("\n"));
   assert.equal(app.eval("game.missiles.length"),0);
-  assert.ok(Math.abs(app.eval("game.boss.parts[0].hp")-(100-11.5*bossParts.BALANCE.weakPointDamageScale))<1e-8);
+  assert.ok(Math.abs(app.eval("game.boss.parts[0].hp")-(100-28.75*bossParts.BALANCE.weakPointDamageScale))<1e-8);
   assert.equal(app.eval("game.boss.hp"),app.eval("game.boss.maxHp"));
   assert.ok(Math.abs(app.eval("game.enemies[0].hp")-48.85)<1e-8);
 });
 
-test("PINK rocket detonation cannot splash newly split minions spawned by its 10x kill", () => {
+test("PINK rocket detonation cannot splash newly split minions spawned by its 25x kill", () => {
   const app=boot();
   app.eval([
     'game.state="PLAYING";game.stageMode="WAVE";game.player.x=180;',
     'game.enemies=[{kind:"splitter",x:490,y:480,r:35,hp:1,maxHp:1,',
     'score:60,color:"#fff",core:"#eee"}];',
-    'addMissile(350,480,1,11.5,{pinkSpecial:true});updateMissiles(.15);'
+    'addMissile(350,480,1,28.75,{pinkSpecial:true});updateMissiles(.15);'
   ].join("\n"));
   assert.equal(app.eval("game.stats.kills"),1);
   assert.equal(app.eval("game.enemies.filter(e=>e.minion).length"),2);
@@ -2170,4 +2170,40 @@ test("ORANGE hits never trigger PINK special rockets or GREEN aura and leave oth
   assert.equal(app.eval("game.weaponType"),"green");
   assert.equal(app.eval("game.redWeapon.stars"),4);
   assert.equal(app.eval("game.orangeExplosions.length"),0);
+});
+
+
+test("PINK 25x impact against enemy still splashes only 1x into adjacent shield", () => {
+  const app = boot();
+  app.eval([
+    'game.state="PLAYING";game.stageMode="WAVE";game.player.x=180;',
+    'game.enemies=[',
+    ' {kind:"scout",x:490,y:480,r:25,hp:60,maxHp:60,score:30,color:"#fff",core:"#eee"},',
+    ' enemyBehaviors.initializeEnemy({kind:"shield",x:730,y:480,r:39,',
+    '  hp:40,maxHp:40,score:60,color:"#aaf",core:"#fff"})',
+    '];addMissile(350,480,1,28.75,{pinkSpecial:true});updateMissiles(.15);'
+  ].join("\n"));
+  assert.equal(app.eval("game.missiles.length"), 0);
+  assert.ok(Math.abs(app.eval("game.enemies[0].hp") - 31.25) < 1e-9);
+  assert.ok(Math.abs(app.eval("game.enemies[1].shieldMax-game.enemies[1].shieldHp") - 1.15) < 1e-9);
+  assert.equal(app.eval("game.enemies[1].hp"), 40);
+  assert.equal(app.eval("game.pinkExplosions.length"), 1);
+});
+
+test("PINK 15% bonus special retains 25x power and tracking after switching to ORANGE P", () => {
+  const app = boot();
+  app.eval([
+    'game.state="PLAYING";game.stageMode="WAVE";game.weaponType="pink";',
+    'game.player.x=175;game.player.y=480;game.spawnTimer=999;',
+    'game.formationTimer=999;keys.Space=true;Math.random=()=>0.125;',
+    'updatePlaying(.001);keys.Space=false;',
+    'collectPowerup({type:"P_ORANGE",x:350,y:480,life:1});'
+  ].join("\n"));
+  assert.equal(app.eval("game.weaponType"), "orange");
+  assert.equal(app.eval("game.missiles.length"), 1);
+  assert.equal(app.eval("game.missiles[0].pinkSpecial"), true);
+  assert.ok(Math.abs(app.eval("game.missiles[0].power / game.bullets[0].power") - 25) < 1e-9);
+  app.eval('game.enemies=[{kind:"scout",x:480,y:465,r:35,hp:100,maxHp:100,score:50,color:"#fff",core:"#eee"}];updateMissiles(.45)');
+  assert.equal(app.eval("game.missiles.length"), 0);
+  assert.ok(Math.abs(app.eval("game.enemies[0].hp") - 71.25) < 1e-8);
 });

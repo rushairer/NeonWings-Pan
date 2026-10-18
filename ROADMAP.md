@@ -7,6 +7,16 @@ Independently maintained from NeonWings commit `5ebcb1de1adb288b41a3c5e387f747bc
 - [x] Configure standalone Pages workflow
 - [ ] Verify site deployment and controller tests on hardware
 
+## v26.8.1 — PINK P 15% chance / 25× direct missile damage
+
+- [x] Increase independent per-shot PINK homing missile chance from 10% to 15%
+- [x] Increase the direct missile hit from 10× to 25× normal PINK bullet damage (28.75 unscaled)
+- [x] Preserve radius-360 PINK blast damage at **1×** normal bullet strength, including fighter/Overdrive scaling
+- [x] Preserve two shots then 0.4-second rest, 100-unit black missile, shielding, Boss turret priority and persistent in-flight specials
+- [x] Test 0.149999 hit / 0.15 miss, deterministic 1500-per-10k distribution, 10%-15% unlocked band and 25×/1× split
+- [x] Test directly impacted enemy and Boss, nearby shield, weapon swap, and all existing Orange/other weapon regressions
+- [ ] Real-device difficulty balance and special-FX FPS review
+
 ## v26.8.0 — ORANGE P on-hit area blast
 
 - [x] Add tenth ORANGE P pickup, two vivid orange baseline-grade shots, clear HUD and equal-share P drop routing

@@ -17,35 +17,35 @@ test("one PINK firing action always records one shot; rest follows every two", (
     { special: false, rest: false, cooldown: 0.101 });
 });
 
-test("10% missile roll is independent from rest schedule and has exact boundary", () => {
+test("15% missile roll is independent from rest schedule and has exact boundary", () => {
   const s = pink.createState();
-  assert.equal(pink.RULES.missileChance, 0.10);
-  assert.equal(pink.RULES.missileDamageMultiplier, 10);
+  assert.equal(pink.RULES.missileChance, 0.15);
+  assert.equal(pink.RULES.missileDamageMultiplier, 25);
   assert.equal(pink.fire(s, 0.101, () => 0).special, true);
-  assert.equal(pink.fire(s, 0.101, () => 0.099999).special, true);
+  assert.equal(pink.fire(s, 0.101, () => 0.149999).special, true);
   assert.equal(s.volleys, 0); // special proc does not change rest count
-  assert.equal(pink.fire(s, 0.101, () => 0.10).special, false);
+  assert.equal(pink.fire(s, 0.101, () => 0.15).special, false);
   assert.equal(pink.fire(s, 0.101, () => 0.99).special, false);
   assert.equal(s.volleys, 0);
 });
 
-test("10,000 deterministic roll values yield 1000 specials at 10%", () => {
+test("10,000 deterministic roll values yield 1500 specials at 15%", () => {
   let count = 0;
   const s = pink.createState();
   for (let i = 0; i < 10_000; i++) {
     if (pink.fire(s, 0.101, () => i / 10_000).special) count++;
   }
-  assert.equal(count, 1000);
+  assert.equal(count, 1500);
   assert.equal(s.volleys, 0);
 });
 
 test("switch resets partial streak but not an in-flight projectile state", () => {
   const state = pink.createState();
   pink.fire(state, 0.101, () => 0.2);
-  const missile = { pinkSpecial: true, power: 11.5 };
+  const missile = { pinkSpecial: true, power: 28.75 };
   pink.switchWeapon(state);
   assert.deepEqual(state, { volleys: 0 });
-  assert.deepEqual(missile, { pinkSpecial: true, power: 11.5 });
+  assert.deepEqual(missile, { pinkSpecial: true, power: 28.75 });
 });
 
 test("homing bullet turns toward live enemies while retaining exact speed", () => {
@@ -97,8 +97,8 @@ test("PINK special missile is 100 logical units across and has a bounded blast l
   assert.equal(pink.RULES.explosionLifetimeSeconds, 0.55);
   assert.equal(pink.RULES.maxExplosionEffects, 12);
   assert.equal(green.RULES.radius, 360);
-  assert.equal(pink.splashDamage(11.5), pink.RULES.normalDamage);
-  assert.ok(Math.abs(pink.splashDamage(34.5) - pink.RULES.normalDamage * 3) < 1e-10);
+  assert.equal(pink.splashDamage(28.75), pink.RULES.normalDamage);
+  assert.ok(Math.abs(pink.splashDamage(86.25) - pink.RULES.normalDamage * 3) < 1e-10);
 });
 
 test("blast reaches the exact GREEN halo radius, including circular target hitboxes", () => {
@@ -125,7 +125,7 @@ test("splash damages each nearby other enemy exactly once without chain propagat
   pink.splash(center,[direct,first,unreachable],null,direct,green,e=>{
     calls++;
     hit.push(e);
-    e.hp-=pink.splashDamage(11.5);
+    e.hp-=pink.splashDamage(28.75);
   },()=>{});
   assert.equal(calls,1);
   assert.deepEqual(hit,[first]);
@@ -161,4 +161,24 @@ test("snapshot victims only and never splash freshly-created minions or dead tar
   assert.equal(spawned.hp,5);
   assert.deepEqual(pink.splash(null,snapshot,null,direct,green,()=>{},()=>{}),
     {enemies:0,boss:false});
+});
+
+
+test("new 10%-15% PINK missile chance band launches while exactly 15% does not", () => {
+  const s = pink.createState();
+  const rolls = [0, 0.099999, 0.1, 0.125, 0.149999, 0.15, 0.150001, 0.99];
+  const actual = rolls.map(roll => pink.fire(s, 0.101, () => roll).special);
+  assert.deepEqual(actual, [true,true,true,true,true,false,false,false]);
+  assert.equal(s.volleys, 0);
+});
+
+test("PINK 25x direct missile remains exactly 1x explosion damage under common scaling", () => {
+  const normal = pink.RULES.normalDamage;
+  const direct = normal * pink.RULES.missileDamageMultiplier;
+  assert.ok(Math.abs(normal - 1.15) < 1e-10);
+  assert.ok(Math.abs(direct - 28.75) < 1e-10);
+  for(const scale of [0.5,1,1.3,2,3]) {
+    assert.ok(Math.abs(direct * scale / (normal * scale) - 25) < 1e-10);
+    assert.ok(Math.abs(pink.splashDamage(direct * scale) - normal * scale) < 1e-10);
+  }
 });
