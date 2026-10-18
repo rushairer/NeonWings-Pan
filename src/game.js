@@ -28,6 +28,8 @@ const W = 1280;
     if (!skyRules) throw new Error("NeonWings-Pan sky P runtime missing");
     const darkRedRules = window.NeonDarkRedWeapon;
     if (!darkRedRules) throw new Error("NeonWings-Pan dark red P runtime missing");
+    const rainbowRules = window.NeonRainbowWeapon;
+    if (!rainbowRules) throw new Error("NeonWings-Pan rainbow P runtime missing");
     const collision = window.NeonCollision;
     if (!collision) throw new Error("NeonWings collision runtime missing");
     const enemyBehaviors = window.NeonEnemyBehaviors;
@@ -1805,20 +1807,21 @@ const W = 1280;
 
     function randomPowerType() {
       const r = Math.random();
-      if (r < 1 / 14) return "P_BLUE";
-      if (r < 2 / 14) return "P_PURPLE";
-      if (r < 3 / 14) return "P_YELLOW";
-      if (r < 4 / 14) return "P_RED";
-      if (r < 5 / 14) return "P_GREEN";
-      if (r < 6 / 14) return "P_BLACK";
-      if (r < 7 / 14) return "P_WHITE";
-      if (r < 8 / 14) return "P_GRAY";
-      if (r < 9 / 14) return "P_PINK";
-      if (r < 10 / 14) return "P_ORANGE";
-      if (r < 11 / 14) return "P_BROWN";
-      if (r < 12 / 14) return "P_LIME";
-      if (r < 13 / 14) return "P_SKY";
-      return "P_DARK_RED";
+      if (r < 1 / 15) return "P_BLUE";
+      if (r < 2 / 15) return "P_PURPLE";
+      if (r < 3 / 15) return "P_YELLOW";
+      if (r < 4 / 15) return "P_RED";
+      if (r < 5 / 15) return "P_GREEN";
+      if (r < 6 / 15) return "P_BLACK";
+      if (r < 7 / 15) return "P_WHITE";
+      if (r < 8 / 15) return "P_GRAY";
+      if (r < 9 / 15) return "P_PINK";
+      if (r < 10 / 15) return "P_ORANGE";
+      if (r < 11 / 15) return "P_BROWN";
+      if (r < 12 / 15) return "P_LIME";
+      if (r < 13 / 15) return "P_SKY";
+      if (r < 14 / 15) return "P_DARK_RED";
+      return "P_RAINBOW";
     }
 
     function weaponMeta(type = game.weaponType) {
@@ -1835,6 +1838,7 @@ const W = 1280;
       if (type === "lime") return { name: "ORBIT", short: "LIME", color: "#c7f542", core: "#fbffd4" };
       if (type === "sky") return { name: "ADAPT", short: "SKY", color: "#86d9ff", core: "#e7f9ff" };
       if (type === "darkred") return { name: "CHAIN", short: "DARK RED", color: "#981332", core: "#ffe0e8" };
+      if (type === "rainbow") return { name: "PRISM", short: "RAINBOW", color: "#e59bff", core: "#ffffff" };
       return { name: "LINE", short: "BLUE", color: "#38e8ff", core: "#e8fdff" };
     }
 
@@ -1852,6 +1856,7 @@ const W = 1280;
       if (powerupType === "P_LIME") return "lime";
       if (powerupType === "P_SKY") return "sky";
       if (powerupType === "P_DARK_RED") return "darkred";
+      if (powerupType === "P_RAINBOW") return "rainbow";
       return "blue";
     }
 
@@ -1869,6 +1874,7 @@ const W = 1280;
       if (game.weaponType === "lime") return "P_LIME";
       if (game.weaponType === "sky") return "P_SKY";
       if (game.weaponType === "darkred") return "P_DARK_RED";
+      if (game.weaponType === "rainbow") return "P_RAINBOW";
       return "P_BLUE";
     }
 
@@ -2146,6 +2152,22 @@ const W = 1280;
             ctx.stroke();
             rect(-29, -3, 9, 6, "#e8fbff");
             rect(20, -3, 9, 6, "#e8fbff");
+          } else if (wt === "rainbow") {
+            // Eight real colors on the PICKUP rim; existing weapon colors
+            // remain visible in the inherited per-projectile shot effects.
+            const palette = ["#ff5372", "#ffa443", "#ffe465", "#bcf542",
+              "#65e9cf", "#6bb7ff", "#997bff", "#f878dc"];
+            for (let i = 0; i < palette.length; i++) {
+              ctx.save();
+              ctx.rotate(i * Math.PI / 4);
+              rect(-5, -30, 10, 9, palette[i]);
+              ctx.restore();
+            }
+            ctx.strokeStyle = "#ffffff";
+            ctx.lineWidth = 2.5;
+            ctx.beginPath();
+            ctx.arc(0, 0, 23, 0, Math.PI * 2);
+            ctx.stroke();
           } else if (wt === "lime") {
             // Four small orbit markers distinguish this from GREEN's aura P.
             ctx.strokeStyle = "#f3ffac";
@@ -2445,6 +2467,65 @@ const W = 1280;
           orangeRules.RULES.normalDamage, "#ff932e", { orangeBlast: true });
         addPlayerShot(muzzleX, baseY + 12, 1100, 0, 9,
           orangeRules.RULES.normalDamage, "#ff932e", { orangeBlast: true });
+      } else if (type === "rainbow") {
+        // Each of the TWO baseline firing positions independently rolls one
+        // of eight MUTUALLY EXCLUSIVE source-weapon projectiles. Seven have
+        // 13% chance, the actual PINK special missile replaces a shot at 9%.
+        // No separate DARK RED 5% missile roll can occur in this weapon.
+        const lanes = [-10, 12];
+        for (let i = 0; i < rainbowRules.RULES.bulletsPerVolley; i++) {
+          const lane = lanes[i];
+          const choice = rainbowRules.fire(Math.random);
+          const tag = { rainbowKind: choice };
+          if (choice === "homing") {
+            // Yellow tracking bullet (guided flight, not a second missile).
+            addPlayerShot(muzzleX, baseY + lane,
+              pinkRules.RULES.bulletSpeed, 0, 9,
+              rainbowRules.RULES.normalDamage, "#ffe071", {
+                ...tag, rainbowHoming: true,
+                life: pinkRules.RULES.bulletLifetimeSeconds
+              });
+          } else if (choice === "slow") {
+            addPlayerShot(muzzleX, baseY + lane, 1100, 0, 9,
+              rainbowRules.RULES.normalDamage, "#121522", {
+                ...tag, blackSlow: true
+              });
+          } else if (choice === "missile") {
+            // Identical PINK 100-unit guided rocket: 25x direct + 1x 360
+            // splash to OTHER victims; no normal bullet in this lane.
+            addMissile(game.player.x + 36, baseY + lane, i ? 1 : -1,
+              pinkRules.RULES.normalDamage * pinkRules.RULES.missileDamageMultiplier,
+              { ...tag, pinkSpecial: true });
+          } else if (choice === "chain") {
+            addPlayerShot(muzzleX, baseY + lane, 1100, 0, 9,
+              darkRedRules.RULES.normalDamage, "#981332", {
+                ...tag, darkRedChain: true
+              });
+          } else if (choice === "gray") {
+            addPlayerShot(muzzleX, baseY + lane, 1100, 0, 9,
+              rainbowRules.RULES.normalDamage, "#abb3c0", {
+                ...tag, grayImpact: true
+              });
+          } else if (choice === "conductive") {
+            addPlayerShot(muzzleX, baseY + lane, 1120, 0, 9,
+              rainbowRules.RULES.normalDamage, "#f3fcff", {
+                ...tag, ...whiteRules.createShot()
+              });
+          } else if (choice === "orbit") {
+            // LIME behavior is a normal muzzle bullet that curves onto a
+            // moving-player 360-radius orbit; no satellite teleport.
+            const orb = limeRules.createShot(game.player, lane);
+            addPlayerShot(orb.x, orb.y, orb.vx, orb.vy, orb.r,
+              limeRules.RULES.normalDamage, "#d1f74c", {
+                ...tag, ...orb
+              });
+          } else if (choice === "blast") {
+            addPlayerShot(muzzleX, baseY + lane, 1100, 0, 9,
+              orangeRules.RULES.normalDamage, "#ff932e", {
+                ...tag, orangeBlast: true
+              });
+          }
+        }
       } else if (type === "darkred") {
         // Each regular dual-shot action independently rolls ONE 5% bonus
         // guided missile. Chain RNG is ONLY evaluated after real impacts.
@@ -2514,7 +2595,7 @@ const W = 1280;
       if (game.weaponType === "red") return redRules.RULES.volleySeconds;
       if (game.weaponType === "yellow") return Math.max(0.17, 0.25 - game.weaponLevel * 0.025);
       if (game.weaponType === "purple") return Math.max(0.10, 0.145 - game.weaponLevel * 0.012);
-      return Math.max(0.07, 0.115 - (game.weaponType === "green" || game.weaponType === "black" || game.weaponType === "white" || game.weaponType === "gray" || game.weaponType === "pink" || game.weaponType === "orange" || game.weaponType === "lime" || game.weaponType === "brown" || game.weaponType === "sky" || game.weaponType === "darkred" ? 1 : game.weaponLevel) * 0.014);
+      return Math.max(0.07, 0.115 - (game.weaponType === "green" || game.weaponType === "black" || game.weaponType === "white" || game.weaponType === "gray" || game.weaponType === "pink" || game.weaponType === "orange" || game.weaponType === "lime" || game.weaponType === "brown" || game.weaponType === "sky" || game.weaponType === "darkred" || game.weaponType === "rainbow" ? 1 : game.weaponLevel) * 0.014);
     }
 
     function findMissileTarget(m) {
@@ -3305,7 +3386,7 @@ const W = 1280;
           if (b.life <= 0) { b.dead = true; continue; }
           skyRules.steer(b, game.enemies, game.boss, dt);
         }
-        if (b.pinkHoming) {
+        if (b.pinkHoming || b.rainbowHoming) {
           b.life -= dt;
           if (b.life <= 0) { b.dead = true; continue; }
           // Reacquire on each active simulation step; disappearing enemies
@@ -3947,7 +4028,11 @@ const W = 1280;
     }
 
     function drawLimeOrbitRing() {
-      if (game.weaponType !== "lime" ||
+      // Rainbow only reveals the orbit guide when it has selected at least
+      // one lime-type projectile, rather than always showing a passive aura.
+      if ((game.weaponType !== "lime" &&
+          !(game.weaponType === "rainbow" &&
+            game.bullets.some(b => b.rainbowKind === "orbit"))) ||
           (game.stageMode !== "WAVE" && game.stageMode !== "BOSS")) return;
       ctx.save();
       ctx.globalAlpha = 0.30 + Math.sin(game.t*4)*0.05;
@@ -3971,6 +4056,15 @@ const W = 1280;
         // LIME uses the SAME ordinary rectangular bullet sprite as BLUE.
         // Its only visual difference is the lime-colored core; the *path*,
         // not the projectile model, curves into an orbit.
+        if (b.rainbowHoming) {
+          // Yellow tracking bullet looks like a yellow bullet, not PINK.
+          ctx.shadowColor = "#ffdb73";
+          ctx.shadowBlur = 17;
+          rect(-7, -7, 31, 14, "#efac35");
+          rect(3, -3, 24, 6, "#fff7ce");
+          ctx.restore();
+          continue;
+        }
         if (b.pinkHoming) {
           ctx.shadowColor = "#ff5dbf";
           ctx.shadowBlur = 18;
@@ -4264,6 +4358,8 @@ const W = 1280;
         ? (game.hp > skyRules.RULES.thresholdHp ? "SKY BOOST  2.5X" : "SKY SEEK  BLACK SLOW")
         : game.weaponType === "darkred"
         ? "DARK RED  50%x30  M5%x10"
+        : game.weaponType === "rainbow"
+        ? "RAINBOW  7x13%  M9%"
         : `${meta.short} WEAPON  LV.${game.weaponLevel}`, 656, 80, 21, "left",
         game.weaponType === "black" ? "#9cccff" : meta.color);
 
@@ -4423,7 +4519,7 @@ const W = 1280;
       ctx.fillRect(0, 0, W, H);
 
       drawText("NEON WINGS", W / 2, 195, 86, "center", "#e7fbff");
-      drawText("NEONWINGS PAN  /  v26.11.1", W / 2, 270, 28, "center", "#98f5ff");
+      drawText("NEONWINGS PAN  /  v26.12.0", W / 2, 270, 28, "center", "#98f5ff");
       drawText(`HIGH SCORE ${String(highScore()).padStart(6, "0")}`, W / 2, 318, 24, "center", "#fff4b7");
 
       drawPlayerShip(W / 2 - 170, 492, -0.20, false, ships[0]);
