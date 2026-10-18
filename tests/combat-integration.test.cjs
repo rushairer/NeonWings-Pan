@@ -3053,11 +3053,11 @@ test("DARK RED 10x missile chains consume shields as distinct full hits, not an 
     '(() => {',
     'game.state="PLAYING";game.player.x=175;',
     'const shield=enemyBehaviors.initializeEnemy({kind:"shield",',
-    'x:490,y:480,r:39,hp:500,maxHp:500,score:30,color:"#fff",core:"#fff"});',
+    'x:490,y:480,r:39,hp:400,maxHp:400,score:30,color:"#fff",core:"#fff"});',
     'game.enemies=[shield];const before=shield.shieldHp;',
     'addMissile(350,480,1,11.5,{darkRedSpecial:true});',
     'Math.random=()=>0;updateMissiles(.15);',
-    'return {absorbed:before-shield.shieldHp,hullLoss:500-shield.hp,',
+    'return {absorbed:before-shield.shieldHp,hullLoss:400-shield.hp,',
     'blast:game.pinkExplosions.length};',
     '})()'
   ].join("\n"));
