@@ -17,7 +17,9 @@
     bulletRadius: 9,
     normalDamage: 1.15,
     bulletsPerVolley: 2,
-    maxOrbitingBullets: 32,
+    // 2 bullets per 0.101 s for 3.2 s = up to 64 live bullets.
+    // A cap below that evicts the oldest shots before completing a full orbit.
+    maxOrbitingBullets: 72,
     maxSegmentLength: 42,
     maxSegmentsPerStep: 128
   });

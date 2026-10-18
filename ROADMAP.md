@@ -7,6 +7,14 @@ Independently maintained from NeonWings commit `5ebcb1de1adb288b41a3c5e387f747bc
 - [x] Configure standalone Pages workflow
 - [ ] Verify site deployment and controller tests on hardware
 
+## v26.9.2 — LIME full-revolution and cache-visible fix
+
+- [x] Identify 32-bullet cap evicting real LIME shots after ~1.6 seconds during held FIRE
+- [x] Increase LIME-specific concurrent projectile cap to 72 (>= 64 lifetime shots), preserving full 3.2s TTL
+- [x] Cache-bust LIME runtime + game engine scripts with current version query
+- [x] Test full-revolution survival under real held-FIRE game-loop simulation, 5-second steady firing, and versioned HTML
+- [ ] Handheld real FPS test with up to ~64 active orbiting bullets and visual flight verification
+
 ## v26.9.1 — LIME P normal-bullet launch and smooth orbital trajectory
 
 - [x] Replace instant radius-360 spawned satellite/dia­mond projectile with normal two-lane muzzle bullets

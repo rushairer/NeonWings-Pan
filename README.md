@@ -29,6 +29,16 @@ A controller-first, five-stage, side-scrolling neon arcade shooter built with br
 - **v26.2.0 NeonWings-Pan exclusive:** red P twin-line fire, a 250-projectile ±10° special fan triggered on 10% of eligible volleys, and an independent 0–5 star progression.
 - **v26.3.0 NeonWings-Pan exclusive:** green P retains starter-grade dual shots and adds a passive neon halo dealing area damage to nearby enemies once per second.
 
+## v26.9.2 — Fix LIME orbit truncation and browser script caching
+
+The previous update DID add normal muzzle-fired LIME bullets and a curved 360-radius path, but there was a remaining full-auto balancing bug: **two shots per 0.101 s** generate roughly **64 live bullets** during the 3.2-second projectile lifetime. With the old **32-orbiter cap**, the oldest shots were deleted after roughly 1.6 seconds (just over one second after reaching the ring) and **could not complete even one revolution**. The cap is now **72**, enough to preserve their full natural lifespan; the existing global player-bullet limit still applies.
+
+The website also referenced unversioned JavaScript URLs after gameplay changes, potentially leaving an existing browser on cached pre-fix code. The active `src/lime-weapon.js` and `src/game.js` script tags now use **`?v=26.9.2`**. Use [the cache-distinct game link](https://rushairer.github.io/NeonWings-Pan/?v=26.9.2) and check for the `v26.9.2` title to confirm this patch loaded.
+
+**Intended in-game behavior:** press FIRE while holding LIME P: two **ordinary rectangular** lime-core projectiles originate at the two starter muzzle positions, spiral smoothly outward during 0.48 seconds, and then orbit the moving fighter at radius 360 at 2.8 rad/s. With the corrected cap, an unobstructed projectile can **make more than one complete revolution** before it expires naturally after 3.2 seconds. Projectile collisions still deal one base 1.15 hit to just the first target; the visual ring is not an aura and has no damage.
+
+New regression tests now simulate continued FIRE through a full orbit (not just single-shot isolated frames), enforce the real shot rate vs capacity, and ensure the HTML includes cache-versioned scripts. No other P colors changed.
+
 ## v26.9.1 — LIME P fires NORMAL bullets with curved orbital flight
 
 Fixed the yellow-green (LIME P) weapon's projectile behavior: it now fires **ordinary twin-lane bullets from the player's muzzle** at exactly the same initial positions and base power as starter-grade BLUE P, rather than spawning diamond-shaped orbiting satellites instantly 360 units away. The yellow-green bullet's **flight path** is the special effect, not the bullet model.

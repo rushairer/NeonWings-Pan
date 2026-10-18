@@ -141,14 +141,25 @@ test("static HTML loads platform before game and doesn't embed legacy code", () 
   assert.ok(html.indexOf('src="./src/gray-weapon.js"') < html.indexOf('src="./src/pink-weapon.js"'));
   assert.ok(html.indexOf('src="./src/pink-weapon.js"') < html.indexOf('src="./src/orange-weapon.js"'));
   assert.ok(html.indexOf('src="./src/orange-weapon.js"') < html.indexOf('src="./src/brown-weapon.js"'));
-  assert.ok(html.indexOf('src="./src/brown-weapon.js"') < html.indexOf('src="./src/lime-weapon.js"'));
-  assert.ok(html.indexOf('src="./src/lime-weapon.js"') < html.indexOf('src="./src/collision.js"'));
+  assert.ok(html.indexOf('src="./src/brown-weapon.js"') < html.indexOf('src="./src/lime-weapon.js?'));
+  assert.ok(html.indexOf('src="./src/lime-weapon.js?') < html.indexOf('src="./src/collision.js"'));
   assert.ok(html.indexOf('src="./src/collision.js"') < html.indexOf('src="./src/enemy-behaviors.js"'));
   assert.ok(html.indexOf('src="./src/enemy-behaviors.js"') < html.indexOf('src="./src/worlds.js"'));
   assert.ok(html.indexOf('src="./src/worlds.js"') < html.indexOf('src="./src/boss-parts.js"'));
   assert.ok(html.indexOf('src="./src/boss-parts.js"') < html.indexOf('src="./src/modes.js"'));
   assert.ok(html.indexOf('src="./src/modes.js"') < html.indexOf('src="./src/records.js"'));
   assert.ok(html.indexOf('src="./src/records.js"') < html.indexOf('src="./src/select-layout.js"'));
-  assert.ok(html.indexOf('src="./src/select-layout.js"') < html.indexOf('src="./src/game.js"'));
+  assert.ok(html.indexOf('src="./src/select-layout.js"') < html.indexOf('src="./src/game.js?'));
   assert.ok(!html.includes("<script>"));
+});
+
+
+test("versioned LIME/game scripts prevent stale JS after successful Pages deploy", () => {
+  const html = fs.readFileSync(path.join(__dirname,"../index.html"),"utf8");
+  const version = require("../package.json").version;
+  assert.equal(version,"26.9.2");
+  assert.ok(html.includes('src="./src/lime-weapon.js?v='+version+'"'));
+  assert.ok(html.includes('src="./src/game.js?v='+version+'"'));
+  assert.equal(html.includes('src="./src/lime-weapon.js"'),false);
+  assert.equal(html.includes('src="./src/game.js"'),false);
 });

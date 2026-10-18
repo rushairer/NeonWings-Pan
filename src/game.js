@@ -4235,7 +4235,7 @@ const W = 1280;
       ctx.fillRect(0, 0, W, H);
 
       drawText("NEON WINGS", W / 2, 195, 86, "center", "#e7fbff");
-      drawText("NEONWINGS PAN  /  v26.9.1", W / 2, 270, 28, "center", "#98f5ff");
+      drawText("NEONWINGS PAN  /  v26.9.2", W / 2, 270, 28, "center", "#98f5ff");
       drawText(`HIGH SCORE ${String(highScore()).padStart(6, "0")}`, W / 2, 318, 24, "center", "#fff4b7");
 
       drawPlayerShip(W / 2 - 170, 492, -0.20, false, ships[0]);

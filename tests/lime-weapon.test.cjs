@@ -11,7 +11,7 @@ test("LIME emits ordinary twin-lane bullets FROM the muzzle, not at radius 360",
   const player = { x: 175, y: 480 };
   assert.equal(R.radius, 360);
   assert.equal(R.bulletsPerVolley, 2);
-  assert.equal(R.maxOrbitingBullets, 32);
+  assert.equal(R.maxOrbitingBullets, 72);
   assert.equal(R.bulletRadius, 9);
   for (const lane of R.muzzleLaneOffsets) {
     const shot = lime.createShot(player, lane);
@@ -136,4 +136,14 @@ test("bullet direction rotates with the path; speed and damage remain normal", (
   lime.step(bullet,p,0.7);
   assert.ok(bullet.vx<0);
   assert.ok(bullet.vy>0);
+});
+
+
+test("LIME fire cadence permits first full orbit before natural shot expiry", () => {
+  const shotsDuringLifetime =
+    Math.ceil(R.bulletLifetimeSeconds * R.bulletsPerVolley / 0.101);
+  assert.equal(shotsDuringLifetime, 64);
+  assert.ok(R.maxOrbitingBullets >= shotsDuringLifetime);
+  const oneTurnSeconds = 2 * Math.PI / R.radiansPerSecond;
+  assert.ok(R.bulletLifetimeSeconds > R.outwardSeconds + oneTurnSeconds);
 });

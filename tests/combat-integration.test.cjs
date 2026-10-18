@@ -2485,7 +2485,7 @@ test("LIME normal bullet can hit Boss hull during outward curve before rim", () 
   assert.ok(Math.abs(app.eval("game.boss.hp")-98.85)<1e-8);
 });
 
-test("LIME normal bullets keep a 32-orbit cap without touching other weapon projectiles", () => {
+test("LIME normal bullets keep a 72-orbit cap without touching other weapon projectiles", () => {
   const app=boot();
   app.eval([
     'game.state="PLAYING";game.weaponType="blue";',
@@ -2545,4 +2545,49 @@ test("BROWN and LIME respect existing fighter Overdrive damage scaling",()=>{
     'updateBrownLaser(.101,true);'
   ].join("\n"));
   assert.ok(Math.abs(app.eval("game.enemies[0].hp")-(100-1.15*scale))<1e-8);
+});
+
+
+test("LIME held fire preserves the very first muzzle bullet through a COMPLETE 360 orbit", () => {
+  const app=boot();
+  const result=app.eval([
+    '(() => {',
+    'game.state="PLAYING";game.stageMode="WAVE";game.weaponType="lime";',
+    'game.player.x=175;game.player.y=480;game.spawnTimer=999;',
+    'game.formationTimer=999;game.invuln=999;keys.Space=true;',
+    'updatePlaying(.033);',
+    'const oldest=game.bullets[0];',
+    'for(let i=0;i<88;i++)updatePlaying(.033);',
+    'return {',
+    '  alive:game.bullets.includes(oldest),',
+    '  age:oldest.orbitAge,life:oldest.life,',
+    '  count:game.bullets.filter(b=>b.orbiting).length,',
+    '  radius:Math.hypot(oldest.x-game.player.x,oldest.y-game.player.y)',
+    '};})()'
+  ].join("\n"));
+  assert.equal(result.alive,true,
+    "Continuous fire must not evict the oldest bullet before its first full revolution");
+  assert.ok(result.age > limeWeapon.RULES.outwardSeconds +
+    2*Math.PI/limeWeapon.RULES.radiansPerSecond);
+  assert.ok(result.life > 0);
+  assert.ok(Math.abs(result.radius-360)<1e-8);
+  assert.ok(result.count>32 && result.count<=limeWeapon.RULES.maxOrbitingBullets);
+});
+
+test("LIME 5 seconds of full-auto fire stays bounded without prematurely dropping live orbiters", () => {
+  const app=boot();
+  const result=app.eval([
+    '(() => {',
+    'game.state="PLAYING";game.stageMode="WAVE";game.weaponType="lime";',
+    'game.player.x=175;game.player.y=480;game.spawnTimer=999;',
+    'game.formationTimer=999;game.invuln=999;keys.Space=true;',
+    'for(let i=0;i<155;i++)updatePlaying(.033);',
+    'return {',
+    '  live:game.bullets.filter(b=>b.orbiting&&b.life>0).length,',
+    '  total:game.bullets.filter(b=>b.orbiting).length',
+    '};})()'
+  ].join("\n"));
+  assert.ok(result.total>32);
+  assert.ok(result.total<=limeWeapon.RULES.maxOrbitingBullets);
+  assert.equal(result.live,result.total);
 });
