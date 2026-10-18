@@ -3175,3 +3175,241 @@ test("DARK RED missile chain and splash do not change original PINK/YELLOW missi
   assert.equal(app.eval("game.missiles[1].power"),28.75);
   assert.equal(app.eval("game.missiles[2].power"),2);
 });
+
+
+test("RAINBOW P is the 15th collectible, recoverable, with a distinct 8-color icon and HUD",()=>{
+  const app=boot();
+  app.eval([
+    'game.state="PLAYING";game.weaponType="blue";game.redWeapon.stars=3;',
+    'collectPowerup({type:"P_RAINBOW",x:320,y:480,life:1});',
+    'game.weaponLevel=3;Math.random=()=>.52;firePlayerWeapons();'
+  ].join("\n"));
+  assert.equal(app.eval("game.weaponType"),"rainbow");
+  assert.equal(app.eval("weaponMeta().name"),"PRISM");
+  assert.equal(app.eval("game.bullets.length"),2);
+  assert.equal(app.eval("game.bullets.every(b=>b.grayImpact)"),true);
+  assert.equal(app.eval("game.redWeapon.stars"),3);
+  assert.ok(Math.abs(app.eval("getFireCooldown()")-.101)<1e-10);
+  app.eval('Math.random=()=>.99');
+  assert.equal(app.eval("randomPowerType()"),"P_RAINBOW");
+  app.eval('game.powerups=[];dropPlayerPowerOnHit()');
+  assert.equal(app.eval("game.powerups.at(-1).type"),"P_RAINBOW");
+  const ui=app.eval([
+    '(() => {const labels=[],colors=[];',
+    'ctx.fillText=t=>labels.push(String(t));',
+    'ctx.fillRect=(x,y,w,h)=>colors.push(ctx.fillStyle);',
+    'game.powerups=[{type:"P_RAINBOW",x:400,y:460,t:0,life:10}];',
+    'drawHud();drawPowerups();',
+    'return {labels,colors};})()'
+  ].join("\n"));
+  assert.ok(ui.labels.includes("RAINBOW  7x13%  M9%"));
+  assert.equal(ui.labels.some(x=>x.includes("RED P")),false);
+  for(const color of ["#ff5372","#ffa443","#ffe465","#bcf542",
+    "#65e9cf","#6bb7ff","#997bff","#f878dc"]) assert.ok(ui.colors.includes(color),color);
+});
+
+test("RAINBOW chooses independently for its two physical bullet slots",()=>{
+  const app=boot();
+  app.eval([
+    'game.weaponType="rainbow";const sequence=[.10,.20];let index=0;',
+    'Math.random=()=>sequence[index++]??.99;',
+    'firePlayerWeapons();'
+  ].join("\n"));
+  assert.equal(app.eval("game.bullets.length"),2);
+  assert.equal(app.eval("game.bullets[0].rainbowKind"),"homing");
+  assert.equal(app.eval("game.bullets[1].rainbowKind"),"slow");
+  assert.equal(app.eval("game.bullets[0].rainbowHoming"),true);
+  assert.equal(app.eval("game.bullets[1].blackSlow"),true);
+  assert.equal(app.eval("game.missiles.length"),0);
+});
+
+test("all eight RAINBOW probability bands create exactly the inherited shot types",()=>{
+  const fixtures=[
+    [.05,"homing","rainbowHoming"],
+    [.20,"slow","blackSlow"],
+    [.30,"missile","pinkSpecial"],
+    [.40,"chain","darkRedChain"],
+    [.55,"gray","grayImpact"],
+    [.68,"conductive","whiteConductive"],
+    [.80,"orbit","orbiting"],
+    [.95,"blast","orangeBlast"]
+  ];
+  for(const [roll,kind,flag]of fixtures){
+    const app=boot();
+    app.eval('game.state="PLAYING";game.weaponType="rainbow";Math.random=()=>'+roll+';firePlayerWeapons()');
+    const array=kind==="missile"?"game.missiles":"game.bullets";
+    assert.equal(app.eval(array+".length"),2,kind);
+    assert.equal(app.eval(array+'.every(s=>s.rainbowKind==="'+kind+'" && s.'+flag+')'),true,kind);
+    assert.equal(app.eval(kind==="missile"?"game.bullets.length":"game.missiles.length"),0,kind);
+    if(kind==="missile"){
+      assert.ok(Math.abs(app.eval("game.missiles[0].power")-28.75)<1e-8);
+      assert.equal(app.eval("game.missiles[0].r"),50);
+    }
+    if(kind==="orbit"){
+      assert.equal(app.eval("game.bullets[0].x"),237);
+      assert.equal(app.eval("game.bullets[0].y"),470);
+      assert.equal(app.eval("game.bullets[1].y"),492);
+    }
+  }
+});
+
+test("RAINBOW yellow-guided bullet actually steers to moving/dead-replaced enemy",()=>{
+  const app=boot();
+  app.eval([
+    'game.state="PLAYING";game.weaponType="rainbow";Math.random=()=>.05;',
+    'firePlayerWeapons();game.bullets=game.bullets.slice(0,1);',
+    'game.enemies=[{kind:"scout",x:580,y:650,r:22,hp:50,maxHp:50,',
+    'color:"#fff",core:"#eee",score:20}];',
+    'updatePlayerBullets(.05);'
+  ].join("\n"));
+  assert.equal(app.eval("game.bullets[0].rainbowKind"),"homing");
+  assert.ok(app.eval("game.bullets[0].y")>470);
+  assert.ok(Math.abs(app.eval("Math.hypot(game.bullets[0].vx,game.bullets[0].vy)")-pinkWeapon.RULES.bulletSpeed)<1e-8);
+  app.eval('game.enemies=[];const old=game.bullets[0].vy;updatePlayerBullets(.05);');
+  assert.ok(app.eval("game.bullets[0].y")>470);
+  assert.equal(app.eval("game.bullets[0].life")>0,true);
+});
+
+test("RAINBOW BLACK shot applies the original 5s/50% slow through actual contact",()=>{
+  const app=boot();
+  app.eval([
+    'game.state="PLAYING";game.weaponType="rainbow";Math.random=()=>.20;',
+    'game.enemies=[{kind:"scout",x:400,y:470,r:24,hp:50,maxHp:50,',
+    'color:"#fff",core:"#eee",score:20}];',
+    'firePlayerWeapons();game.bullets=game.bullets.slice(0,1);',
+    'updatePlayerBullets(.2);'
+  ].join("\n"));
+  assert.ok(Math.abs(app.eval("game.enemies[0].hp")-48.85)<1e-8);
+  assert.equal(app.eval("game.enemies[0].slowRemaining"),blackWeapon.RULES.duration);
+  assert.equal(app.eval("blackRules.isSlowed(game.enemies[0])"),true);
+});
+
+test("RAINBOW DARK RED projectile repeats up to 30 full-strength 50%-chain hits",()=>{
+  const app=boot();
+  app.eval([
+    'game.state="PLAYING";game.weaponType="rainbow";Math.random=()=>.40;',
+    'game.enemies=[{kind:"scout",x:400,y:470,r:24,hp:1000,maxHp:1000,',
+    'color:"#fff",core:"#eee",score:20}];',
+    'firePlayerWeapons();game.bullets=game.bullets.slice(0,1);',
+    'Math.random=()=>0;updatePlayerBullets(.20);'
+  ].join("\n"));
+  assert.equal(app.eval("game.bullets.length"),0);
+  assert.ok(Math.abs(app.eval("game.enemies[0].hp")-(1000-30*1.15))<1e-8);
+  assert.equal(app.eval("game.missiles.length"),0,
+    "RAINBOW DARK RED chain must not also roll its 5% missile bonus");
+});
+
+test("RAINBOW GRAY projectile preserves mutually exclusive stun versus boosted damage",()=>{
+  const setup=(outcome)=>{
+    const app=boot();
+    app.eval([
+      'game.state="PLAYING";game.weaponType="rainbow";Math.random=()=>.55;',
+      'game.enemies=[{kind:"scout",x:400,y:470,r:24,hp:50,maxHp:50,',
+      'color:"#fff",core:"#eee",score:20}];',
+      'firePlayerWeapons();game.bullets=game.bullets.slice(0,1);'
+    ].join("\n"));
+    app.eval('Math.random=()=>'+outcome+';updatePlayerBullets(.20)');
+    return app;
+  };
+  const stunned=setup(.23);
+  assert.equal(stunned.eval("game.enemies[0].grayStunRemaining"),grayWeapon.RULES.stunSeconds);
+  assert.ok(Math.abs(stunned.eval("game.enemies[0].hp")-48.85)<1e-8);
+  const amplified=setup(.80);
+  assert.equal(amplified.eval("game.enemies[0].grayStunRemaining"),0);
+  assert.ok(Math.abs(amplified.eval("game.enemies[0].hp")-(50-1.15*1.5))<1e-8);
+});
+
+test("RAINBOW WHITE projectile pierces and deals source WHITE 60%-conductive splash",()=>{
+  const app=boot();
+  app.eval([
+    'game.state="PLAYING";game.weaponType="rainbow";Math.random=()=>.68;',
+    'game.enemies=[',
+    ' {kind:"scout",x:400,y:470,r:20,hp:50,maxHp:50,score:20,color:"#fff",core:"#eee"},',
+    ' {kind:"scout",x:680,y:470,r:20,hp:50,maxHp:50,score:20,color:"#fff",core:"#eee"}',
+    '];firePlayerWeapons();game.bullets=game.bullets.slice(0,1);',
+    'Math.random=()=>.99;updatePlayerBullets(.20);'
+  ].join("\n"));
+  assert.equal(app.eval("game.bullets.length"),1);
+  assert.equal(app.eval("game.bullets[0].rainbowKind"),"conductive");
+  assert.ok(Math.abs(app.eval("game.enemies[0].hp")-48.85)<1e-8);
+  assert.ok(Math.abs(app.eval("game.enemies[1].hp")-(50-1.15*.60))<1e-8);
+  assert.equal(app.eval("game.bullets[0].hitEnemies.length"),2);
+  assert.ok(app.eval("game.electricArcs.length")>=2);
+});
+
+test("RAINBOW LIME-type projectile flies from muzzle into 360 orbit and persists on swap",()=>{
+  const app=boot();
+  app.eval([
+    'game.state="PLAYING";game.weaponType="rainbow";Math.random=()=>.80;',
+    'firePlayerWeapons();game.bullets=game.bullets.slice(0,1);',
+    'game.player.x=225;game.player.y=530;updatePlayerBullets(.5);'
+  ].join("\n"));
+  assert.equal(app.eval("game.bullets.length"),1);
+  assert.ok(Math.abs(app.eval("Math.hypot(game.bullets[0].x-game.player.x,game.bullets[0].y-game.player.y)")-360)<1e-8);
+  assert.equal(app.eval("game.bullets[0].rainbowKind"),"orbit");
+  app.eval('collectPowerup({type:"P_BLUE",x:300,y:480,life:1});updatePlayerBullets(.10)');
+  assert.equal(app.eval("game.weaponType"),"blue");
+  assert.equal(app.eval("game.bullets[0].orbiting"),true);
+  assert.equal(app.eval("game.bullets[0].rainbowKind"),"orbit");
+});
+
+test("RAINBOW ORANGE-type projectile explodes 3x once at radius 100",()=>{
+  const app=boot();
+  app.eval([
+    'game.state="PLAYING";game.weaponType="rainbow";Math.random=()=>.95;',
+    'game.enemies=[',
+    ' {kind:"scout",x:400,y:470,r:20,hp:50,maxHp:50,score:20,color:"#fff",core:"#eee"},',
+    ' {kind:"scout",x:480,y:470,r:20,hp:50,maxHp:50,score:20,color:"#fff",core:"#eee"},',
+    ' {kind:"scout",x:540,y:470,r:20,hp:50,maxHp:50,score:20,color:"#fff",core:"#eee"}',
+    '];firePlayerWeapons();game.bullets=game.bullets.slice(0,1);',
+    'updatePlayerBullets(.2);'
+  ].join("\n"));
+  assert.equal(app.eval("game.bullets.length"),0);
+  assert.ok(Math.abs(app.eval("game.enemies[0].hp")-46.55)<1e-8);
+  assert.ok(Math.abs(app.eval("game.enemies[1].hp")-46.55)<1e-8);
+  assert.equal(app.eval("game.enemies[2].hp"),50);
+  assert.equal(app.eval("game.orangeExplosions.length"),1);
+});
+
+test("RAINBOW 9% missile replaces a bullet and uses PINK 25x direct plus 1x 360 AoE",()=>{
+  const app=boot();
+  app.eval([
+    'game.state="PLAYING";game.weaponType="rainbow";Math.random=()=>.30;',
+    'firePlayerWeapons();game.missiles=game.missiles.slice(0,1);',
+    'game.enemies=[',
+    ' {kind:"scout",x:490,y:480,r:25,hp:100,maxHp:100,score:20,color:"#fff",core:"#eee"},',
+    ' {kind:"scout",x:790,y:480,r:25,hp:50,maxHp:50,score:20,color:"#fff",core:"#eee"}',
+    '];',
+    'game.missiles[0].x=350;game.missiles[0].y=480;game.missiles[0].vy=0;',
+    'updateMissiles(.15);'
+  ].join("\n"));
+  assert.equal(app.eval("game.bullets.length"),0);
+  assert.equal(app.eval("game.missiles.length"),0);
+  assert.ok(Math.abs(app.eval("game.enemies[0].hp")-71.25)<1e-8);
+  assert.ok(Math.abs(app.eval("game.enemies[1].hp")-48.85)<1e-8);
+  assert.equal(app.eval("game.pinkExplosions.length"),1);
+});
+
+test("RAINBOW source projectiles retain original damage/target effects after switching to RED",()=>{
+  const app=boot();
+  app.eval([
+    'game.state="PLAYING";game.weaponType="rainbow";game.redWeapon.stars=4;',
+    'Math.random=()=>.20;firePlayerWeapons();game.bullets=game.bullets.slice(0,1);',
+    'collectPowerup({type:"P_RED",x:280,y:480,life:1});',
+    'game.enemies=[{kind:"scout",x:400,y:470,r:24,hp:50,maxHp:50,',
+    'score:20,color:"#fff",core:"#eee"}];',
+    'updatePlayerBullets(.2);'
+  ].join("\n"));
+  assert.equal(app.eval("game.weaponType"),"red");
+  assert.equal(app.eval("game.redWeapon.stars"),4);
+  assert.equal(app.eval("game.enemies[0].slowRemaining"),blackWeapon.RULES.duration);
+});
+
+test("RAINBOW missile projectile choice never adds ordinary or DARK RED bonus missiles",()=>{
+  const app=boot();
+  app.eval('game.weaponType="rainbow";Math.random=()=>.30;firePlayerWeapons()');
+  assert.equal(app.eval("game.missiles.length"),2);
+  assert.equal(app.eval("game.bullets.length"),0);
+  assert.equal(app.eval("game.missiles.every(m=>m.pinkSpecial&&!m.darkRedSpecial)"),true);
+  assert.equal(app.eval("game.missiles.every(m=>m.power===28.75&&m.r===50)"),true);
+});
