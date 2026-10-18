@@ -7,6 +7,18 @@ Independently maintained from NeonWings commit `5ebcb1de1adb288b41a3c5e387f747bc
 - [x] Configure standalone Pages workflow
 - [ ] Verify site deployment and controller tests on hardware
 
+## v26.11.0 — DARK RED P / 10%-chance chained full damage
+
+- [x] Implement separate fourteenth DARK RED P pickup and normal twin-shot loadout (baseline 1.15 power / 0.101s)
+- [x] After a guaranteed real hit, independently roll a 10% chance for each additional 100%-strength damage hit on the same victim
+- [x] Limit to 10 total hits per projectile (one initial, nine extra), iterative and bounded
+- [x] Apply each hit through existing frontal shield, Boss weak point, scoring, kill and Overdrive damage logic
+- [x] Stop on original enemy death, original turret destruction or Boss defeat; no target transfer or splitter-child damage
+- [x] Preserve normal RED stars, fan projectiles and unique RED-only star HUD, including after weapon switching
+- [x] Update 14-color P probability, pickup sprite, projectile FX, HUD, browser assets/build and versioned Pages entry
+- [x] Add deterministic unit and combat integration tests for RNG boundaries, ten-hit cap, shields, turret-break penalty and flight persistence
+- [ ] Manual hardware balance/FPS and visual validation for extremely rare long hit chains
+
 ## v26.10.0 — Live rollout: unlimited LIME, SKY adaptive, GRAY FX, RED-only stars
 
 - [x] Remove LIME's 72-bullet ceiling and exclude orbiting bullets from the ordinary shared 360 projectile quota, keeping 3.2s TTL and one-hit removal

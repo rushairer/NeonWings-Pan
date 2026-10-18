@@ -13,7 +13,7 @@ A controller-first, five-stage, side-scrolling neon arcade shooter built with br
 ## Currently playable
 
 - Five themed stages and five multi-phase bosses; higher-difficulty loops after stage five
-- 11 enemy types, formations, thirteen weapon families, collectible power-ups and BOMB
+- 11 enemy types, formations, fourteen weapon families, collectible power-ups and BOMB
 - Gamepad rumble where browser/device supports it, Web Audio synthesis, volume and vibration options
 - Pause, fullscreen, local high score, end-of-run statistics
 - v23 foundation: 4:3 letterbox sizing; auto-pause on background/focus loss or controller disconnection; browser-storage fallback
@@ -28,6 +28,20 @@ A controller-first, five-stage, side-scrolling neon arcade shooter built with br
 - v26.1.1 UI fix: fighter/mode selector uses explicit non-overlapping layout geometry; selected fighter frame, Training hint, ship descriptions and score footer retain safe spacing.
 - **v26.2.0 NeonWings-Pan exclusive:** red P twin-line fire, a 250-projectile ±10° special fan triggered on 10% of eligible volleys, and an independent 0–5 star progression.
 - **v26.3.0 NeonWings-Pan exclusive:** green P retains starter-grade dual shots and adds a passive neon halo dealing area damage to nearby enemies once per second.
+
+## v26.11.0 — DARK RED P / CHAIN (深红色)
+
+**The fourteenth P weapon** has a dark burgundy pickup with a three-strike emblem and distinctive crimson-glowing bullets; unlike normal RED P, it has no star progression, volley rest or special fan. DARK RED is available from ordinary P drops with equal per-color odds (**1/14 conditional color probability**), can be re-equipped/recovered and displays `DARK RED  10% CHAIN  x10`.
+
+Each firing action emits **two standard forward bullets** at baseline dual-shot cadence (approximately 0.101s), each dealing normal direct-shot damage **1.15 (100%)** before fighter/Overdrive scaling. When a bullet actually collides with an enemy or Boss, the initial damage event is **guaranteed**. A fresh, independent **10% chance** then decides whether to deal **a second full-strength 100% damage event** to that *same* target. A second success earns a third 10% roll, and so on, up to a **hard maximum of 10 total full-strength hits per bullet** (initial hit + at most nine extras). No random roll or extra damage occurs beyond the tenth hit.
+
+Thus the probability of at least **2 hits is 10%**, **3 hits is 1%**, **4 hits is 0.1%** and **10 hits is 0.0000001%**. Each repeated hit is processed individually through ordinary enemy/Boss damage functions, so existing shields are consumed incrementally, Boss turret weak-point scaling and regular kill rewards apply, and Overdrive scaling remains identical to the initial hit. No damage attenuation occurs.
+
+**No piercing or transfer:** when the original enemy dies, a struck Boss turret breaks, or the Boss dies, the chain stops immediately, without damaging neighboring enemies or newly spawned splitter children. An existing Boss turret-break bonus still removes 6.5% maximum Boss hull HP **once**; this normal effect is not a chain hit. Already-fired DARK RED bullets retain the effect even after switching weapons. The ordinary RED P five-star HUD appears **only when RED P is equipped**, unaffected by DARK RED.
+
+Tests include independent RNG thresholds (0.099999 accepts, 0.10 rejects), max ten hits/no eleventh roll, shield charge, enemy death, splitter, Boss/turret break, Overdrive, weapon switching and all pre-existing weapon regression tests.
+
+**Play:** https://rushairer.github.io/NeonWings-Pan/?v=26.11.0
 
 ## v26.10.0 — Unlimited LIME P, adaptive SKY P, clearer GRAY stun and RED-only star UI
 
