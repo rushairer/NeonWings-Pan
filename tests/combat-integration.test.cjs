@@ -2959,7 +2959,10 @@ test("DARK RED ceases chain as soon as a turret breaks, never punching through t
     'Math.random=()=>0;updatePlayerBullets(.20);'
   ].join("\n"));
   assert.ok(app.eval("game.boss.parts[0].hp")<=0);
-  assert.equal(app.eval("game.boss.hp"),100);
+  // Destroying a turret normally damages the Boss hull by 6.5% of max HP.
+  // That one-time weak-point reward is NOT a chained hull hit.
+  assert.equal(app.eval("game.boss.hp"),
+    100 - Math.ceil(100 * bossParts.BALANCE.hullDamageOnBreak));
   assert.equal(app.eval("game.bullets.length"),0);
 });
 
