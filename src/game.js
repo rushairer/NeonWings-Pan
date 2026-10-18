@@ -18,6 +18,8 @@ const W = 1280;
     if (!grayRules) throw new Error("NeonWings-Pan gray P runtime missing");
     const pinkRules = window.NeonPinkWeapon;
     if (!pinkRules) throw new Error("NeonWings-Pan pink P runtime missing");
+    const orangeRules = window.NeonOrangeWeapon;
+    if (!orangeRules) throw new Error("NeonWings-Pan orange P runtime missing");
     const collision = window.NeonCollision;
     if (!collision) throw new Error("NeonWings collision runtime missing");
     const enemyBehaviors = window.NeonEnemyBehaviors;
@@ -47,6 +49,7 @@ const W = 1280;
       playerBullets: 360,
       electricArcs: 96,
       pinkExplosions: pinkRules.RULES.maxExplosionEffects,
+      orangeExplosions: orangeRules.RULES.maxExplosionEffects,
       missiles: 48,
       enemies: enemyBehaviors.CONFIG.maxEnemies
     });
@@ -1076,6 +1079,7 @@ const W = 1280;
         particles: [],
         electricArcs: [],
         pinkExplosions: [],
+        orangeExplosions: [],
         boss: null,
 
         stars: Array.from({ length: 110 }, () => ({
@@ -1762,15 +1766,16 @@ const W = 1280;
 
     function randomPowerType() {
       const r = Math.random();
-      if (r < 1 / 9) return "P_BLUE";
-      if (r < 2 / 9) return "P_PURPLE";
-      if (r < 3 / 9) return "P_YELLOW";
-      if (r < 4 / 9) return "P_RED";
-      if (r < 5 / 9) return "P_GREEN";
-      if (r < 6 / 9) return "P_BLACK";
-      if (r < 7 / 9) return "P_WHITE";
-      if (r < 8 / 9) return "P_GRAY";
-      return "P_PINK";
+      if (r < 1 / 10) return "P_BLUE";
+      if (r < 2 / 10) return "P_PURPLE";
+      if (r < 3 / 10) return "P_YELLOW";
+      if (r < 4 / 10) return "P_RED";
+      if (r < 5 / 10) return "P_GREEN";
+      if (r < 6 / 10) return "P_BLACK";
+      if (r < 7 / 10) return "P_WHITE";
+      if (r < 8 / 10) return "P_GRAY";
+      if (r < 9 / 10) return "P_PINK";
+      return "P_ORANGE";
     }
 
     function weaponMeta(type = game.weaponType) {
@@ -1782,6 +1787,7 @@ const W = 1280;
       if (type === "white") return { name: "CONDUCT", short: "WHITE", color: "#f1faff", core: "#bde9ff" };
       if (type === "gray") return { name: "IMPACT", short: "GRAY", color: "#929ba9", core: "#f0f3ff" };
       if (type === "pink") return { name: "SEEKER", short: "PINK", color: "#ff79c8", core: "#fff1fb" };
+      if (type === "orange") return { name: "BURST", short: "ORANGE", color: "#ff922e", core: "#fff0d3" };
       return { name: "LINE", short: "BLUE", color: "#38e8ff", core: "#e8fdff" };
     }
 
@@ -1794,6 +1800,7 @@ const W = 1280;
       if (powerupType === "P_WHITE") return "white";
       if (powerupType === "P_GRAY") return "gray";
       if (powerupType === "P_PINK") return "pink";
+      if (powerupType === "P_ORANGE") return "orange";
       return "blue";
     }
 
@@ -1806,6 +1813,7 @@ const W = 1280;
       if (game.weaponType === "white") return "P_WHITE";
       if (game.weaponType === "gray") return "P_GRAY";
       if (game.weaponType === "pink") return "P_PINK";
+      if (game.weaponType === "orange") return "P_ORANGE";
       return "P_BLUE";
     }
 
@@ -2034,6 +2042,19 @@ const W = 1280;
             ctx.stroke();
             rect(-4, -33, 8, 7, "#ffffff");
             rect(-4, 26, 8, 7, "#ffffff");
+          } else if (wt === "orange") {
+            // Four spiky copper rays mark the on-hit explosive pickup.
+            for (const angle of [0, Math.PI / 2, Math.PI, Math.PI * 1.5]) {
+              ctx.save();
+              ctx.rotate(angle);
+              rect(23, -3, 12, 6, "#ffe0a0");
+              ctx.restore();
+            }
+            ctx.strokeStyle = "#fff0bb";
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(0, 0, 28, 0, Math.PI * 2);
+            ctx.stroke();
           }
         } else if (p.type === "BOMB") {
           // Cyan-white bomb pickup.
@@ -2082,6 +2103,16 @@ const W = 1280;
       });
     }
 
+    function addOrangeExplosion(x, y) {
+      // Visual-only pool: only detonateOrangeShot resolves gameplay damage.
+      if (game.orangeExplosions.length >= LIMITS.orangeExplosions) {
+        game.orangeExplosions.shift();
+      }
+      game.orangeExplosions.push({
+        x, y, life: orangeRules.RULES.explosionLifetimeSeconds
+      });
+    }
+
     function addParticle(x, y, vx, vy, life, c) {
       if (game.particles.length >= LIMITS.particles) return;
       game.particles.push({ x, y, vx, vy, life, c });
@@ -2100,6 +2131,8 @@ const W = 1280;
       game.electricArcs = game.electricArcs.filter(arc => arc.life > 0);
       for (const blast of game.pinkExplosions) blast.life -= dt;
       game.pinkExplosions = game.pinkExplosions.filter(blast => blast.life > 0);
+      for (const blast of game.orangeExplosions) blast.life -= dt;
+      game.orangeExplosions = game.orangeExplosions.filter(blast => blast.life > 0);
     }
 
     function drawPinkExplosions() {
@@ -2133,6 +2166,40 @@ const W = 1280;
         ctx.lineWidth = 3;
         ctx.beginPath();
         ctx.arc(0, 0, ringRadius * 0.72, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.restore();
+      }
+    }
+
+    function drawOrangeExplosions() {
+      const radius = orangeRules.RULES.radius;
+      for (const blast of game.orangeExplosions) {
+        const progress = clamp(1 - blast.life / orangeRules.RULES.explosionLifetimeSeconds, 0, 1);
+        const alpha = (1 - progress) * (1 - progress);
+        const ring = radius * Math.min(1, 0.15 + progress * 3);
+        ctx.save();
+        ctx.translate(blast.x, blast.y);
+        ctx.globalAlpha = alpha;
+        const fire = ctx.createRadialGradient(0, 0, 0, 0, 0, radius);
+        fire.addColorStop(0, "rgba(255,255,204,.56)");
+        fire.addColorStop(0.32, "rgba(255,165,47,.37)");
+        fire.addColorStop(0.75, "rgba(255,93,17,.15)");
+        fire.addColorStop(1, "rgba(255,93,17,0)");
+        ctx.fillStyle = fire;
+        ctx.beginPath();
+        ctx.arc(0, 0, radius, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.shadowColor = "#ff7a1a";
+        ctx.shadowBlur = 18;
+        ctx.strokeStyle = "#ff9c39";
+        ctx.lineWidth = 5 + (1 - progress) * 4;
+        ctx.beginPath();
+        ctx.arc(0, 0, ring, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.strokeStyle = "#ffe1a3";
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(0, 0, ring * 0.73, 0, Math.PI * 2);
         ctx.stroke();
         ctx.restore();
       }
@@ -2235,6 +2302,13 @@ const W = 1280;
             pinkRules.RULES.normalDamage * pinkRules.RULES.missileDamageMultiplier,
             { pinkSpecial: true });
         }
+      } else if (type === "orange") {
+        // Starter-grade twin lanes. Every orange bullet detonates on its FIRST
+        // swept target contact; the 3x area damage replaces separate direct hit.
+        addPlayerShot(muzzleX, baseY - 10, 1100, 0, 9,
+          orangeRules.RULES.normalDamage, "#ff932e", { orangeBlast: true });
+        addPlayerShot(muzzleX, baseY + 12, 1100, 0, 9,
+          orangeRules.RULES.normalDamage, "#ff932e", { orangeBlast: true });
       } else if (type === "gray") {
         // Each actual gray bullet contact independently chooses one effect.
         addPlayerShot(muzzleX, baseY - 10, 1100, 0, 9, 1.15, "#abb3c0", { grayImpact: true });
@@ -2290,7 +2364,7 @@ const W = 1280;
       if (game.weaponType === "red") return redRules.RULES.volleySeconds;
       if (game.weaponType === "yellow") return Math.max(0.17, 0.25 - game.weaponLevel * 0.025);
       if (game.weaponType === "purple") return Math.max(0.10, 0.145 - game.weaponLevel * 0.012);
-      return Math.max(0.07, 0.115 - (game.weaponType === "green" || game.weaponType === "black" || game.weaponType === "white" || game.weaponType === "gray" || game.weaponType === "pink" ? 1 : game.weaponLevel) * 0.014);
+      return Math.max(0.07, 0.115 - (game.weaponType === "green" || game.weaponType === "black" || game.weaponType === "white" || game.weaponType === "gray" || game.weaponType === "pink" || game.weaponType === "orange" ? 1 : game.weaponLevel) * 0.014);
     }
 
     function findMissileTarget(m) {
@@ -2895,6 +2969,62 @@ const W = 1280;
       }
     }
 
+    // Find the FIRST swept enemy/turret/Boss-hull contact. Even with a long
+    // frame, later targets cannot steal a blast from something hit earlier.
+    function updateOrangeProjectile(b) {
+      const candidates = [];
+      for (const e of game.enemies) {
+        if (e.hp <= 0 || !collision.sweptCircleHit(
+          b.previousX, b.previousY, b.x, b.y, e.x, e.y, b.r + e.r
+        )) continue;
+        candidates.push({
+          target: e, part: null,
+          impact: orangeRules.circleImpact(b, e, b.r + e.r)
+        });
+      }
+      const boss = game.boss;
+      if (boss?.active && boss.hp > 0) {
+        const part = bossParts.findHit(
+          boss, b.previousX, b.previousY, b.x, b.y, b.r
+        );
+        if (part) {
+          candidates.push({
+            target: boss, part,
+            impact: orangeRules.circleImpact(b,
+              { x: boss.x + part.x, y: boss.y + part.y }, part.r + b.r)
+          });
+        } else if (collision.sweptAabbHit(
+          b.previousX, b.previousY, b.x, b.y,
+          boss.x - boss.rx - b.r, boss.x + boss.rx + b.r,
+          boss.y - boss.ry - b.r, boss.y + boss.ry + b.r
+        )) {
+          const impact = orangeRules.bossImpact(b, boss, b.r);
+          if (impact) candidates.push({ target: boss, part: null, impact });
+        }
+      }
+      if (!candidates.length) return;
+      candidates.sort((a, c) => a.impact.t - c.impact.t);
+      const { target, part, impact } = candidates[0];
+
+      // Capture the entire target population before the direct 3x damage,
+      // so a splitter dying or a new Boss appearing cannot receive the same
+      // blast again. The directly struck enemy/Boss is never double-hit.
+      const enemiesAtImpact = game.enemies.slice();
+      const bossAtImpact = boss?.active && boss.hp > 0 ? boss : null;
+      b.dead = true;
+      addOrangeExplosion(impact.x, impact.y);
+      const power = b.power * orangeRules.RULES.damageMultiplier;
+      if (target === boss) {
+        damageBoss(power, impact.x, impact.y, "#ffad4b", part);
+      } else {
+        damageEnemy(target, power, impact.x, impact.y, "#ffad4b");
+      }
+      orangeRules.splash(impact, enemiesAtImpact, bossAtImpact, target,
+        e => damageEnemy(e, power, e.x, e.y, "#ff9c39"),
+        hitBoss => damageBoss(power, impact.x, impact.y, "#ff9c39")
+      );
+    }
+
     function updatePlayerBullets(dt) {
       for (const b of game.bullets) {
         if (b.dead) continue;
@@ -2915,6 +3045,10 @@ const W = 1280;
         if (b.dead) continue;
         if (b.whiteConductive) {
           updateWhiteProjectile(b);
+          continue;
+        }
+        if (b.orangeBlast) {
+          updateOrangeProjectile(b);
           continue;
         }
 
@@ -3482,6 +3616,15 @@ const W = 1280;
           ctx.restore();
           continue;
         }
+        if (b.orangeBlast) {
+          ctx.shadowColor = "#ff8929";
+          ctx.shadowBlur = 19;
+          rect(-8, -7, 38, 14, "#ff6b16");
+          rect(-3, -4, 33, 8, "#ffb647");
+          rect(13, -2, 16, 4, "#fff0b6");
+          ctx.restore();
+          continue;
+        }
         if (b.whiteConductive) {
           ctx.shadowColor = "#88eaff";
           ctx.shadowBlur = 20;
@@ -3727,6 +3870,8 @@ const W = 1280;
         ? "GRAY 20/5/75  1.5X"
         : game.weaponType === "pink"
         ? "PINK SEEK  2/.4S  10%x10"
+        : game.weaponType === "orange"
+        ? "ORANGE BLAST  R100  X3"
         : `${meta.short} WEAPON  LV.${game.weaponLevel}`, 656, 80, 21, "left",
         game.weaponType === "black" ? "#9cccff" : meta.color);
 
@@ -3886,7 +4031,7 @@ const W = 1280;
       ctx.fillRect(0, 0, W, H);
 
       drawText("NEON WINGS", W / 2, 195, 86, "center", "#e7fbff");
-      drawText("NEONWINGS PAN  /  v26.7.2", W / 2, 270, 28, "center", "#98f5ff");
+      drawText("NEONWINGS PAN  /  v26.8.0", W / 2, 270, 28, "center", "#98f5ff");
       drawText(`HIGH SCORE ${String(highScore()).padStart(6, "0")}`, W / 2, 318, 24, "center", "#fff4b7");
 
       drawPlayerShip(W / 2 - 170, 492, -0.20, false, ships[0]);
@@ -4223,6 +4368,7 @@ const W = 1280;
       drawBossWarning(game.boss);
       drawBoss(game.boss);
       drawPinkExplosions();
+      drawOrangeExplosions();
       drawElectricArcs();
       drawPowerups();
       drawParticles();
