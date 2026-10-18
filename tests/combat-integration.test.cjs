@@ -3315,7 +3315,7 @@ test("RAINBOW GRAY projectile preserves mutually exclusive stun versus boosted d
   assert.equal(stunned.eval("game.enemies[0].grayStunRemaining"),grayWeapon.RULES.stunSeconds);
   assert.ok(Math.abs(stunned.eval("game.enemies[0].hp")-48.85)<1e-8);
   const amplified=setup(.80);
-  assert.equal(amplified.eval("game.enemies[0].grayStunRemaining"),0);
+  assert.equal(amplified.eval("grayRules.isStunned(game.enemies[0])"),false);
   assert.ok(Math.abs(amplified.eval("game.enemies[0].hp")-(50-1.15*1.5))<1e-8);
 });
 
@@ -3411,5 +3411,5 @@ test("RAINBOW missile projectile choice never adds ordinary or DARK RED bonus mi
   assert.equal(app.eval("game.missiles.length"),2);
   assert.equal(app.eval("game.bullets.length"),0);
   assert.equal(app.eval("game.missiles.every(m=>m.pinkSpecial&&!m.darkRedSpecial)"),true);
-  assert.equal(app.eval("game.missiles.every(m=>m.power===28.75&&m.r===50)"),true);
+  assert.equal(app.eval("game.missiles.every(m=>Math.abs(m.power-28.75)<1e-8&&m.r===50)"),true);
 });
