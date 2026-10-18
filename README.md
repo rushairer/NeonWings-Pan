@@ -13,7 +13,7 @@ A controller-first, five-stage, side-scrolling neon arcade shooter built with br
 ## Currently playable
 
 - Five themed stages and five multi-phase bosses; higher-difficulty loops after stage five
-- 11 enemy types, formations, fourteen weapon families, collectible power-ups and BOMB
+- 11 enemy types, formations, fifteen weapon families, collectible power-ups and BOMB
 - Gamepad rumble where browser/device supports it, Web Audio synthesis, volume and vibration options
 - Pause, fullscreen, local high score, end-of-run statistics
 - v23 foundation: 4:3 letterbox sizing; auto-pause on background/focus loss or controller disconnection; browser-storage fallback
@@ -28,6 +28,27 @@ A controller-first, five-stage, side-scrolling neon arcade shooter built with br
 - v26.1.1 UI fix: fighter/mode selector uses explicit non-overlapping layout geometry; selected fighter frame, Training hint, ship descriptions and score footer retain safe spacing.
 - **v26.2.0 NeonWings-Pan exclusive:** red P twin-line fire, a 250-projectile ±10° special fan triggered on 10% of eligible volleys, and an independent 0–5 star progression.
 - **v26.3.0 NeonWings-Pan exclusive:** green P retains starter-grade dual shots and adds a passive neon halo dealing area damage to nearby enemies once per second.
+
+## v26.12.0 — RAINBOW P / PRISM (彩色随机弹)
+
+The FIFTEENTH P color is RAINBOW / PRISM, obtainable through the normal power-up drops, recoverable after taking a hit, and independently available in Classic, Boss Rush and Training modes. Its pickup has an eight-color perimeter. It fires at the **starter dual-shot cadence** (approximately 0.101s per firing action); **each of the TWO projectile slots independently rolls one mutually exclusive effect**. It NEVER fires all eight at once and never quietly makes an extra DARK RED or PINK proc on top of the selected projectile.
+
+| Random shot type | Per projectile | Inherited behavior |
+| --- | ---: | --- |
+| Yellow guided bullet | 13% | Yellow-colored homing projectile, seeks a live enemy/Boss (guided flight like YELLOW's target-seeking missiles, but this is a normal-power bullet, not an extra missile) |
+| Black slow bullet | 13% | Original BLACK P's 5-second, 50%-speed enemy/Boss slow and same blue-glow status FX |
+| Pink missile | **9%** | **REPLACES** that shot with the existing PINK P 100-unit BLACK guided special missile, 25× direct damage, 360-radius pink explosion with only 1× direct-shot damage to OTHER nearby victims |
+| Dark red chain bullet | 13% | Original DARK RED P's guaranteed 1× hit then independent 50%-chance full-strength repeats, up to 30 TOTAL damage hits to the SAME living victim; no new 5%-chance dark-red rocket |
+| Gray impact bullet | 13% | Original GRAY P's mutually exclusive 20% knockback / 5% 0.5s stun / 75% 1.5× direct-damage outcome on contact |
+| White piercing conductive bolt | 13% | Original WHITE P piercing shot plus 360-radius electric arcs, up to 3 hops at original 60% secondary damage per victim (in this game, WHITE is *conductive*, not a missile weapon) |
+| Lime orbit bullet | 13% | Original LIME P's ordinary muzzle bullet curving into a 360-radius clockwise orbit around the moving player (3.2s active lifetime, no artificial per-color projectile count cap) |
+| Orange explosive bullet | 13% | Original ORANGE P's first-hit radius-100 explosion, 3× ordinary bullet damage to each victim exactly once |
+
+**Total:** 7 × 13% + 9% = **100%**. The type roll is made **once per physical projectile as it is launched**, never on frame update/impact. With two independent projectile slots per action, a dual launch can contain two different effects or even two missiles; outcomes are not manually normalized after launch. Existing shared missile/normal-shot budgets still protect all weapons, while lime orbiters keep their previously requested no-cap semantics and natural TTL.
+
+All damage inherits the original ship/Overdrive scaling, shield absorption, Boss weak-point geometry, kill accounting and existing effects without a second implementation. Already-fired mixed bullets and specials survive P color switches. Unique `P_RAINBOW` drops, rainbow pickup icon, status `RAINBOW  7x13%  M9%`, cache-versioned browser runtime and deterministic 100,000-roll probability tests are included. Existing 14 weapon behaviors are left unchanged.
+
+Playable release: https://rushairer.github.io/NeonWings-Pan/?v=26.12.0
 
 ## v26.11.1 — DARK RED P 50% chain up to 30 hits + 5% guided 10× missile
 

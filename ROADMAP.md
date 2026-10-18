@@ -7,6 +7,18 @@ Independently maintained from NeonWings commit `5ebcb1de1adb288b41a3c5e387f747bc
 - [x] Configure standalone Pages workflow
 - [ ] Verify site deployment and controller tests on hardware
 
+## v26.12.0 — RAINBOW P / eight randomly inherited projectile abilities
+
+- [x] Add fifteenth multicolor P pickup with distinct eight-color rim, HUD and normal collectible/HP-dropped re-equip behavior
+- [x] Keep two physical starter-rate projectile slots and independently select exactly ONE of eight original weapon modes per slot
+- [x] Enforce 13% each for yellow homing, black slow, DARK RED chain, GRAY impact, WHITE penetration + conductivity, LIME orbit, ORANGE explosion
+- [x] Enforce 9% PINK guided 100-unit missile instead of the corresponding bullet slot: 25× direct and 360-radius 1× splash
+- [x] Reuse original 50%/30-hit DARK RED, GRAY 20/5/75, WHITE 3-hop, BLACK 5s/50%, ORANGE 100-radius 3× and LIME radius-360 logic directly
+- [x] Draw each mixed projectile with its inherited weapon-style sprite; show faint orbital ring only when rainbow has active LIME-type orbits
+- [x] Keep RED star UI restricted to original RED P; preserve regular YELLOW guided missiles, PINK 15% missile, and DARK RED 5% extra missile rules unchanged
+- [x] Add explicit RNG boundary and 100k-roll distribution tests, plus combat coverage for every selected projectile type, shields, Boss and palette
+- [ ] Manually inspect device FPS/visual readability with many concurrent mixed projectiles and verify controller gameplay
+
 ## v26.11.1 — DARK RED 50% repeat / 30 hits / 5% guided 10× rocket
 
 - [x] Raise per-successful-landed-hit continuation chance from 10% to 50% with independent RNG on every extra 100%-strength hit
