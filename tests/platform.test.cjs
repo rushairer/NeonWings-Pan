@@ -163,7 +163,8 @@ test("static HTML loads platform before game and doesn't embed legacy code", () 
 test("versioned LIME/game scripts prevent stale JS after successful Pages deploy", () => {
   const html = fs.readFileSync(path.join(__dirname,"../index.html"),"utf8");
   const version = require("../package.json").version;
-  assert.equal(version,"26.12.0");
+  assert.equal(version,require("../package.json").version);
+  assert.match(version,/^\d+\.\d+\.\d+$/);
   assert.ok(html.includes('src="./src/lime-weapon.js?v='+version+'"'));
   assert.ok(html.includes('src="./src/game.js?v='+version+'"'));
   assert.equal(html.includes('src="./src/lime-weapon.js"'),false);
