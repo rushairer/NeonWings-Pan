@@ -7,6 +7,18 @@ Independently maintained from NeonWings commit `5ebcb1de1adb288b41a3c5e387f747bc
 - [x] Configure standalone Pages workflow
 - [ ] Verify site deployment and controller tests on hardware
 
+## v26.11.1 — DARK RED 50% repeat / 30 hits / 5% guided 10× rocket
+
+- [x] Raise per-successful-landed-hit continuation chance from 10% to 50% with independent RNG on every extra 100%-strength hit
+- [x] Increase HARD max from 10 to 30 TOTAL full-damage events per direct ordinary-bullet or special-rocket collision; STOP at original victim death or Boss mount break
+- [x] Fire one BONUS homing missile on an independent 5% roll per TWO-bullet DARK RED firing action; never roll on hit or for every chained strike
+- [x] Make rocket same radius-50 / 100 logical-unit homing physics and 360-range impact explosion as PINK, visually DARK RED
+- [x] Set each direct rocket chain damage event to exactly 10× normal bullet power (1000%, before common fighter/Overdrive scale)
+- [x] Keep 360-radius splash at one ordinary 1× hit to nearby OTHER targets, no splash chain, no direct-target double damage
+- [x] Retain normal RED's stars/fan, PINK's own 15%/25× special, YELLOW missiles, shields, Boss weak points and 14-color P pool
+- [x] Update browser cache versions, rules, HUD and deterministic unit/integration tests
+- [ ] Manual gameplay pacing, Boss chain balance and performance on AYANEO AIR MINI
+
 ## v26.11.0 — DARK RED P / 10%-chance chained full damage
 
 - [x] Implement separate fourteenth DARK RED P pickup and normal twin-shot loadout (baseline 1.15 power / 0.101s)

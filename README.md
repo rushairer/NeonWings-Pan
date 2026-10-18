@@ -29,6 +29,18 @@ A controller-first, five-stage, side-scrolling neon arcade shooter built with br
 - **v26.2.0 NeonWings-Pan exclusive:** red P twin-line fire, a 250-projectile ±10° special fan triggered on 10% of eligible volleys, and an independent 0–5 star progression.
 - **v26.3.0 NeonWings-Pan exclusive:** green P retains starter-grade dual shots and adds a passive neon halo dealing area damage to nearby enemies once per second.
 
+## v26.11.1 — DARK RED P 50% chain up to 30 hits + 5% guided 10× missile
+
+The separate fourteenth DARK RED P weapon now deals far more frequent repeat hits. Every ordinary DARK RED bullet still deals one guaranteed **100% normal 1.15 damage** on actual contact. While the SAME victim stays alive, a fresh **50% chance** triggers each additional **FULL 100% damage event**. The chain stops immediately on the first failed roll, the original enemy's death, Boss turret destruction, or Boss defeat; a strict **30 TOTAL hits per projectile** prevents unlimited damage and no roll happens after the cap. Repeats use the existing damage/score/shield and Overdrive paths, with NO damage reduction or new target acquisition. Under this rule, the probability of 2 or more hits is 50%, 3 or more is 25%, 4 or more is 12.5%; long streaks are increasingly rare.
+
+Each TWO-bullet firing action also has one independent **5% chance** to launch an ADDITIONAL **dark-burgundy guided missile**. Its homing, swept-hit rules, 100-game-unit rocket size, maximum travel life, 48-missile shared cap, radius-360 blast and fade are PINK-special compatible, but the body, fins, trails and explosion are **DARK RED** rather than PINK or black. Its DIRECT impact deals **1,000% of a normal DARK RED shot = 10× (11.5 unscaled)** and independently follows the SAME **50% repeat chance / 30-hit cap**: every successful repeat again deals the missile's complete original **10×** impact damage (never reduced). Boss mounts can receive the chain, but once the original mount breaks, further strikes cannot spill into the Boss hull.
+
+As on the original PINK missile, the area explosion affects OTHER existing nearby enemies/Bosses at 360 logical units for **exactly ONE 100%-strength normal bullet splash**, without chain or repeated detonation. The directly struck victim receives its 10× chained impacts only (no additional splash). Shield absorption, splitter spawning and shared fighter/Overdrive multipliers retain their normal behavior. The 5% missile proc is evaluated once **per ordinary two-bullet firing action**, never per projectile hit or per repeat. DARK RED does NOT inherit normal RED's star progression, and original PINK's 15% chance / 25× rocket remains unchanged.
+
+**HUD:** `DARK RED  50%x30  M5%x10` (50% continuation, 30 total hits, 5% missile launch, 10× rocket impact). New regression tests lock 0.499999 / 0.50 chain boundaries, 0.049999 / 0.05 missile boundaries, max 30 hits / 29 continuation rolls, and end-to-end Boss/weak-point, shield, homing, dropped target, dark-red blast and unaffected original PINK.
+
+**Play:** https://rushairer.github.io/NeonWings-Pan/?v=26.11.1
+
 ## v26.11.0 — DARK RED P / CHAIN (深红色)
 
 **The fourteenth P weapon** has a dark burgundy pickup with a three-strike emblem and distinctive crimson-glowing bullets; unlike normal RED P, it has no star progression, volley rest or special fan. DARK RED is available from ordinary P drops with equal per-color odds (**1/14 conditional color probability**), can be re-equipped/recovered and displays `DARK RED  10% CHAIN  x10`.
