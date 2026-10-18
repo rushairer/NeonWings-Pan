@@ -30,6 +30,8 @@ const W = 1280;
     if (!darkRedRules) throw new Error("NeonWings-Pan dark red P runtime missing");
     const rainbowRules = window.NeonRainbowWeapon;
     if (!rainbowRules) throw new Error("NeonWings-Pan rainbow P runtime missing");
+    const magnetRules = window.NeonMagnetWeapon;
+    if (!magnetRules) throw new Error("NeonWings-Pan magnet P runtime missing");
     const collision = window.NeonCollision;
     if (!collision) throw new Error("NeonWings collision runtime missing");
     const enemyBehaviors = window.NeonEnemyBehaviors;
@@ -60,6 +62,8 @@ const W = 1280;
       electricArcs: 96,
       pinkExplosions: pinkRules.RULES.maxExplosionEffects,
       orangeExplosions: orangeRules.RULES.maxExplosionEffects,
+      magneticFields: magnetRules.RULES.maxFields,
+      magneticBursts: magnetRules.RULES.maxBursts,
       missiles: 48,
       enemies: enemyBehaviors.CONFIG.maxEnemies
     });
@@ -1092,6 +1096,8 @@ const W = 1280;
         electricArcs: [],
         pinkExplosions: [],
         orangeExplosions: [],
+        magneticFields: [],
+        magneticBursts: [],
         boss: null,
 
         stars: Array.from({ length: 110 }, () => ({
@@ -1762,21 +1768,32 @@ const W = 1280;
         if (!e || e.hp <= 0) continue;
         const { movementDt, attackDt } = grayRules.advance(e, dt, blackRules);
         e.t += movementDt;
-        e.x += e.vx * movementDt;
-
-        // Even scripted zigzag positioning must freeze at the exact on-hit
-        // coordinates, not snap to its sinusoidal path while movementDt is 0.
-        if (movementDt > 0) {
-          if (e.kind === "zigzag") {
-            e.y = e.baseY + Math.sin(e.t * 5.2 + e.wave) * 120;
-          } else if (e.kind === "orb" || e.kind === "splitter") {
-            e.y += (Math.sin(e.t * 4 + e.wave) * 75) * movementDt;
-          } else if (e.kind === "sniper" || e.kind === "shield") {
-            e.y += (e.vy + Math.sin(e.t * 2.8 + e.wave) * 26) * movementDt;
-          } else {
-            e.y += (e.vy + Math.sin(e.t * 3.8 + e.wave) * 38) * movementDt;
+        const magneticField = magnetRules.nearest(game.magneticFields, e, W, H);
+        if (magneticField) {
+          // A field overrides natural travel (rather than stacking vx on the
+          // specified 100/s attraction). BLACK slow / GRAY stun remain effective.
+          magnetRules.pull(e, magneticField, Math.min(movementDt, magneticField.remaining),
+            { minX: -120, maxX: W + 120, minY: 70, maxY: H - 70 });
+          // Zigzag enemies must resume from the actual pulled coordinate,
+          // never jump to their pre-pull sine-wave position.
+          if (e.kind === "zigzag")
+            e.baseY = e.y - Math.sin(e.t * 5.2 + e.wave) * 120;
+        } else {
+          e.x += e.vx * movementDt;
+          // Even scripted zigzag positioning must freeze at the exact on-hit
+          // coordinates, not snap to its sinusoidal path while movementDt is 0.
+          if (movementDt > 0) {
+            if (e.kind === "zigzag") {
+              e.y = e.baseY + Math.sin(e.t * 5.2 + e.wave) * 120;
+            } else if (e.kind === "orb" || e.kind === "splitter") {
+              e.y += (Math.sin(e.t * 4 + e.wave) * 75) * movementDt;
+            } else if (e.kind === "sniper" || e.kind === "shield") {
+              e.y += (e.vy + Math.sin(e.t * 2.8 + e.wave) * 26) * movementDt;
+            } else {
+              e.y += (e.vy + Math.sin(e.t * 3.8 + e.wave) * 38) * movementDt;
+            }
+            if (e.y < 70 || e.y > H - 70) e.vy *= -1;
           }
-          if (e.y < 70 || e.y > H - 70) e.vy *= -1;
         }
 
         if (attackDt > 0 && e.kind === "carrier" && e.x < W - 120 && e.x > 110) {
@@ -1805,23 +1822,15 @@ const W = 1280;
       game.enemies = game.enemies.filter(e => e.hp > 0 && e.x > -120);
     }
 
+    const POWER_TYPES = Object.freeze([
+      "P_BLUE", "P_PURPLE", "P_YELLOW", "P_RED", "P_GREEN",
+      "P_BLACK", "P_WHITE", "P_GRAY", "P_PINK", "P_ORANGE",
+      "P_BROWN", "P_LIME", "P_SKY", "P_DARK_RED", "P_RAINBOW",
+      "P_MAGNET"
+    ]);
     function randomPowerType() {
-      const r = Math.random();
-      if (r < 1 / 15) return "P_BLUE";
-      if (r < 2 / 15) return "P_PURPLE";
-      if (r < 3 / 15) return "P_YELLOW";
-      if (r < 4 / 15) return "P_RED";
-      if (r < 5 / 15) return "P_GREEN";
-      if (r < 6 / 15) return "P_BLACK";
-      if (r < 7 / 15) return "P_WHITE";
-      if (r < 8 / 15) return "P_GRAY";
-      if (r < 9 / 15) return "P_PINK";
-      if (r < 10 / 15) return "P_ORANGE";
-      if (r < 11 / 15) return "P_BROWN";
-      if (r < 12 / 15) return "P_LIME";
-      if (r < 13 / 15) return "P_SKY";
-      if (r < 14 / 15) return "P_DARK_RED";
-      return "P_RAINBOW";
+      return POWER_TYPES[Math.min(POWER_TYPES.length - 1,
+        Math.floor(Math.random() * POWER_TYPES.length))];
     }
 
     function weaponMeta(type = game.weaponType) {
@@ -1839,6 +1848,7 @@ const W = 1280;
       if (type === "sky") return { name: "ADAPT", short: "SKY", color: "#86d9ff", core: "#e7f9ff" };
       if (type === "darkred") return { name: "CHAIN", short: "DARK RED", color: "#981332", core: "#ffe0e8" };
       if (type === "rainbow") return { name: "PRISM", short: "RAINBOW", color: "#e59bff", core: "#ffffff" };
+      if (type === "magnet") return { name: "MAGNET", short: "MAGNET", color: "#ff6f91", core: "#c8efff" };
       return { name: "LINE", short: "BLUE", color: "#38e8ff", core: "#e8fdff" };
     }
 
@@ -1857,6 +1867,7 @@ const W = 1280;
       if (powerupType === "P_SKY") return "sky";
       if (powerupType === "P_DARK_RED") return "darkred";
       if (powerupType === "P_RAINBOW") return "rainbow";
+      if (powerupType === "P_MAGNET") return "magnet";
       return "blue";
     }
 
@@ -1875,6 +1886,7 @@ const W = 1280;
       if (game.weaponType === "sky") return "P_SKY";
       if (game.weaponType === "darkred") return "P_DARK_RED";
       if (game.weaponType === "rainbow") return "P_RAINBOW";
+      if (game.weaponType === "magnet") return "P_MAGNET";
       return "P_BLUE";
     }
 
@@ -2049,7 +2061,13 @@ const W = 1280;
           const wt = powerupWeaponType(p.type);
           const meta = weaponMeta(wt);
           rect(-23, -23, 46, 46, "#07111f");
-          rect(-19, -19, 38, 38, meta.color);
+          if (wt === "magnet") {
+            // The P itself transitions from saturated red to pale sky blue.
+            const gradient = ctx.createLinearGradient(-19, -19, 19, 19);
+            gradient.addColorStop(0, "#ff4568");
+            gradient.addColorStop(1, "#a9e8ff");
+            rect(-19, -19, 38, 38, gradient);
+          } else rect(-19, -19, 38, 38, meta.color);
           rect(-13, -13, 26, 26, "#081020");
           drawText("P", 0, 1, 28, "center", meta.core);
           rect(-29, -4, 6, 8, meta.core);
@@ -2152,6 +2170,16 @@ const W = 1280;
             ctx.stroke();
             rect(-29, -3, 9, 6, "#e8fbff");
             rect(20, -3, 9, 6, "#e8fbff");
+          } else if (wt === "magnet") {
+            ctx.strokeStyle = "#c7f4ff";
+            ctx.lineWidth = 2.5;
+            ctx.beginPath();
+            ctx.arc(0, 0, 29, 0, Math.PI * 2);
+            ctx.stroke();
+            rect(-35, -6, 12, 12, "#ff4568");
+            rect(23, -6, 12, 12, "#a9e8ff");
+            rect(-4, -34, 8, 9, "#ff8fa6");
+            rect(-4, 25, 8, 9, "#c7f4ff");
           } else if (wt === "rainbow") {
             // Eight real colors on the PICKUP rim; existing weapon colors
             // remain visible in the inherited per-projectile shot effects.
@@ -2258,6 +2286,8 @@ const W = 1280;
       game.pinkExplosions = game.pinkExplosions.filter(blast => blast.life > 0);
       for (const blast of game.orangeExplosions) blast.life -= dt;
       game.orangeExplosions = game.orangeExplosions.filter(blast => blast.life > 0);
+      for (const burst of game.magneticBursts) burst.life -= dt;
+      game.magneticBursts = game.magneticBursts.filter(burst => burst.life > 0);
     }
 
     function drawPinkExplosions() {
@@ -2522,6 +2552,13 @@ const W = 1280;
               ...tag, orangeBlast: true
             });
         }
+      } else if (type === "magnet") {
+        // Two ordinary starter-grade projectiles; the 10% field roll happens
+        // ONLY at a genuine enemy/shield/Boss collision, never on emission.
+        for (const lane of [-10, 12]) {
+          addPlayerShot(muzzleX, baseY + lane, 1100, 0, 9,
+            magnetRules.RULES.normalDamage, "#ff6080", { magneticShot: true });
+        }
       } else if (type === "darkred") {
         // Each regular dual-shot action independently rolls ONE 5% bonus
         // guided missile. Chain RNG is ONLY evaluated after real impacts.
@@ -2592,7 +2629,7 @@ const W = 1280;
       if (game.weaponType === "rainbow") return rainbowRules.RULES.shotCooldownSeconds;
       if (game.weaponType === "yellow") return Math.max(0.17, 0.25 - game.weaponLevel * 0.025);
       if (game.weaponType === "purple") return Math.max(0.10, 0.145 - game.weaponLevel * 0.012);
-      return Math.max(0.07, 0.115 - (game.weaponType === "green" || game.weaponType === "black" || game.weaponType === "white" || game.weaponType === "gray" || game.weaponType === "pink" || game.weaponType === "orange" || game.weaponType === "lime" || game.weaponType === "brown" || game.weaponType === "sky" || game.weaponType === "darkred" ? 1 : game.weaponLevel) * 0.014);
+      return Math.max(0.07, 0.115 - (game.weaponType === "green" || game.weaponType === "black" || game.weaponType === "white" || game.weaponType === "gray" || game.weaponType === "pink" || game.weaponType === "orange" || game.weaponType === "lime" || game.weaponType === "brown" || game.weaponType === "sky" || game.weaponType === "darkred" || game.weaponType === "magnet" ? 1 : game.weaponLevel) * 0.014);
     }
 
     function findMissileTarget(m) {
@@ -2699,6 +2736,8 @@ const W = 1280;
       game.stageMode = "BOSS";
       game.spawnTimer = 999;
       game.enemies.length = 0;
+      game.magneticFields.length = 0;
+      game.magneticBursts.length = 0;
       game.enemyBullets.length = Math.min(game.enemyBullets.length, 8);
 
       startBgm();
@@ -2784,8 +2823,29 @@ const W = 1280;
       const ampX = [18, 36, 28, 44, 54][b.pattern] * phaseBoost;
       const ampY = [140, 190, 155, 210, 170][b.pattern] * phaseBoost;
       if (movementDt > 0) {
-        b.x = clamp(b.targetX + Math.sin(b.t * (0.55 + b.pattern * 0.08 + b.phase * 0.04)) * ampX, W - 390, W - 125);
-        b.y = clamp(H / 2 + Math.sin(b.t * (0.85 + b.pattern * 0.06 + b.phase * 0.05)) * ampY, 145, H - 145);
+        const naturalX = clamp(b.targetX +
+          Math.sin(b.t * (0.55 + b.pattern * 0.08 + b.phase * 0.04)) * ampX,
+          W - 390, W - 125);
+        const naturalY = clamp(H / 2 +
+          Math.sin(b.t * (0.85 + b.pattern * 0.06 + b.phase * 0.05)) * ampY,
+          145, H - 145);
+        const field = magnetRules.nearest(game.magneticFields, b, W, H);
+        if (field) {
+          // Boss counts as a screen enemy, but remains in its targetable arena.
+          magnetRules.pull(b, field, Math.min(movementDt, field.remaining),
+            { minX: W - 390, maxX: W - 125, minY: 145, maxY: H - 145 });
+          b.targetX = clamp(b.x, W - 390, W - 125);
+          b.magnetRecover = 0.6;
+        } else if (b.magnetRecover > 0) {
+          // Return smoothly to the scripted orbit, with no post-field snap.
+          const blend = Math.min(1, movementDt / Math.max(0.01, b.magnetRecover));
+          b.x += (naturalX - b.x) * blend;
+          b.y += (naturalY - b.y) * blend;
+          b.magnetRecover = Math.max(0, b.magnetRecover - movementDt);
+        } else {
+          b.x = naturalX;
+          b.y = naturalY;
+        }
       }
 
       // A previously ready shot still must not fire during a one-second stun.
@@ -2913,6 +2973,8 @@ const W = 1280;
       game.enemyBullets.length = 0;
       game.bullets.length = 0;
       game.missiles.length = 0;
+      game.magneticFields.length = 0;
+      game.magneticBursts.length = 0;
       game.powerups.length = 0;
       game.world.phase = "idle";
       game.world.hazard = null;
@@ -3372,6 +3434,57 @@ const W = 1280;
       }
     }
 
+    // Roll exactly once on a REAL ordinary MAGNET projectile collision, even
+    // when an enemy's shield absorbs all hull damage. Fields are world-anchored
+    // at the swept contact and keep the shot's ORIGINAL power after P swaps.
+    function tryStartMagneticField(bullet, impact) {
+      if (!bullet.magneticShot || !magnetRules.triggers(Math.random())) return false;
+      if (game.magneticFields.length >= LIMITS.magneticFields) return false;
+      game.magneticFields.push(magnetRules.createField(
+        impact.x, impact.y, bullet.power));
+      sfx("overdriveReady");
+      return true;
+    }
+
+    // At exactly two active seconds, count living overlapping circles/Boss
+    // hull ONCE, then apply each target's N*0.6 shot-power damage ONE time.
+    // Snapshot before damage: newly split drones/new Bosses never get a free
+    // hit from an expired field, and the effect cannot recursively proc.
+    function updateMagneticFields(dt) {
+      if (!(dt > 0)) return;
+      for (const field of game.magneticFields.slice()) {
+        if (!game.magneticFields.includes(field)) continue;
+        field.remaining = Math.max(0, field.remaining - dt);
+        if (field.remaining > 1e-9) continue;
+        field.remaining = 0;
+        const victims = game.enemies.filter(e =>
+          e.hp > 0 && greenRules.enemyInRange(field, e));
+        const boss = game.boss && game.boss.active && game.boss.hp > 0 &&
+          greenRules.bossInRange(field, game.boss) ? game.boss : null;
+        const count = victims.length + (boss ? 1 : 0);
+        if (game.magneticBursts.length < LIMITS.magneticBursts)
+          game.magneticBursts.push({
+            x: field.x, y: field.y,
+            life: magnetRules.RULES.burstSeconds,
+            count
+          });
+        if (!count) continue;
+        const power = magnetRules.damage(field.power, count);
+        for (const e of victims) {
+          if (e.hp > 0 && game.enemies.includes(e))
+            damageEnemy(e, power, e.x, e.y, "#a9e8ff");
+        }
+        if (boss && game.boss === boss && boss.active && boss.hp > 0) {
+          // GREEN's hull edge/shape rules; never bypass Boss HP handling.
+          const x = clamp(field.x, boss.x - boss.rx, boss.x + boss.rx);
+          const y = clamp(field.y, boss.y - boss.ry, boss.y + boss.ry);
+          damageBoss(power, x, y, "#ff678c");
+        }
+      }
+      game.magneticFields = game.magneticFields.filter(f => f.remaining > 0);
+      game.enemies = game.enemies.filter(e => e.hp > 0 && e.x > -120);
+    }
+
     function updatePlayerBullets(dt) {
       for (const b of game.bullets) {
         if (b.dead) continue;
@@ -3424,6 +3537,8 @@ const W = 1280;
           } else {
             b.dead = true;
           }
+          if (b.magneticShot) tryStartMagneticField(b,
+            orangeRules.circleImpact(b, e, b.r + e.r));
           if (b.blackSlow) blackRules.apply(e); // Includes shield-absorbed hits.
           const grayOutcome = b.grayImpact ? grayRules.apply(e, Math.random(), {
             direction: Math.sign(b.vx), minX: -120, maxX: W + 120
@@ -3451,6 +3566,9 @@ const W = 1280;
           );
           if (part) {
             b.dead = true;
+            if (b.magneticShot) tryStartMagneticField(b,
+              orangeRules.circleImpact(b,
+                {x: boss.x + part.x, y: boss.y + part.y}, b.r + part.r));
             if (b.blackSlow) blackRules.apply(boss);
             const grayOutcome = b.grayImpact ? grayRules.apply(boss, Math.random(), {
               boss: true, direction: Math.sign(b.vx), minX: W - 390, maxX: W - 125
@@ -3471,6 +3589,8 @@ const W = 1280;
             boss.y - boss.ry - b.r, boss.y + boss.ry + b.r
           )) {
             b.dead = true; // Piercing lances also only hit a Boss once.
+            if (b.magneticShot) tryStartMagneticField(b,
+              orangeRules.bossImpact(b, boss, b.r) || {x:b.x,y:b.y});
             if (b.blackSlow) blackRules.apply(boss);
             const grayOutcome = b.grayImpact ? grayRules.apply(boss, Math.random(), {
               boss: true, direction: Math.sign(b.vx), minX: W - 390, maxX: W - 125
@@ -3920,6 +4040,8 @@ const W = 1280;
 
       updateEnemies(dt);
       updateBoss(dt);
+      // Settle previous fields BEFORE player hits can spawn new ones this frame.
+      updateMagneticFields(dt);
       updateBrownLaser(dt, firing);
       updatePlayerBullets(dt);
       updateMissiles(dt);
@@ -4053,6 +4175,17 @@ const W = 1280;
         // LIME uses the SAME ordinary rectangular bullet sprite as BLUE.
         // Its only visual difference is the lime-colored core; the *path*,
         // not the projectile model, curves into an orbit.
+        if (b.magneticShot) {
+          const gradient = ctx.createLinearGradient(-9, -6, 35, 6);
+          gradient.addColorStop(0, "#ff4267");
+          gradient.addColorStop(1, "#a9e8ff");
+          ctx.shadowColor = "#acdfff";
+          ctx.shadowBlur = 18;
+          rect(-8, -8, 40, 16, gradient);
+          rect(5, -3, 29, 6, "#f5fbff");
+          ctx.restore();
+          continue;
+        }
         if (b.rainbowHoming) {
           // Yellow tracking bullet looks like a yellow bullet, not PINK.
           ctx.shadowColor = "#ffdb73";
@@ -4191,6 +4324,63 @@ const W = 1280;
         rect(-10, -3, 20, 6, b.c);
         rect(-2, -5, 10, 10, b.glow);
         rect(-16, -1, 10, 2, "rgba(255,255,255,.35)");
+        ctx.restore();
+      }
+    }
+
+    function drawMagneticFields() {
+      const radius = greenRules.RULES.radius;
+      for (const field of game.magneticFields) {
+        const progress = 1 - field.remaining / magnetRules.RULES.pullSeconds;
+        ctx.save();
+        ctx.translate(field.x, field.y);
+        const fill = ctx.createRadialGradient(0, 0, 18, 0, 0, radius);
+        fill.addColorStop(0, "rgba(255,70,105,.16)");
+        fill.addColorStop(.6, "rgba(184,151,227,.085)");
+        fill.addColorStop(1, "rgba(154,232,255,.035)");
+        ctx.fillStyle = fill;
+        ctx.beginPath();
+        ctx.arc(0, 0, radius, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = progress < .5 ? "#ff698d" : "#a8eaff";
+        ctx.shadowColor = "#adccff";
+        ctx.shadowBlur = 15;
+        ctx.lineWidth = 4;
+        ctx.globalAlpha = .65 + .22 * Math.sin(game.t * 9);
+        ctx.beginPath();
+        ctx.arc(0, 0, radius, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+        ctx.lineWidth = 2;
+        for (let i = 0; i < 8; i++) {
+          const angle = Math.PI * i / 4 + game.t * .15;
+          const r = radius * (.83 + .045 * Math.sin(game.t * 4 + i));
+          ctx.strokeStyle = i % 2 ? "#a9e8ff" : "#ff7b96";
+          ctx.beginPath();
+          ctx.moveTo(Math.cos(angle) * r, Math.sin(angle) * r);
+          ctx.lineTo(Math.cos(angle) * (r - 27), Math.sin(angle) * (r - 27));
+          ctx.stroke();
+        }
+        ctx.globalAlpha = 1;
+        ctx.fillStyle = "#ff738d";
+        ctx.beginPath(); ctx.arc(0, 0, 13, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = "#b5efff";
+        ctx.beginPath(); ctx.arc(0, 0, 7, 0, Math.PI * 2); ctx.fill();
+        drawText("MAGNET " + field.remaining.toFixed(1) + "S",
+          0, -radius + 28, 18, "center", "#bdefff");
+        ctx.restore();
+      }
+      for (const burst of game.magneticBursts) {
+        const progress = 1 - burst.life / magnetRules.RULES.burstSeconds;
+        ctx.save();
+        ctx.globalAlpha = (1 - progress) * .9;
+        ctx.strokeStyle = "#b5edff";
+        ctx.shadowColor = "#ff688a";
+        ctx.shadowBlur = 20;
+        ctx.lineWidth = 7 * (1 - progress) + 1;
+        ctx.beginPath();
+        ctx.arc(burst.x, burst.y, radius * (.25 + .75 * progress), 0, Math.PI * 2);
+        ctx.stroke();
         ctx.restore();
       }
     }
@@ -4357,6 +4547,8 @@ const W = 1280;
         ? "DARK RED  50%x30  M5%x10"
         : game.weaponType === "rainbow"
         ? "RAINBOW  7x13%  M9%"
+        : game.weaponType === "magnet"
+        ? "MAGNET 10%  R360  2.0S"
         : `${meta.short} WEAPON  LV.${game.weaponLevel}`, 656, 80, 21, "left",
         game.weaponType === "black" ? "#9cccff" : meta.color);
 
@@ -4842,6 +5034,7 @@ const W = 1280;
       drawBackground(dt);
       worlds.drawHazard(ctx, game.world, W, H);
       drawGreenAura();
+      drawMagneticFields();
       drawLimeOrbitRing();
       drawOverdriveAura();
       drawBombFlash();

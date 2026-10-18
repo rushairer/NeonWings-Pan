@@ -7,6 +7,17 @@ Independently maintained from NeonWings commit `5ebcb1de1adb288b41a3c5e387f747bc
 - [x] Configure standalone Pages workflow
 - [ ] Verify site deployment and controller tests on hardware
 
+## v26.13.0 — MAGNET P gradient-field attraction
+
+- [x] Add 16th uniform P color with red-to-pale-blue gradient pickup, bullets and HUD
+- [x] On each real normal-shot enemy/shield/Boss contact roll independent 10% magnetic-field proc
+- [x] Stationary radius-360 field (GREEN geometry), attracting all visible enemies + Bosses at baseline 100 logical units/s for 2 active seconds
+- [x] Multiple overlapping fields choose nearest center without additive velocity; preserve GRAY stun, BLACK slow, Boss boundaries and scripted resume
+- [x] When field expires, snapshot living targets within range, including at most one Boss hull; deal each N*0.6 of the original projectile's scaled damage with standard shields/Boss/score semantics
+- [x] Cap active fields/burst FX at 8 each, use visual-only canvas effects and keep existing bullets/fields active after weapon swaps
+- [x] Update distribution, browser asset cache version, node tests, and deployment build
+- [ ] Confirm magnet readability, gameplay balance and FPS on AYANEO AIR MINI or real browser
+
 ## v26.12.1 — RAINBOW P single projectile per 0.4 seconds
 
 - [x] Replace the prior 2-projectile / 0.101s volley with one centered shot every 0.4 active-combat seconds while firing is held

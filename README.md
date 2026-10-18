@@ -29,6 +29,16 @@ A controller-first, five-stage, side-scrolling neon arcade shooter built with br
 - **v26.2.0 NeonWings-Pan exclusive:** red P twin-line fire, a 250-projectile ±10° special fan triggered on 10% of eligible volleys, and an independent 0–5 star progression.
 - **v26.3.0 NeonWings-Pan exclusive:** green P retains starter-grade dual shots and adds a passive neon halo dealing area damage to nearby enemies once per second.
 
+## v26.13.0 — MAGNET P (红色→浅蓝色渐变 / 磁场)
+
+The new **sixteenth P pickup** has a red-to-pale-blue gradient. It fires two ordinary 1.15-power gradient bolts at the original starter 0.101-second cadence, independent of weapon upgrades. Every REAL bullet impact on an enemy, shield or living Boss turret/hull rolls an independent **10% chance** to create a stationary magnetic field **at the actual first swept contact**, not at the player's location.
+
+**Magnetic field radius = 360 game coordinates**, identical to GREEN's aura. For **2 active-combat seconds**, it attracts **all visible enemies anywhere on the screen**, including an active Boss, toward the closest active field at a base **100 game coordinates per second**. It replaces natural movement while active; existing BLACK slowdown and GRAY stun still apply. Bosses remain inside their targetable arena. Fields continue after weapon changes; pause and stage transitions freeze them. Up to eight simultaneous fields can exist, and attraction from overlapping fields never multiplies the stated speed.
+
+Exactly when the field expires, let **N** be the number of living ordinary enemies whose circles intersect its radius, plus one if the Boss hull intersects. **Every target inside gets N × 0.6 × the triggering projectile's original scaled damage** (normal base 1.15; preserve fighter/Overdrive multiplier captured on firing). Example: three qualifying targets receive 3 × 0.6 × 1.15 = **2.07 damage each** before ordinary shielding. Outside enemies take zero field damage, even though they were pulled while the field was active. Bullet contact also deals its normal direct-hit damage. The field itself is one-shot: it does not trigger more fields, hit new splitter children, or repeat damage. Magnetic bursts are visual-only and bounded. Regular enemy kill/scoring/shield rules and Boss stages remain intact; the other fifteen P weapons are unchanged.
+
+**Play:** https://rushairer.github.io/NeonWings-Pan/?v=26.13.0
+
 ## v26.12.1 — 彩色武器逐发射击与 0.4 秒间隔
 
 RAINBOW / PRISM now fires **exactly ONE projectile (or ONE replacing PINK special missile) per firing action**, centered on the fighter's muzzle, followed by **0.4 seconds of active-combat cooldown** before the next shot while FIRE is held. The cooldown does not advance during pause. This applies at every weapon level. Each emission independently chooses one of the same eight abilities at the original **7 × 13% + 9% = 100%** distribution. No other weapon's fire cadence or special effect is changed.
