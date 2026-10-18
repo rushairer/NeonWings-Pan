@@ -1588,7 +1588,7 @@ test("recollecting GRAY keeps burst streak; switching weapons resets it without 
   app.eval('collectPowerup({type:"P_BLUE",x:500,y:480,life:1})');
   assert.equal(app.eval("game.grayWeapon.volleys"),0);
   assert.equal(app.eval("game.redWeapon.stars"),4);
-  assert.ok(Math.abs(app.eval("getFireCooldown()")-Math.max(.07,.115-game.weaponLevel*.014))<1e-9);
+  assert.ok(Math.abs(app.eval("getFireCooldown() - Math.max(.07,.115-game.weaponLevel*.014)"))<1e-9);
   app.eval('collectPowerup({type:"P_GRAY",x:500,y:480,life:1})');
   assert.equal(app.eval("game.grayWeapon.volleys"),0);
   app.eval("updatePlaying(.001)");
@@ -1605,6 +1605,6 @@ test("GRAY burst counters never affect RED star progression or PURPLE shooting c
   assert.equal(app.eval("game.redWeapon.stars"),2);
   app.eval('collectPowerup({type:"P_PURPLE",x:500,y:480,life:1})');
   assert.equal(app.eval("game.grayWeapon.volleys"),0);
-  assert.ok(Math.abs(app.eval("getFireCooldown()")-Math.max(.10,.145-game.weaponLevel*.012))<1e-9);
+  assert.ok(Math.abs(app.eval("getFireCooldown() - Math.max(.10,.145-game.weaponLevel*.012)"))<1e-9);
   assert.equal(app.eval("game.redWeapon.stars"),2);
 });
