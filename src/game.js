@@ -46,6 +46,7 @@ const W = 1280;
       enemyBullets: 340,
       playerBullets: 360,
       electricArcs: 96,
+      pinkExplosions: pinkRules.RULES.maxExplosionEffects,
       missiles: 48,
       enemies: enemyBehaviors.CONFIG.maxEnemies
     });
@@ -1074,6 +1075,7 @@ const W = 1280;
         powerups: [],
         particles: [],
         electricArcs: [],
+        pinkExplosions: [],
         boss: null,
 
         stars: Array.from({ length: 110 }, () => ({
@@ -2069,6 +2071,17 @@ const W = 1280;
       });
     }
 
+    // Every special PINK missile draws a single, bounded 360-radius visual
+    // effect; only detonatePinkMissile applies damage (never draw functions).
+    function addPinkExplosion(x, y) {
+      if (game.pinkExplosions.length >= LIMITS.pinkExplosions) {
+        game.pinkExplosions.shift();
+      }
+      game.pinkExplosions.push({
+        x, y, life: pinkRules.RULES.explosionLifetimeSeconds
+      });
+    }
+
     function addParticle(x, y, vx, vy, life, c) {
       if (game.particles.length >= LIMITS.particles) return;
       game.particles.push({ x, y, vx, vy, life, c });
@@ -2085,6 +2098,44 @@ const W = 1280;
       game.particles = game.particles.filter(p => p.life > 0);
       for (const arc of game.electricArcs) arc.life -= dt;
       game.electricArcs = game.electricArcs.filter(arc => arc.life > 0);
+      for (const blast of game.pinkExplosions) blast.life -= dt;
+      game.pinkExplosions = game.pinkExplosions.filter(blast => blast.life > 0);
+    }
+
+    function drawPinkExplosions() {
+      const radius = greenRules.RULES.radius;
+      for (const blast of game.pinkExplosions) {
+        const progress = clamp(1 - blast.life / pinkRules.RULES.explosionLifetimeSeconds, 0, 1);
+        const alpha = (1 - progress) * (1 - progress);
+        // Blast damage applies at full 360 radius instantly. This wave is
+        // visual only and expands to the same radius before fading away.
+        const ringRadius = radius * Math.min(1, 0.16 + progress * 3.4);
+        ctx.save();
+        ctx.translate(blast.x, blast.y);
+        ctx.globalAlpha = alpha;
+        const glow = ctx.createRadialGradient(0, 0, 0, 0, 0, radius);
+        glow.addColorStop(0, "rgba(255,208,240,.37)");
+        glow.addColorStop(0.45, "rgba(255,89,176,.19)");
+        glow.addColorStop(0.85, "rgba(255,45,158,.08)");
+        glow.addColorStop(1, "rgba(255,45,158,0)");
+        ctx.fillStyle = glow;
+        ctx.beginPath();
+        ctx.arc(0, 0, radius, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.shadowColor = "#ff44ad";
+        ctx.shadowBlur = 30;
+        ctx.strokeStyle = "#ff82ce";
+        ctx.lineWidth = 8 + (1 - progress) * 5;
+        ctx.beginPath();
+        ctx.arc(0, 0, ringRadius, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.strokeStyle = "#ffe0f5";
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.arc(0, 0, ringRadius * 0.72, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.restore();
+      }
     }
 
     function drawElectricArcs() {
@@ -2132,7 +2183,8 @@ const W = 1280;
       haptic("missile", 0.10, 0.12, 24, 0.12);
       const overdrive = combatRules.isActive(game.combat);
       game.missiles.push({
-        x, y, vx: 520, vy: vySign * 160, r: 14,
+        x, y, vx: 520, vy: vySign * 160,
+        r: extra.pinkSpecial ? pinkRules.RULES.specialMissileSize / 2 : 14,
         power: power * combatRules.weaponDamageScale(game.combat, selectedShip().id),
         life: 4.6, turn: overdrive ? 5.8 : 4.2, trail: 0,
         overdrive, targetSlot: (game.missileSequence++) % 3,
@@ -2697,6 +2749,21 @@ const W = 1280;
       }
     }
 
+    // Special rocket: 10x damage is already applied to the direct victim.
+    // Other pre-existing enemies / a different Boss within GREEN's 360 radius
+    // each receive 1x PINK bolt power (including common ship/Overdrive scaling).
+    // No chain propagation and no duplicate hit on the direct victim.
+    function detonatePinkMissile(m, directTarget, nearbyEnemies, nearbyBoss) {
+      if (!m.pinkSpecial) return;
+      addPinkExplosion(m.x, m.y);
+      const splashPower = pinkRules.splashDamage(m.power);
+      pinkRules.splash({ x: m.x, y: m.y }, nearbyEnemies, nearbyBoss,
+        directTarget, greenRules,
+        e => damageEnemy(e, splashPower, e.x, e.y, "#ff74ca"),
+        b => damageBoss(splashPower, m.x, m.y, "#ff74ca")
+      );
+    }
+
     function updateMissiles(dt) {
       for (const m of game.missiles) {
         const fromX = m.x, fromY = m.y;
@@ -2730,11 +2797,17 @@ const W = 1280;
             Math.random() < 0.5 ? trailA : trailB);
         }
 
+        // Snapshot BEFORE direct damage: splitter child spawns and newly
+        // activated Bosses may not be affected by this same explosion.
+        const nearbyEnemies = m.pinkSpecial ? game.enemies.slice() : null;
+        const nearbyBoss = m.pinkSpecial && game.boss?.active && game.boss.hp > 0
+          ? game.boss : null;
         for (const e of game.enemies) {
           if (e.hp <= 0) continue;
           if (collision.sweptCircleHit(fromX, fromY, m.x, m.y, e.x, e.y, m.r + e.r)) {
             m.life = 0;
             damageEnemy(e, m.power, m.x, m.y, m.pinkSpecial ? "#ff82d0" : "#ffd76b");
+            if (m.pinkSpecial) detonatePinkMissile(m, e, nearbyEnemies, nearbyBoss);
             break;
           }
         }
@@ -2745,12 +2818,14 @@ const W = 1280;
           if (targetPart) {
             m.life = 0;
             damageBoss(m.power, m.x, m.y, m.pinkSpecial ? "#ff82d0" : "#ffd76b", targetPart);
+            if (m.pinkSpecial) detonatePinkMissile(m, b, nearbyEnemies, nearbyBoss);
           } else if (collision.sweptAabbHit(
             fromX, fromY, m.x, m.y,
             b.x - b.rx - m.r, b.x + b.rx + m.r, b.y - b.ry - m.r, b.y + b.ry + m.r
           )) {
             m.life = 0;
             damageBoss(m.power, m.x, m.y, m.pinkSpecial ? "#ff82d0" : "#ffd76b");
+            if (m.pinkSpecial) detonatePinkMissile(m, b, nearbyEnemies, nearbyBoss);
           }
         }
       }
@@ -3453,13 +3528,32 @@ const W = 1280;
         ctx.translate(m.x, m.y);
         ctx.rotate(Math.atan2(m.vy, m.vx));
         if (m.pinkSpecial) {
-          ctx.shadowBlur = 23;
-          ctx.shadowColor = "#ff5fae";
-          rect(-22, -7, 43, 14, "#ef56ad");
-          rect(-12, -4, 31, 8, "#ffe9fa");
-          rect(-29, -4, 10, 8, "#ffaadf");
-          rect(12, -11, 11, 6, "#ff86cb");
-          rect(12, 5, 11, 6, "#ff86cb");
+          // 100 x 100 logical-unit silhouette (including fins). BLACK body
+          // with pink-outline contrast so it remains readable in dark arenas.
+          const half = pinkRules.RULES.specialMissileSize / 2;
+          ctx.shadowBlur = 24;
+          ctx.shadowColor = "#ff61ba";
+          rect(-half + 6, -half, 24, 28, "#050509");
+          rect(-half + 6, half - 28, 24, 28, "#050509");
+          ctx.strokeStyle = "#ff89d2";
+          ctx.lineWidth = 3;
+          ctx.strokeRect(-half + 6, -half, 24, 28);
+          ctx.strokeRect(-half + 6, half - 28, 24, 28);
+          ctx.fillStyle = "#030306";
+          ctx.beginPath();
+          ctx.moveTo(-half, -18);
+          ctx.lineTo(-half + 12, -25);
+          ctx.lineTo(half - 32, -25);
+          ctx.lineTo(half, 0);
+          ctx.lineTo(half - 32, 25);
+          ctx.lineTo(-half + 12, 25);
+          ctx.lineTo(-half, 18);
+          ctx.closePath();
+          ctx.fill();
+          ctx.stroke();
+          rect(-half + 23, -6, 52, 12, "#16121b");
+          rect(-half + 40, -3, 24, 6, "#ff69bf");
+          rect(-half + 2, -6, 12, 12, "#ffb5e4");
         } else {
           rect(-18, -6, 34, 12, "#ffd76b");
           rect(-8, -4, 18, 8, "#fff4b7");
@@ -3792,7 +3886,7 @@ const W = 1280;
       ctx.fillRect(0, 0, W, H);
 
       drawText("NEON WINGS", W / 2, 195, 86, "center", "#e7fbff");
-      drawText("NEONWINGS PAN  /  v26.7.0", W / 2, 270, 28, "center", "#98f5ff");
+      drawText("NEONWINGS PAN  /  v26.7.1", W / 2, 270, 28, "center", "#98f5ff");
       drawText(`HIGH SCORE ${String(highScore()).padStart(6, "0")}`, W / 2, 318, 24, "center", "#fff4b7");
 
       drawPlayerShip(W / 2 - 170, 492, -0.20, false, ships[0]);
@@ -4128,6 +4222,7 @@ const W = 1280;
       for (const e of game.enemies) drawEnemy(e);
       drawBossWarning(game.boss);
       drawBoss(game.boss);
+      drawPinkExplosions();
       drawElectricArcs();
       drawPowerups();
       drawParticles();
