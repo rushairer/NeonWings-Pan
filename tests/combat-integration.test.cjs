@@ -2505,15 +2505,19 @@ test("LIME normal bullet can hit Boss hull during outward curve before rim", () 
   assert.ok(Math.abs(app.eval("game.boss.hp")-98.85)<1e-8);
 });
 
-test("LIME normal bullets keep a 72-orbit cap without touching other weapon projectiles", () => {
+test("LIME accepts unlimited simultaneous orbiting bullets, independent from other weapon bullet cap", () => {
   const app=boot();
   app.eval([
     'game.state="PLAYING";game.weaponType="blue";',
     'addPlayerShot(300,480,1100,0,9,1.15,"#38e8ff");',
-    'game.weaponType="lime";for(let i=0;i<40;i++)firePlayerWeapons();'
+    'game.weaponType="lime";for(let i=0;i<230;i++)firePlayerWeapons();'
   ].join("\n"));
-  assert.equal(app.eval("game.bullets.filter(b=>b.orbiting).length"),limeWeapon.RULES.maxOrbitingBullets);
+  assert.equal(limeWeapon.RULES.maxOrbitingBullets,Infinity);
+  assert.equal(app.eval("game.bullets.filter(b=>b.orbiting).length"),460);
   assert.equal(app.eval("game.bullets.filter(b=>!b.orbiting).length"),1);
+  app.eval('game.weaponType="blue";firePlayerWeapons()');
+  assert.equal(app.eval("game.bullets.filter(b=>b.orbiting).length"),460);
+  assert.equal(app.eval("game.bullets.filter(b=>!b.orbiting).length"),3);
 });
 
 test("LIME ring guide is cosmetic only; the normal bullets, not a passive aura, deal damage", () => {
@@ -2591,10 +2595,11 @@ test("LIME held fire preserves the very first muzzle bullet through a COMPLETE 3
     2*Math.PI/limeWeapon.RULES.radiansPerSecond);
   assert.ok(result.life > 0);
   assert.ok(Math.abs(result.radius-360)<1e-8);
-  assert.ok(result.count>32 && result.count<=limeWeapon.RULES.maxOrbitingBullets);
+  assert.ok(result.count>32);
+  assert.equal(limeWeapon.RULES.maxOrbitingBullets,Infinity);
 });
 
-test("LIME 5 seconds of full-auto fire stays bounded without prematurely dropping live orbiters", () => {
+test("LIME 5 seconds of full-auto fire recycles by TTL and impacts, never by quantity cap", () => {
   const app=boot();
   const result=app.eval([
     '(() => {',
@@ -2608,6 +2613,170 @@ test("LIME 5 seconds of full-auto fire stays bounded without prematurely droppin
     '};})()'
   ].join("\n"));
   assert.ok(result.total>32);
-  assert.ok(result.total<=limeWeapon.RULES.maxOrbitingBullets);
+  assert.ok(result.total<100, "finite lifetime bounds normal held-fire projectile population");
   assert.equal(result.live,result.total);
+});
+
+
+test("SKY P is the 13th collectible and switches damage/homing/slow at actual game.hp 3", () => {
+  const app=boot();
+  app.eval([
+    'game.state="PLAYING";game.weaponType="blue";',
+    'collectPowerup({type:"P_SKY",x:300,y:480,life:1});',
+    'game.weaponLevel=3;game.hp=4;firePlayerWeapons();'
+  ].join("\n"));
+  assert.equal(app.eval("game.weaponType"),"sky");
+  assert.equal(app.eval("weaponMeta().short"),"SKY");
+  assert.equal(app.eval("game.bullets.length"),2);
+  assert.ok(Math.abs(app.eval("game.bullets[0].power")-2.875)<1e-8);
+  assert.equal(app.eval("game.bullets.every(b=>b.skyShot&&!b.skyHoming&&!b.blackSlow)"),true);
+  assert.ok(Math.abs(app.eval("getFireCooldown()")-.101)<1e-8);
+  const labels=app.eval('(() => {const arr=[];ctx.fillText=t=>arr.push(String(t));drawHud();return arr;})()');
+  assert.ok(labels.includes("SKY BOOST  2.5X"));
+  app.eval('game.bullets=[];game.hp=3;firePlayerWeapons()');
+  assert.equal(app.eval("game.bullets.length"),2);
+  assert.ok(Math.abs(app.eval("game.bullets[0].power")-1.15)<1e-8);
+  assert.equal(app.eval("game.bullets.every(b=>b.skyHoming&&b.blackSlow&&b.skyShot)"),true);
+  assert.equal(app.eval("game.bullets[0].life"),skyWeapon.RULES.seekingLifetimeSeconds);
+  const low=app.eval('(() => {const arr=[];ctx.fillText=t=>arr.push(String(t));drawHud();return arr;})()');
+  assert.ok(low.includes("SKY SEEK  BLACK SLOW"));
+  app.eval('game.hp=2;game.bullets=[];firePlayerWeapons()');
+  assert.equal(app.eval("game.bullets.every(b=>b.skyHoming&&b.blackSlow)"),true);
+  app.eval('Math.random=()=>.99');
+  assert.equal(app.eval("randomPowerType()"),"P_SKY");
+  app.eval('game.weaponLevel=3;game.powerups=[];dropPlayerPowerOnHit()');
+  assert.equal(app.eval("game.powerups.at(-1).type"),"P_SKY");
+});
+
+test("SKY mode decision freezes in each already-fired bullet even after HP crosses 3", () => {
+  const app=boot();
+  app.eval([
+    'game.state="PLAYING";game.weaponType="sky";game.hp=4;firePlayerWeapons();',
+    'game.hp=3;firePlayerWeapons();',
+    'game.hp=5;firePlayerWeapons();'
+  ].join("\n"));
+  assert.equal(app.eval("game.bullets.length"),6);
+  assert.equal(app.eval("game.bullets.slice(0,2).every(b=>b.power===2.875&&!b.blackSlow&&!b.skyHoming)"),true);
+  assert.equal(app.eval("game.bullets.slice(2,4).every(b=>b.power===1.15&&b.blackSlow&&b.skyHoming)"),true);
+  assert.equal(app.eval("game.bullets.slice(4).every(b=>b.power===2.875&&!b.blackSlow&&!b.skyHoming)"),true);
+});
+
+test("SKY low-health shots steer toward living targets and keep BLACK's exact 5s debuff and glow", () => {
+  const app=boot();
+  app.eval([
+    'game.state="PLAYING";game.weaponType="sky";game.hp=3;',
+    'game.player.x=175;game.player.y=480;',
+    'game.enemies=[{kind:"scout",x:480,y:520,r:30,hp:100,maxHp:100,',
+    'score:20,color:"#fff",core:"#fff"}];',
+    'firePlayerWeapons();updatePlayerBullets(.17);'
+  ].join("\n"));
+  assert.equal(app.eval("game.enemies[0].slowRemaining"),blackWeapon.RULES.duration);
+  assert.ok(app.eval("game.enemies[0].hp")<100);
+  assert.equal(app.eval("game.enemies[0].grayStunRemaining"),undefined);
+  const strokes=app.eval([
+    '(() => {const colors=[];ctx.stroke=()=>colors.push(ctx.strokeStyle);',
+    'drawEnemy(game.enemies[0]);return colors;})()'
+  ].join("\n"));
+  assert.ok(strokes.includes("#50b9ff"));
+  assert.ok(strokes.includes("#d1f3ff"));
+  app.eval('collectPowerup({type:"P_ORANGE",x:300,y:480,life:1})');
+  assert.equal(app.eval("game.weaponType"),"orange");
+  assert.equal(app.eval("game.enemies[0].slowRemaining"),5);
+});
+
+test("SKY high-health ordinary hit deals 2.5x, with no status; SKY low-health tracks Boss turret", () => {
+  const app=boot();
+  app.eval([
+    'game.state="PLAYING";game.stageMode="WAVE";game.weaponType="sky";game.hp=4;',
+    'game.player.x=175;game.player.y=480;',
+    'game.enemies=[{kind:"scout",x:450,y:470,r:25,hp:50,maxHp:50,',
+    'score:20,color:"#fff",core:"#fff"}];',
+    'firePlayerWeapons();game.bullets=game.bullets.slice(0,1);',
+    'updatePlayerBullets(.23);'
+  ].join("\n"));
+  assert.ok(Math.abs(app.eval("game.enemies[0].hp")-47.125)<1e-8);
+  assert.equal(app.eval("game.enemies[0].slowRemaining"),undefined);
+  app.eval([
+    'game.bullets=[];game.enemies=[];game.hp=3;',
+    'game.boss={active:true,x:540,y:480,rx:100,ry:80,hp:100,maxHp:100,',
+    'parts:[{id:"UPPER TURRET",x:-80,y:0,r:28,hp:40,maxHp:40}],color:"#fff"};',
+    'firePlayerWeapons();updatePlayerBullets(.22);'
+  ].join("\n"));
+  assert.equal(app.eval("game.boss.slowRemaining"),blackWeapon.RULES.duration);
+  assert.ok(app.eval("game.boss.parts[0].hp")<40);
+  assert.equal(app.eval("game.boss.hp"),100);
+});
+
+test("SKY low-health homing bullets remain active after changing weapon and expire in active time", () => {
+  const app=boot();
+  app.eval([
+    'game.state="PLAYING";game.stageMode="WAVE";game.weaponType="sky";game.hp=3;',
+    'game.enemies=[{kind:"scout",x:900,y:650,r:18,hp:100,maxHp:100,color:"#fff",core:"#fff"}];',
+    'firePlayerWeapons();collectPowerup({type:"P_GREEN",x:200,y:400,life:1});'
+  ].join("\n"));
+  assert.equal(app.eval("game.weaponType"),"green");
+  assert.equal(app.eval("game.bullets.filter(b=>b.skyHoming).length"),2);
+  const before=app.eval("game.bullets[0].life");
+  app.eval('game.state="PAUSED";updatePlaying(5)');
+  assert.equal(app.eval("game.bullets[0].life"),before);
+  app.eval('game.state="PLAYING";updatePlayerBullets(.1)');
+  assert.ok(app.eval("game.bullets[0]?.life")<before);
+});
+
+test("gray stun renders a proportional gold countdown ring and exactly three spinning stars", () => {
+  const app=boot();
+  const draw=app.eval([
+    '(() => {',
+    'const arcs=[],paints=[],labels=[];',
+    'ctx.ellipse=(x,y,rx,ry,r,start,end)=>arcs.push({rx,ry,start,end});',
+    'ctx.fill=()=>paints.push(ctx.fillStyle);',
+    'ctx.fillText=(label)=>labels.push(String(label));',
+    'game.t=2.5;drawGrayStun(30,25,.25);',
+    'return {arcs,paints,labels};})()'
+  ].join("\n"));
+  assert.equal(draw.arcs.length,2);
+  assert.ok(Math.abs((draw.arcs[0].end-draw.arcs[0].start)-Math.PI)<1e-8);
+  assert.equal(draw.paints.length,3);
+  assert.ok(draw.labels.includes("STUN"));
+  assert.equal(app.eval("grayRules.RULES.stunChance"),0.05);
+  assert.equal(app.eval("grayRules.RULES.stunSeconds"),0.5);
+  const hide=app.eval('(() => {const labels=[];ctx.fillText=t=>labels.push(String(t));drawGrayStun(30,25,0);return labels;})()');
+  assert.equal(hide.includes("STUN"),false);
+});
+
+test("gray stun enhancement appears on existing enemy and Boss status without changing damage", () => {
+  const app=boot();
+  const messages=app.eval([
+    '(() => {',
+    'const drawn=[];ctx.fillText=t=>drawn.push(String(t));',
+    'game.state="PLAYING";game.t=2;',
+    'game.enemies=[{kind:"scout",x:440,y:480,r:30,hp:20,color:"#fff",core:"#fff",grayStunRemaining:.4}];',
+    'game.boss={active:true,x:950,y:480,rx:100,ry:80,hp:100,maxHp:100,',
+    'parts:[],pattern:0,color:"#fff",core:"#eee",name:"BOSS",grayStunRemaining:.2};',
+    'drawEnemy(game.enemies[0]);drawBoss(game.boss);',
+    'return drawn;})()'
+  ].join("\n"));
+  assert.ok(messages.filter(x=>x==="STUN").length>=2);
+  assert.equal(app.eval("game.enemies[0].hp"),20);
+  assert.equal(app.eval("game.boss.hp"),100);
+});
+
+test("RED fan stars still accumulate after switching but neither HUD nor STAR UP popup shows off-red",()=>{
+  const app=boot();
+  app.eval([
+    'game.state="PLAYING";game.stageMode="WAVE";game.weaponType="red";',
+    'game.spawnTimer=999;game.formationTimer=999;game.invuln=999;',
+    'redRules.fire(game.redWeapon,0);',
+    'collectPowerup({type:"P_SKY",x:300,y:480,life:1});game.message="";',
+    'updatePlaying(3.01);'
+  ].join("\n"));
+  assert.equal(app.eval("game.weaponType"),"sky");
+  assert.equal(app.eval("game.redWeapon.stars"),1);
+  assert.equal(app.eval("game.message.includes('RED P')"),false);
+  const labels=app.eval('(() => {const arr=[];ctx.fillText=t=>arr.push(String(t));drawHud();return arr;})()');
+  assert.equal(labels.some(t=>t.includes("RED P")),false);
+  app.eval('collectPowerup({type:"P_RED",x:300,y:480,life:1})');
+  assert.equal(app.eval("game.redWeapon.stars"),1);
+  const redLabels=app.eval('(() => {const arr=[];ctx.fillText=t=>arr.push(String(t));drawHud();return arr;})()');
+  assert.ok(redLabels.some(t=>t.includes("RED P")&&t.includes("★☆☆☆☆")));
 });

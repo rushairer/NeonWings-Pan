@@ -2382,7 +2382,7 @@ const W = 1280;
           { pinkHoming: true, life: pinkRules.RULES.bulletLifetimeSeconds });
         if (pinkSpecial) {
           // The additional missile inherits the SAME Overdrive/ship damage
-          // scaling as the normal bolt: exactly 10x impact power.
+          // scaling as the normal bolt: exactly 25x impact power.
           addMissile(game.player.x + 36, baseY - 18, -1,
             pinkRules.RULES.normalDamage * pinkRules.RULES.missileDamageMultiplier,
             { pinkSpecial: true });
@@ -2474,7 +2474,7 @@ const W = 1280;
       if (game.weaponType === "red") return redRules.RULES.volleySeconds;
       if (game.weaponType === "yellow") return Math.max(0.17, 0.25 - game.weaponLevel * 0.025);
       if (game.weaponType === "purple") return Math.max(0.10, 0.145 - game.weaponLevel * 0.012);
-      return Math.max(0.07, 0.115 - (game.weaponType === "green" || game.weaponType === "black" || game.weaponType === "white" || game.weaponType === "gray" || game.weaponType === "pink" || game.weaponType === "orange" || game.weaponType === "lime" || game.weaponType === "brown" ? 1 : game.weaponLevel) * 0.014);
+      return Math.max(0.07, 0.115 - (game.weaponType === "green" || game.weaponType === "black" || game.weaponType === "white" || game.weaponType === "gray" || game.weaponType === "pink" || game.weaponType === "orange" || game.weaponType === "lime" || game.weaponType === "brown" || game.weaponType === "sky" ? 1 : game.weaponLevel) * 0.014);
     }
 
     function findMissileTarget(m) {
@@ -2933,7 +2933,7 @@ const W = 1280;
       }
     }
 
-    // Special rocket: 10x damage is already applied to the direct victim.
+    // Special rocket: 25x damage is already applied to the direct victim.
     // Other pre-existing enemies / a different Boss within GREEN's 360 radius
     // each receive 1x PINK bolt power (including common ship/Overdrive scaling).
     // No chain propagation and no duplicate hit on the direct victim.
