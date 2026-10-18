@@ -13,7 +13,7 @@ A controller-first, five-stage, side-scrolling neon arcade shooter built with br
 ## Currently playable
 
 - Five themed stages and five multi-phase bosses; higher-difficulty loops after stage five
-- 11 enemy types, formations, eight weapon families, collectible power-ups and BOMB
+- 11 enemy types, formations, nine weapon families, collectible power-ups and BOMB
 - Gamepad rumble where browser/device supports it, Web Audio synthesis, volume and vibration options
 - Pause, fullscreen, local high score, end-of-run statistics
 - v23 foundation: 4:3 letterbox sizing; auto-pause on background/focus loss or controller disconnection; browser-storage fallback
@@ -28,6 +28,16 @@ A controller-first, five-stage, side-scrolling neon arcade shooter built with br
 - v26.1.1 UI fix: fighter/mode selector uses explicit non-overlapping layout geometry; selected fighter frame, Training hint, ship descriptions and score footer retain safe spacing.
 - **v26.2.0 NeonWings-Pan exclusive:** red P twin-line fire, a 250-projectile ±10° special fan triggered on 10% of eligible volleys, and an independent 0–5 star progression.
 - **v26.3.0 NeonWings-Pan exclusive:** green P retains starter-grade dual shots and adds a passive neon halo dealing area damage to nearby enemies once per second.
+
+## v26.7.0 — PINK P / SEEKER
+
+PINK P is the ninth P pickup in the regular collectible rotation, independent of the original NeonWings repository.
+
+- **Single guided shot:** one visibly pink homing bullet is emitted per firing action, regardless of weapon level. It begins pointing forward and smoothly turns toward the nearest viable target; enemy destruction, spawning, movement, and Boss activations cause retargeting, while no target means it flies along its last heading. The projectile uses swept collision detection, starter-grade direct damage **1.15** (before player/Overdrive scaling), and a bounded **3.6-second lifetime**.
+- **Burst cadence:** after every **2 single-bullet firing actions**, PINK rests for **0.4 seconds**, then repeats. Normal between-shot interval uses the starter-grade firing interval (0.101s). Fire button release or collecting PINK again preserves the partial count; changing weapon colors resets that count without affecting RED stars or GRAY burst state.
+- **5% special missile:** each ordinary PINK firing action also makes **one 5% roll**. When successful, the same action fires **one EXTRA** homing pink missile in addition to its regular guided bullet. Its impact damage is exactly **10× the normal PINK bullet** (11.5 before common Overdrive/ship scaling, 10× afterward). Both projectile types share existing damage, shielding, Boss turret/hull, and kill-economy rules. Missile guidance and 48-missile shared cap reuse the established YELLOW missile system, but the pink missile has its own visual trail and body.
+- **Persistence and safety:** PINK bullets/missiles launched before a weapon swap keep their homing behavior and damage; pause/transitions freeze progression. Bounded projectile and particle pools avoid unbounded growth. Other P weapons, including yellow missile damage, are unchanged.
+- **HUD:** `PINK SEEK  2/.4S  5%x10`; it shows guided bullets, burst rest and missile probability/multiplier.
 
 ## v26.6.2 — GRAY P 20/5/75 and five-volley burst
 

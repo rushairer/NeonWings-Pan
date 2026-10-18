@@ -7,6 +7,17 @@ Independently maintained from NeonWings commit `5ebcb1de1adb288b41a3c5e387f747bc
 - [x] Configure standalone Pages workflow
 - [ ] Verify site deployment and controller tests on hardware
 
+## v26.7.0 — PINK P single-seeker, burst fire, 10× special missile
+
+- [x] Add ninth P pickup with distinct pink sprite, player HUD, and regular drop/restore behavior
+- [x] Fire exactly one homing pink bullet per action at all weapon levels, using swept collisions and finite projectile TTL
+- [x] Apply a 0.4-second firing rest after each two single-bullet pink shots
+- [x] Roll 5% per firing action for one additional homing 10× damage missile
+- [x] Reuse bounded YELLOW missile targeting/physics and ordinary enemy shield/Boss turret/hull damage paths
+- [x] Preserve launched PINK projectiles and their 10× power after swapping weapon colors
+- [x] Add isolated steering/probability/unit tests, collision/integration regressions, docs, and CI asset checks
+- [ ] Verify homing readability, balance, and crowded-stage FPS on physical handheld or browser
+
 ## v26.6.2 — GRAY P 20/5/75 and burst-rest timing
 
 - [x] Set knockback to 20%, stun to 5%, amplified damage to 75%, strictly mutually exclusive

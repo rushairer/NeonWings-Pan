@@ -16,6 +16,8 @@ const W = 1280;
     if (!whiteRules) throw new Error("NeonWings-Pan white P runtime missing");
     const grayRules = window.NeonGrayWeapon;
     if (!grayRules) throw new Error("NeonWings-Pan gray P runtime missing");
+    const pinkRules = window.NeonPinkWeapon;
+    if (!pinkRules) throw new Error("NeonWings-Pan pink P runtime missing");
     const collision = window.NeonCollision;
     if (!collision) throw new Error("NeonWings collision runtime missing");
     const enemyBehaviors = window.NeonEnemyBehaviors;
@@ -1019,6 +1021,7 @@ const W = 1280;
         combat: combatRules.createState(),
         redWeapon: redRules.createState(),
         grayWeapon: grayRules.createState(),
+        pinkWeapon: pinkRules.createState(),
         greenAura: greenRules.createState(),
         missileSequence: 0,
         enemySequence: 0,
@@ -1757,14 +1760,15 @@ const W = 1280;
 
     function randomPowerType() {
       const r = Math.random();
-      if (r < 1 / 8) return "P_BLUE";
-      if (r < 2 / 8) return "P_PURPLE";
-      if (r < 3 / 8) return "P_YELLOW";
-      if (r < 4 / 8) return "P_RED";
-      if (r < 5 / 8) return "P_GREEN";
-      if (r < 6 / 8) return "P_BLACK";
-      if (r < 7 / 8) return "P_WHITE";
-      return "P_GRAY";
+      if (r < 1 / 9) return "P_BLUE";
+      if (r < 2 / 9) return "P_PURPLE";
+      if (r < 3 / 9) return "P_YELLOW";
+      if (r < 4 / 9) return "P_RED";
+      if (r < 5 / 9) return "P_GREEN";
+      if (r < 6 / 9) return "P_BLACK";
+      if (r < 7 / 9) return "P_WHITE";
+      if (r < 8 / 9) return "P_GRAY";
+      return "P_PINK";
     }
 
     function weaponMeta(type = game.weaponType) {
@@ -1775,6 +1779,7 @@ const W = 1280;
       if (type === "black") return { name: "SLOW", short: "BLACK", color: "#191e2a", core: "#dce9ff" };
       if (type === "white") return { name: "CONDUCT", short: "WHITE", color: "#f1faff", core: "#bde9ff" };
       if (type === "gray") return { name: "IMPACT", short: "GRAY", color: "#929ba9", core: "#f0f3ff" };
+      if (type === "pink") return { name: "SEEKER", short: "PINK", color: "#ff79c8", core: "#fff1fb" };
       return { name: "LINE", short: "BLUE", color: "#38e8ff", core: "#e8fdff" };
     }
 
@@ -1786,6 +1791,7 @@ const W = 1280;
       if (powerupType === "P_BLACK") return "black";
       if (powerupType === "P_WHITE") return "white";
       if (powerupType === "P_GRAY") return "gray";
+      if (powerupType === "P_PINK") return "pink";
       return "blue";
     }
 
@@ -1797,6 +1803,7 @@ const W = 1280;
       if (game.weaponType === "black") return "P_BLACK";
       if (game.weaponType === "white") return "P_WHITE";
       if (game.weaponType === "gray") return "P_GRAY";
+      if (game.weaponType === "pink") return "P_PINK";
       return "P_BLUE";
     }
 
@@ -1883,6 +1890,7 @@ const W = 1280;
           // active fan attacks, and already launched projectiles.
           redRules.switchWeapon(game.redWeapon);
           grayRules.switchWeapon(game.grayWeapon);
+          pinkRules.switchWeapon(game.pinkWeapon);
           greenRules.switchWeapon(game.greenAura);
           game.fireCooldown = 0;
         }
@@ -2015,6 +2023,15 @@ const W = 1280;
             ctx.strokeRect(-23, -23, 46, 46);
             rect(-8, -32, 16, 6, "#e5e9f3");
             rect(-8, 26, 16, 6, "#e5e9f3");
+          } else if (wt === "pink") {
+            // A small seeker reticle distinguishes PINK from the other P icons.
+            ctx.strokeStyle = "#ffeaff";
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.arc(0, 0, 29, 0, Math.PI * 2);
+            ctx.stroke();
+            rect(-4, -33, 8, 7, "#ffffff");
+            rect(-4, 26, 8, 7, "#ffffff");
           }
         } else if (p.type === "BOMB") {
           // Cyan-white bomb pickup.
@@ -2109,7 +2126,7 @@ const W = 1280;
       });
     }
 
-    function addMissile(x, y, vySign = 1, power = 2) {
+    function addMissile(x, y, vySign = 1, power = 2, extra = {}) {
       if (game.missiles.length >= LIMITS.missiles) return;
       sfx("missile");
       haptic("missile", 0.10, 0.12, 24, 0.12);
@@ -2118,11 +2135,12 @@ const W = 1280;
         x, y, vx: 520, vy: vySign * 160, r: 14,
         power: power * combatRules.weaponDamageScale(game.combat, selectedShip().id),
         life: 4.6, turn: overdrive ? 5.8 : 4.2, trail: 0,
-        overdrive, targetSlot: (game.missileSequence++) % 3
+        overdrive, targetSlot: (game.missileSequence++) % 3,
+        ...extra
       });
     }
 
-    function firePlayerWeapons() {
+    function firePlayerWeapons(pinkSpecial = false) {
       sfx("shot");
       hapticShot();
       const level = game.weaponLevel;
@@ -2153,6 +2171,18 @@ const W = 1280;
         // direct and chained electric damage from hitting the same target twice.
         addPlayerShot(muzzleX, baseY - 10, 1120, 0, 9, 1.15, "#f3fcff", whiteRules.createShot());
         addPlayerShot(muzzleX, baseY + 12, 1120, 0, 9, 1.15, "#f3fcff", whiteRules.createShot());
+      } else if (type === "pink") {
+        // Always ONE normal homing projectile, at any weapon level.
+        addPlayerShot(muzzleX, baseY, pinkRules.RULES.bulletSpeed, 0, 9,
+          pinkRules.RULES.normalDamage, "#ff80cb",
+          { pinkHoming: true, life: pinkRules.RULES.bulletLifetimeSeconds });
+        if (pinkSpecial) {
+          // The additional missile inherits the SAME Overdrive/ship damage
+          // scaling as the normal bolt: exactly 10x impact power.
+          addMissile(game.player.x + 36, baseY - 18, -1,
+            pinkRules.RULES.normalDamage * pinkRules.RULES.missileDamageMultiplier,
+            { pinkSpecial: true });
+        }
       } else if (type === "gray") {
         // Each actual gray bullet contact independently chooses one effect.
         addPlayerShot(muzzleX, baseY - 10, 1100, 0, 9, 1.15, "#abb3c0", { grayImpact: true });
@@ -2208,7 +2238,7 @@ const W = 1280;
       if (game.weaponType === "red") return redRules.RULES.volleySeconds;
       if (game.weaponType === "yellow") return Math.max(0.17, 0.25 - game.weaponLevel * 0.025);
       if (game.weaponType === "purple") return Math.max(0.10, 0.145 - game.weaponLevel * 0.012);
-      return Math.max(0.07, 0.115 - (game.weaponType === "green" || game.weaponType === "black" || game.weaponType === "white" || game.weaponType === "gray" ? 1 : game.weaponLevel) * 0.014);
+      return Math.max(0.07, 0.115 - (game.weaponType === "green" || game.weaponType === "black" || game.weaponType === "white" || game.weaponType === "gray" || game.weaponType === "pink" ? 1 : game.weaponLevel) * 0.014);
     }
 
     function findMissileTarget(m) {
@@ -2230,7 +2260,7 @@ const W = 1280;
       let best = null;
       let bestScore = Infinity;
 
-      if (game.boss) {
+      if (game.boss && game.boss.active && game.boss.hp > 0) {
         const b = game.boss;
         const d = dist(m.x, m.y, b.x, b.y);
         best = b;
@@ -2693,14 +2723,18 @@ const W = 1280;
         if (m.trail <= 0) {
           m.trail = 0.035;
           const a = Math.atan2(m.vy, m.vx);
-          addParticle(m.x - Math.cos(a) * 18, m.y - Math.sin(a) * 18, rand(-45, 20), rand(-45, 45), rand(0.16, 0.34), Math.random() < 0.5 ? "#ffd76b" : "#ff8f5f");
+          const trailA = m.pinkSpecial ? "#ffa1e4" : "#ffd76b";
+          const trailB = m.pinkSpecial ? "#ff4da9" : "#ff8f5f";
+          addParticle(m.x - Math.cos(a) * 18, m.y - Math.sin(a) * 18,
+            rand(-45, 20), rand(-45, 45), rand(0.16, 0.34),
+            Math.random() < 0.5 ? trailA : trailB);
         }
 
         for (const e of game.enemies) {
           if (e.hp <= 0) continue;
           if (collision.sweptCircleHit(fromX, fromY, m.x, m.y, e.x, e.y, m.r + e.r)) {
             m.life = 0;
-            damageEnemy(e, m.power, m.x, m.y, "#ffd76b");
+            damageEnemy(e, m.power, m.x, m.y, m.pinkSpecial ? "#ff82d0" : "#ffd76b");
             break;
           }
         }
@@ -2710,13 +2744,13 @@ const W = 1280;
           const targetPart = bossParts.findHit(b, fromX, fromY, m.x, m.y, m.r);
           if (targetPart) {
             m.life = 0;
-            damageBoss(m.power, m.x, m.y, "#ffd76b", targetPart);
+            damageBoss(m.power, m.x, m.y, m.pinkSpecial ? "#ff82d0" : "#ffd76b", targetPart);
           } else if (collision.sweptAabbHit(
             fromX, fromY, m.x, m.y,
             b.x - b.rx - m.r, b.x + b.rx + m.r, b.y - b.ry - m.r, b.y + b.ry + m.r
           )) {
             m.life = 0;
-            damageBoss(m.power, m.x, m.y, "#ffd76b");
+            damageBoss(m.power, m.x, m.y, m.pinkSpecial ? "#ff82d0" : "#ffd76b");
           }
         }
       }
@@ -2788,8 +2822,16 @@ const W = 1280;
 
     function updatePlayerBullets(dt) {
       for (const b of game.bullets) {
+        if (b.dead) continue;
         b.previousX = b.x;
         b.previousY = b.y;
+        if (b.pinkHoming) {
+          b.life -= dt;
+          if (b.life <= 0) { b.dead = true; continue; }
+          // Reacquire on each active simulation step; disappearing enemies
+          // never leave an invalid stored target reference behind.
+          pinkRules.steer(b, findMissileTarget(b), dt);
+        }
         b.x += b.vx * dt;
         b.y += (b.vy || 0) * dt;
       }
@@ -3099,6 +3141,7 @@ const W = 1280;
         game.bomb = game.bombMax;
         game.weaponLevel = 3;
         grayRules.switchWeapon(game.grayWeapon);
+        pinkRules.switchWeapon(game.pinkWeapon);
         game.weaponType = "blue";
         game.invuln = 2.5;
         game.combat = combatRules.createState();
@@ -3225,7 +3268,12 @@ const W = 1280;
 
       const firing = readInput(dt);
       if (firing && game.fireCooldown <= 0) {
-        firePlayerWeapons();
+        // A PINK firing action always emits one guided bolt. The extra guided
+        // missile is a 5% independent proc on THAT action, not on hit/frame.
+        const pinkVolley = game.weaponType === "pink"
+          ? pinkRules.fire(game.pinkWeapon, getFireCooldown(), Math.random)
+          : null;
+        firePlayerWeapons(pinkVolley?.special || false);
         if (game.weaponType === "red") {
           const volley = redRules.fire(game.redWeapon, Math.random());
           game.fireCooldown = volley.cooldown;
@@ -3236,6 +3284,9 @@ const W = 1280;
         } else if (game.weaponType === "gray") {
           // Count each dual-bullet firing action as ONE volley.
           game.fireCooldown = grayRules.fire(game.grayWeapon, getFireCooldown()).cooldown;
+        } else if (pinkVolley) {
+          // 0.4s rest on every second single pink bullet, even after a proc.
+          game.fireCooldown = pinkVolley.cooldown;
         } else {
           game.fireCooldown = getFireCooldown();
         }
@@ -3347,6 +3398,15 @@ const W = 1280;
         ctx.translate(b.x, b.y);
         ctx.rotate(Math.atan2(b.vy || 0, b.vx || 1));
         const core = b.c || "#5ae8ff";
+        if (b.pinkHoming) {
+          ctx.shadowColor = "#ff5dbf";
+          ctx.shadowBlur = 18;
+          rect(-7, -7, 31, 14, "#fc78c6");
+          rect(3, -3, 24, 6, "#fff0fa");
+          rect(-12, -2, 10, 4, "#ffb9e8");
+          ctx.restore();
+          continue;
+        }
         if (b.whiteConductive) {
           ctx.shadowColor = "#88eaff";
           ctx.shadowBlur = 20;
@@ -3392,11 +3452,21 @@ const W = 1280;
         ctx.save();
         ctx.translate(m.x, m.y);
         ctx.rotate(Math.atan2(m.vy, m.vx));
-        rect(-18, -6, 34, 12, "#ffd76b");
-        rect(-8, -4, 18, 8, "#fff4b7");
-        rect(-24, -4, 8, 8, "#ff8f5f");
-        rect(10, -9, 8, 6, "#ffe083");
-        rect(10, 3, 8, 6, "#ffe083");
+        if (m.pinkSpecial) {
+          ctx.shadowBlur = 23;
+          ctx.shadowColor = "#ff5fae";
+          rect(-22, -7, 43, 14, "#ef56ad");
+          rect(-12, -4, 31, 8, "#ffe9fa");
+          rect(-29, -4, 10, 8, "#ffaadf");
+          rect(12, -11, 11, 6, "#ff86cb");
+          rect(12, 5, 11, 6, "#ff86cb");
+        } else {
+          rect(-18, -6, 34, 12, "#ffd76b");
+          rect(-8, -4, 18, 8, "#fff4b7");
+          rect(-24, -4, 8, 8, "#ff8f5f");
+          rect(10, -9, 8, 6, "#ffe083");
+          rect(10, 3, 8, 6, "#ffe083");
+        }
         ctx.restore();
       }
     }
@@ -3561,6 +3631,8 @@ const W = 1280;
         ? "WHITE ARC 60% 1-3 HOPS"
         : game.weaponType === "gray"
         ? "GRAY 20/5/75  1.5X"
+        : game.weaponType === "pink"
+        ? "PINK SEEK  2/.4S  5%x10"
         : `${meta.short} WEAPON  LV.${game.weaponLevel}`, 656, 80, 21, "left",
         game.weaponType === "black" ? "#9cccff" : meta.color);
 
@@ -3720,7 +3792,7 @@ const W = 1280;
       ctx.fillRect(0, 0, W, H);
 
       drawText("NEON WINGS", W / 2, 195, 86, "center", "#e7fbff");
-      drawText("NEONWINGS PAN  /  v26.6.2", W / 2, 270, 28, "center", "#98f5ff");
+      drawText("NEONWINGS PAN  /  v26.7.0", W / 2, 270, 28, "center", "#98f5ff");
       drawText(`HIGH SCORE ${String(highScore()).padStart(6, "0")}`, W / 2, 318, 24, "center", "#fff4b7");
 
       drawPlayerShip(W / 2 - 170, 492, -0.20, false, ships[0]);

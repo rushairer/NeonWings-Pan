@@ -11,6 +11,7 @@ const greenWeapon = require("../src/green-weapon.js");
 const blackWeapon = require("../src/black-weapon.js");
 const whiteWeapon = require("../src/white-weapon.js");
 const grayWeapon = require("../src/gray-weapon.js");
+const pinkWeapon = require("../src/pink-weapon.js");
 const collision = require("../src/collision.js");
 const enemyBehaviors = require("../src/enemy-behaviors.js");
 const worlds = require("../src/worlds.js");
@@ -42,7 +43,7 @@ function boot(options = {}) {
     NeonCombat: combat,
     NeonRedWeapon: redWeapon,
     NeonGreenWeapon: greenWeapon,
-    NeonBlackWeapon: blackWeapon, NeonWhiteWeapon: whiteWeapon, NeonGrayWeapon: grayWeapon,
+    NeonBlackWeapon: blackWeapon, NeonWhiteWeapon: whiteWeapon, NeonGrayWeapon: grayWeapon, NeonPinkWeapon: pinkWeapon,
     NeonCollision: collision,
     NeonEnemyBehaviors: enemyBehaviors,
     NeonWorlds: worlds,
@@ -134,7 +135,8 @@ test("static HTML loads platform before game and doesn't embed legacy code", () 
   assert.ok(html.indexOf('src="./src/green-weapon.js"') < html.indexOf('src="./src/black-weapon.js"'));
   assert.ok(html.indexOf('src="./src/black-weapon.js"') < html.indexOf('src="./src/white-weapon.js"'));
   assert.ok(html.indexOf('src="./src/white-weapon.js"') < html.indexOf('src="./src/gray-weapon.js"'));
-  assert.ok(html.indexOf('src="./src/gray-weapon.js"') < html.indexOf('src="./src/collision.js"'));
+  assert.ok(html.indexOf('src="./src/gray-weapon.js"') < html.indexOf('src="./src/pink-weapon.js"'));
+  assert.ok(html.indexOf('src="./src/pink-weapon.js"') < html.indexOf('src="./src/collision.js"'));
   assert.ok(html.indexOf('src="./src/collision.js"') < html.indexOf('src="./src/enemy-behaviors.js"'));
   assert.ok(html.indexOf('src="./src/enemy-behaviors.js"') < html.indexOf('src="./src/worlds.js"'));
   assert.ok(html.indexOf('src="./src/worlds.js"') < html.indexOf('src="./src/boss-parts.js"'));
