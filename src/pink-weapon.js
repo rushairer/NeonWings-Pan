@@ -12,7 +12,10 @@
     restSeconds: 0.4,
     bulletSpeed: 940,
     turnRadiansPerSecond: 8.5,
-    bulletLifetimeSeconds: 3.6
+    bulletLifetimeSeconds: 3.6,
+    specialMissileSize: 100,
+    explosionLifetimeSeconds: 0.55,
+    maxExplosionEffects: 12
   });
 
   function createState() {
@@ -74,7 +77,38 @@
     return true;
   }
 
-  const api = Object.freeze({ RULES, createState, switchWeapon, fire, steer });
+  // Reuse GREEN's circle/AABB intersection tests so the pink blast and green
+  // aura can never disagree about range. Direct missile damage has already
+  // been applied by the caller; exclude that same enemy or Boss from splash.
+  // This is one instantaneous, non-propagating pulse. Callers provide an
+  // enemy snapshot captured before direct damage to exclude split-spawned
+  // minions and newly appearing wave/Boss targets.
+  function splash(center, enemies, boss, directTarget, greenRules, onEnemy, onBoss) {
+    if (!center || !Number.isFinite(center.x) || !Number.isFinite(center.y) ||
+        !Array.isArray(enemies) || !greenRules?.enemyInRange ||
+        !greenRules?.bossInRange) {
+      return { enemies: 0, boss: false };
+    }
+    let hitCount = 0;
+    for (const enemy of enemies.slice()) {
+      if (!enemy || enemy === directTarget || !(enemy.hp > 0) ||
+          !greenRules.enemyInRange(center, enemy)) continue;
+      onEnemy(enemy);
+      hitCount++;
+    }
+    const hitBoss = Boolean(boss?.active && boss.hp > 0 &&
+      boss !== directTarget && greenRules.bossInRange(center, boss));
+    if (hitBoss) onBoss(boss);
+    return { enemies: hitCount, boss: hitBoss };
+  }
+
+  function splashDamage(missilePower) {
+    return missilePower / RULES.missileDamageMultiplier;
+  }
+
+  const api = Object.freeze({
+    RULES, createState, switchWeapon, fire, steer, splash, splashDamage
+  });
   root.NeonPinkWeapon = api;
   if (typeof module === "object" && module.exports) module.exports = api;
 })(typeof globalThis !== "undefined" ? globalThis : this);

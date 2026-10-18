@@ -88,3 +88,77 @@ test("paused/invalid frame time cannot steer; invalid special RNG cannot mutate 
   for(const cd of [0,-1,NaN,Infinity]) assert.throws(() => pink.fire(s, cd, () => 0.2),TypeError);
   assert.equal(s.volleys, 0);
 });
+
+
+const green = require("../src/green-weapon.js");
+
+test("PINK special missile is 100 logical units across and has a bounded blast lifetime", () => {
+  assert.equal(pink.RULES.specialMissileSize, 100);
+  assert.equal(pink.RULES.explosionLifetimeSeconds, 0.55);
+  assert.equal(pink.RULES.maxExplosionEffects, 12);
+  assert.equal(green.RULES.radius, 360);
+  assert.equal(pink.splashDamage(11.5), pink.RULES.normalDamage);
+  assert.equal(pink.splashDamage(34.5), pink.RULES.normalDamage * 3);
+});
+
+test("blast reaches the exact GREEN halo radius, including circular target hitboxes", () => {
+  const center = {x:500,y:480};
+  const direct = {x:510,y:480,r:10,hp:100};
+  const touching = {x:885,y:480,r:25,hp:10};
+  const outside = {x:886,y:480,r:25,hp:10};
+  const behind = {x:145,y:480,r:12,hp:10};
+  const hit = [];
+  const result = pink.splash(center,[direct,touching,outside,behind],null,direct,
+    green,e=>hit.push(e),()=>{throw Error("No Boss")});
+  assert.deepEqual(result,{enemies:2,boss:false});
+  assert.deepEqual(hit,[touching,behind]);
+  assert.equal(hit.includes(direct),false);
+  assert.equal(hit.includes(outside),false);
+});
+
+test("splash damages each nearby other enemy exactly once without chain propagation", () => {
+  const center={x:100,y:480}, direct={x:100,y:480,r:10,hp:10};
+  const first={x:420,y:480,r:10,hp:10};
+  const unreachable={x:750,y:480,r:10,hp:10};
+  let calls=0;
+  const hit=[];
+  pink.splash(center,[direct,first,unreachable],null,direct,green,e=>{
+    calls++;
+    hit.push(e);
+    e.hp-=pink.splashDamage(11.5);
+  },()=>{});
+  assert.equal(calls,1);
+  assert.deepEqual(hit,[first]);
+  assert.equal(first.hp,8.85);
+  assert.equal(unreachable.hp,10);
+  assert.equal(direct.hp,10);
+});
+
+test("Boss can take nearby explosion once, but never on its own direct hit", () => {
+  const boss={active:true,x:790,y:480,rx:90,ry:80,hp:100};
+  const center={x:360,y:480};
+  const effects=[];
+  const r=pink.splash(center,[],boss,null,green,()=>{},b=>effects.push(b));
+  assert.deepEqual(r,{enemies:0,boss:true});
+  assert.deepEqual(effects,[boss]);
+  assert.deepEqual(pink.splash(center,[],boss,boss,green,()=>{},
+    ()=>{throw Error("No double Boss hit")}),{enemies:0,boss:false});
+  boss.active=false;
+  assert.equal(pink.splash(center,[],boss,null,green,()=>{},()=>{}).boss,false);
+});
+
+test("snapshot victims only and never splash freshly-created minions or dead targets", () => {
+  const direct={x:400,y:480,r:30,hp:10};
+  const neighbor={x:550,y:480,r:20,hp:10};
+  const dead={x:600,y:480,r:20,hp:0};
+  const snapshot=[direct,neighbor,dead];
+  const spawned={x:630,y:480,r:10,hp:5};
+  const hit=[];
+  pink.splash({x:420,y:480},snapshot,null,direct,green,e=>{
+    hit.push(e); snapshot.push(spawned);
+  },()=>{});
+  assert.deepEqual(hit,[neighbor]);
+  assert.equal(spawned.hp,5);
+  assert.deepEqual(pink.splash(null,snapshot,null,direct,green,()=>{},()=>{}),
+    {enemies:0,boss:false});
+});
