@@ -2781,3 +2781,203 @@ test("RED fan stars still accumulate after switching but neither HUD nor STAR UP
   const redLabels=app.eval('(() => {const arr=[];ctx.fillText=t=>arr.push(String(t));drawHud();return arr;})()');
   assert.ok(redLabels.some(t=>t.includes("RED P")&&t.includes("★☆☆☆☆")));
 });
+
+
+test("DARK RED is the fourteenth pickup with distinct twin 1x bullets and no RED star system",()=>{
+  const app=boot();
+  app.eval([
+    'game.state="PLAYING";game.weaponType="blue";game.redWeapon.stars=3;',
+    'collectPowerup({type:"P_DARK_RED",x:300,y:480,life:1});',
+    'firePlayerWeapons();'
+  ].join("\n"));
+  assert.equal(app.eval("game.weaponType"),"darkred");
+  assert.equal(app.eval("weaponMeta().name"),"CHAIN");
+  assert.equal(app.eval("game.bullets.length"),2);
+  assert.equal(app.eval("game.bullets.every(b=>b.darkRedChain && b.power===1.15 && b.r===9 && b.vx===1100 && b.vy===0)"),true);
+  assert.equal(app.eval("game.redWeapon.stars"),3);
+  assert.equal(app.eval("game.redWeapon.volleys"),0);
+  assert.ok(Math.abs(app.eval("getFireCooldown()")-.101)<1e-10);
+  app.eval("Math.random=()=>.99");
+  assert.equal(app.eval("randomPowerType()"),"P_DARK_RED");
+  app.eval("game.powerups=[];dropPlayerPowerOnHit()");
+  assert.equal(app.eval("game.powerups.at(-1).type"),"P_DARK_RED");
+  const labels=app.eval([
+    '(() => {const labels=[];ctx.fillText=x=>labels.push(String(x));',
+    'drawHud();drawPowerups();drawPlayerBullets();return labels;})()'
+  ].join("\n"));
+  assert.ok(labels.includes("DARK RED  10% CHAIN  x10"));
+  assert.equal(labels.some(x=>x.includes("RED P")),false,
+    "DARK RED must never expose ordinary RED star HUD");
+});
+
+test("DARK RED new 14-color drop shares all colors fairly at bucket centers",()=>{
+  const app=boot();
+  const expected=[
+    "P_BLUE","P_PURPLE","P_YELLOW","P_RED","P_GREEN","P_BLACK","P_WHITE",
+    "P_GRAY","P_PINK","P_ORANGE","P_BROWN","P_LIME","P_SKY","P_DARK_RED"
+  ];
+  for(let i=0;i<expected.length;i++){
+    const roll=(i+.5)/expected.length;
+    app.eval("Math.random=()=>"+roll);
+    assert.equal(app.eval("randomPowerType()"),expected[i]);
+  }
+});
+
+test("DARK RED ordinary contact has only one full-strength hit when 10% fails",()=>{
+  const app=boot();
+  app.eval([
+    'game.state="PLAYING";game.player.x=175;game.player.y=480;',
+    'game.weaponType="darkred";game.weaponLevel=3;',
+    'game.enemies=[{kind:"scout",x:420,y:470,r:24,hp:100,maxHp:100,',
+    'score:20,color:"#fff",core:"#eee"}];',
+    'firePlayerWeapons();game.bullets=game.bullets.slice(0,1);',
+    'Math.random=()=>.1;updatePlayerBullets(.20);'
+  ].join("\n"));
+  assert.ok(Math.abs(app.eval("game.enemies[0].hp")-98.85)<1e-9);
+  assert.equal(app.eval("game.bullets.length"),0);
+  assert.equal(app.eval("game.enemies[0].slowRemaining||0"),0);
+});
+
+test("DARK RED perpetual 10% success yields exactly ten separate full-damage hits",()=>{
+  const app=boot();
+  app.eval([
+    'game.state="PLAYING";game.player.x=175;game.player.y=480;',
+    'game.weaponType="darkred";game.weaponLevel=3;',
+    'game.enemies=[{kind:"scout",x:420,y:470,r:24,hp:100,maxHp:100,',
+    'score:20,color:"#fff",core:"#eee"}];',
+    'firePlayerWeapons();game.bullets=game.bullets.slice(0,1);',
+    'Math.random=()=>0;updatePlayerBullets(.20);'
+  ].join("\n"));
+  assert.ok(Math.abs(app.eval("game.enemies[0].hp")-88.5)<1e-8);
+  assert.equal(app.eval("game.bullets.length"),0);
+  assert.equal(app.eval("game.stats.kills"),0);
+});
+
+test("DARK RED two bullets independently chain on separate target lanes",()=>{
+  const app=boot();
+  app.eval([
+    'game.state="PLAYING";game.player.x=175;game.player.y=480;',
+    'game.weaponType="darkred";',
+    'game.enemies=[',
+    ' {kind:"scout",x:420,y:465,r:8,hp:100,maxHp:100,score:20,color:"#fff",core:"#eee"},',
+    ' {kind:"scout",x:420,y:500,r:8,hp:100,maxHp:100,score:20,color:"#fff",core:"#eee"}',
+    '];firePlayerWeapons();Math.random=()=>0;updatePlayerBullets(.20);'
+  ].join("\n"));
+  assert.ok(Math.abs(app.eval("game.enemies[0].hp")-88.5)<1e-8);
+  assert.ok(Math.abs(app.eval("game.enemies[1].hp")-88.5)<1e-8);
+  assert.equal(app.eval("game.bullets.length"),0);
+});
+
+test("DARK RED stops immediately when target dies and does not transfer to neighbors",()=>{
+  const app=boot();
+  app.eval([
+    'game.state="PLAYING";game.player.x=175;game.player.y=480;',
+    'game.weaponType="darkred";',
+    'game.enemies=[',
+    ' {kind:"scout",x:420,y:470,r:25,hp:2,maxHp:2,score:20,color:"#fff",core:"#eee"},',
+    ' {kind:"scout",x:470,y:470,r:25,hp:100,maxHp:100,score:20,color:"#fff",core:"#eee"}',
+    '];firePlayerWeapons();game.bullets=game.bullets.slice(0,1);',
+    'Math.random=()=>0;updatePlayerBullets(.22);'
+  ].join("\n"));
+  assert.ok(app.eval("game.enemies[0].hp")<=0);
+  assert.equal(app.eval("game.enemies[1].hp"),100);
+  assert.equal(app.eval("game.stats.kills"),1);
+});
+
+test("DARK RED kills splitter once; its freshly spawned children never join the damage chain",()=>{
+  const app=boot();
+  app.eval([
+    'game.state="PLAYING";game.stageMode="WAVE";game.player.x=175;',
+    'game.weaponType="darkred";',
+    'game.enemies=[{kind:"splitter",x:420,y:470,r:35,hp:1,maxHp:1,',
+    'score:60,color:"#fff",core:"#eee"}];',
+    'firePlayerWeapons();game.bullets=game.bullets.slice(0,1);',
+    'Math.random=()=>0;updatePlayerBullets(.22);'
+  ].join("\n"));
+  assert.equal(app.eval("game.stats.kills"),1);
+  assert.equal(app.eval("game.enemies.filter(e=>e.minion).length"),2);
+  assert.equal(app.eval("game.enemies.filter(e=>e.minion).every(e=>e.hp===e.maxHp)"),true);
+});
+
+test("DARK RED repeated 100% shield hits absorb charge before normal hull hits",()=>{
+  const app=boot();
+  app.eval([
+    'game.state="PLAYING";game.player.x=175;game.weaponType="darkred";',
+    'game.enemies=[enemyBehaviors.initializeEnemy({kind:"shield",',
+    'x:420,y:470,r:39,hp:100,maxHp:100,score:50,color:"#fff",core:"#eee"})];',
+    'const shield=game.enemies[0];const startShield=shield.shieldHp;',
+    'firePlayerWeapons();game.bullets=game.bullets.slice(0,1);',
+    'Math.random=()=>0;updatePlayerBullets(.20);',
+    'game.darkRedShieldLoss=startShield-shield.shieldHp;'
+  ].join("\n"));
+  const absorbed=app.eval("game.darkRedShieldLoss");
+  const hullLoss=100-app.eval("game.enemies[0].hp");
+  assert.ok(absorbed>0);
+  assert.ok(Math.abs(absorbed+hullLoss-11.5)<1e-8);
+  assert.equal(app.eval("game.stats.kills"),0);
+});
+
+test("DARK RED repeatedly damages only Boss hull and stops at ten full hits",()=>{
+  const app=boot();
+  app.eval([
+    'game.state="PLAYING";game.stageMode="BOSS";game.weaponType="darkred";',
+    'game.player.x=175;game.player.y=480;',
+    'game.boss={active:true,x:480,y:470,rx:65,ry:70,hp:100,maxHp:100,',
+    'parts:[],color:"#fff",core:"#fff"};',
+    'firePlayerWeapons();game.bullets=game.bullets.slice(0,1);',
+    'Math.random=()=>0;updatePlayerBullets(.20);'
+  ].join("\n"));
+  assert.ok(Math.abs(app.eval("game.boss.hp")-88.5)<1e-8);
+  assert.equal(app.eval("game.bullets.length"),0);
+});
+
+test("DARK RED hits Boss turret with original weak-point scaling on every repeat",()=>{
+  const app=boot();
+  app.eval([
+    'game.state="PLAYING";game.stageMode="BOSS";game.weaponType="darkred";',
+    'game.player.x=175;game.player.y=480;',
+    'game.boss={active:true,x:620,y:470,rx:80,ry:70,hp:100,maxHp:100,',
+    'parts:[{id:"UPPER TURRET",x:-175,y:0,r:24,hp:100,maxHp:100}],',
+    'color:"#fff",core:"#fff"};',
+    'firePlayerWeapons();game.bullets=game.bullets.slice(0,1);',
+    'Math.random=()=>0;updatePlayerBullets(.20);'
+  ].join("\n"));
+  const expected=1.15*10*bossParts.BALANCE.weakPointDamageScale;
+  assert.ok(Math.abs(app.eval("game.boss.parts[0].hp")-(100-expected))<1e-8);
+  assert.equal(app.eval("game.boss.hp"),100);
+});
+
+test("DARK RED ceases chain as soon as a turret breaks, never punching through to hull",()=>{
+  const app=boot();
+  app.eval([
+    'game.state="PLAYING";game.stageMode="BOSS";game.weaponType="darkred";',
+    'game.player.x=175;game.player.y=480;',
+    'game.boss={active:true,x:620,y:470,rx:80,ry:70,hp:100,maxHp:100,',
+    'parts:[{id:"UPPER TURRET",x:-175,y:0,r:24,hp:2,maxHp:2}],',
+    'color:"#fff",core:"#fff"};',
+    'firePlayerWeapons();game.bullets=game.bullets.slice(0,1);',
+    'Math.random=()=>0;updatePlayerBullets(.20);'
+  ].join("\n"));
+  assert.ok(app.eval("game.boss.parts[0].hp")<=0);
+  assert.equal(app.eval("game.boss.hp"),100);
+  assert.equal(app.eval("game.bullets.length"),0);
+});
+
+test("DARK RED remains 100% per repeat during Overdrive and after swapping weapons",()=>{
+  const app=boot();
+  app.eval([
+    'game.state="PLAYING";game.player.x=175;game.player.y=480;',
+    'game.weaponType="darkred";game.redWeapon.stars=4;',
+    'game.combat.energy=100;activateOverdrive();firePlayerWeapons();',
+    'game.bullets=game.bullets.slice(0,1);',
+    'game.enemies=[{kind:"scout",x:420,y:470,r:30,hp:100,maxHp:100,',
+    'score:20,color:"#fff",core:"#eee"}];',
+    'collectPowerup({type:"P_BLUE",x:320,y:480,life:1});',
+    'Math.random=()=>0;updatePlayerBullets(.20);'
+  ].join("\n"));
+  const scale=app.eval("combatRules.weaponDamageScale(game.combat,selectedShip().id)");
+  assert.ok(scale>1);
+  assert.ok(Math.abs(app.eval("game.enemies[0].hp")-(100-11.5*scale))<1e-8);
+  assert.equal(app.eval("game.weaponType"),"blue");
+  assert.equal(app.eval("game.redWeapon.stars"),4);
+});
