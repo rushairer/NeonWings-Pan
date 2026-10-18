@@ -7,6 +7,17 @@ Independently maintained from NeonWings commit `5ebcb1de1adb288b41a3c5e387f747bc
 - [x] Configure standalone Pages workflow
 - [ ] Verify site deployment and controller tests on hardware
 
+## v26.8.0 — ORANGE P on-hit area blast
+
+- [x] Add tenth ORANGE P pickup, two vivid orange baseline-grade shots, clear HUD and equal-share P drop routing
+- [x] First swept collision detonates the bullet, with true 100-game-unit-radius blast and 3× regular bullet damage
+- [x] Resolve the directly hit target through the blast damage without accidental extra 1× damage; preserve Boss turret priority and shield behavior
+- [x] Sort enemy/Boss swept contacts by the earliest impact to avoid detonating behind closer targets
+- [x] One event per target, no propagation and no damage to splitter children created during that same explosion
+- [x] Short-lived orange fireball/ripple FX at radius 100 with a strict concurrent count cap of 48
+- [x] Isolate geometry/rules in orange-weapon.js and cover both unit and combat integration regressions
+- [ ] Check FX clarity, baseline damage balance and sustained FPS in real browser/AYANEO AIR MINI
+
 ## v26.7.2 — PINK missile launch probability 10%
 
 - [x] Increase per-firing-action independent special homing missile probability from 5% to 10%

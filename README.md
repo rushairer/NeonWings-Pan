@@ -13,7 +13,7 @@ A controller-first, five-stage, side-scrolling neon arcade shooter built with br
 ## Currently playable
 
 - Five themed stages and five multi-phase bosses; higher-difficulty loops after stage five
-- 11 enemy types, formations, nine weapon families, collectible power-ups and BOMB
+- 11 enemy types, formations, ten weapon families, collectible power-ups and BOMB
 - Gamepad rumble where browser/device supports it, Web Audio synthesis, volume and vibration options
 - Pause, fullscreen, local high score, end-of-run statistics
 - v23 foundation: 4:3 letterbox sizing; auto-pause on background/focus loss or controller disconnection; browser-storage fallback
@@ -28,6 +28,16 @@ A controller-first, five-stage, side-scrolling neon arcade shooter built with br
 - v26.1.1 UI fix: fighter/mode selector uses explicit non-overlapping layout geometry; selected fighter frame, Training hint, ship descriptions and score footer retain safe spacing.
 - **v26.2.0 NeonWings-Pan exclusive:** red P twin-line fire, a 250-projectile ±10° special fan triggered on 10% of eligible volleys, and an independent 0–5 star progression.
 - **v26.3.0 NeonWings-Pan exclusive:** green P retains starter-grade dual shots and adds a passive neon halo dealing area damage to nearby enemies once per second.
+
+## v26.8.0 — ORANGE P / BLAST
+
+The tenth power-up color, **ORANGE P**, joins the regular P drop rotation. Its two orange-glowing starter-grade bullets travel straight forward. Each bullet **detonates immediately on its first swept enemy or Boss/turret collision**; it never pierces or chain-reacts.
+
+- **Area:** the explosion has a **100 logical-unit radius**, measured from the FIRST actual swept projectile impact. A target's collision circle or Boss rectangle counts when touching that radius.
+- **Damage:** every affected target, **including the directly struck enemy or Boss**, receives **exactly 3× the normal ORANGE bullet's 1.15 direct power** (3.45 before the shared ship/Overdrive damage scale). This explosive hit *replaces* a separate 1× direct hit, preventing 4× accidental double damage. Boss direct turret impact retains the existing weak-point mechanics; nearby non-direct Bosses take a single hull explosion hit.
+- **Safety:** an orange bullet can explode only once. Nearby targets receive one 3× explosion damage event each; no secondary chain, and children spawned by a splitter's destruction are never hit by their parent's explosion. Shields absorb area damage through the established shield rules; Boss kills and score flow through the original combat functions.
+- **Visuals:** the hot-orange detonation expands to the same radius 100 and fades over 0.35 seconds, without any drawing-time damage. No more than 48 orange blast FX can remain live at once. Bullets, pickups and the HUD are orange and visually distinct; HUD: `ORANGE BLAST  R100  X3`.
+- **Cadence and independence:** ORANGE uses the starting twin-bullet shooting cadence and base damage at all general weapon levels. Switching colors does not erase already-fired orange bullets. Other nine P colors, including PINK's 10% homing missile and GREEN's passive halo, retain their existing effects. All ten P pickups appear in the normal drop pool with equal conditional P-color odds.
 
 ## v26.7.2 — PINK P missile chance increased to 10%
 
