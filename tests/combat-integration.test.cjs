@@ -3953,3 +3953,18 @@ test("STASIS freeze HUD, timed rings and black-white pickups are cosmetic only",
   assert.ok(image.stops.includes("#020408"));
   assert.ok(image.stops.includes("#ffffff"));
 });
+
+test("STASIS freeze is cleared when defeated Boss hands off to next stage",()=>{
+  const app=boot();
+  app.eval([
+    'game.state="PLAYING";game.stageMode="WAVE";',
+    'spawnBoss();game.boss.active=true;',
+    'game.stasisRemaining=2.7;game.boss.hp=0;',
+    'killBoss();'
+  ].join("\n"));
+  assert.equal(app.eval("game.boss"),null);
+  assert.equal(app.eval("game.stageMode"),"BOSS_REWARD");
+  assert.equal(app.eval("game.stasisRemaining"),0);
+  app.eval("game.stasisRemaining=1.5;finishBossReward()");
+  assert.equal(app.eval("game.stasisRemaining"),0);
+});

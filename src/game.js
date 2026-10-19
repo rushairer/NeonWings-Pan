@@ -3027,6 +3027,9 @@ const W = 1280;
 
       game.shake = 22;
       game.boss = null;
+      // The defeated arena has no frozen enemies; never carry BOMB stasis
+      // into the next stage or Boss Rush reward screen.
+      game.stasisRemaining = 0;
       game.enemyBullets.length = 0;
       game.bullets.length = 0;
       game.missiles.length = 0;
@@ -3953,6 +3956,7 @@ const W = 1280;
 
     function finishBossReward() {
       if (!game.pendingStageAdvance) return;
+      game.stasisRemaining = 0;
 
       if (game.mode === "bossRush" && game.pendingStageAdvance.kind === "complete") {
         game.highScore = saveModeHighScore(game.mode, game.score);
