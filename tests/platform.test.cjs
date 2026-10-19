@@ -151,7 +151,7 @@ test("static HTML loads platform before game and doesn't embed legacy code", () 
   assert.ok(html.indexOf('src="./src/combat.js"') < html.indexOf('src="./src/red-weapon.js"'));
   assert.ok(html.indexOf('src="./src/red-weapon.js"') < html.indexOf('src="./src/green-weapon.js"'));
   assert.ok(html.indexOf('src="./src/green-weapon.js"') < html.indexOf('src="./src/solar-aura-weapon.js?'));
-  assert.ok(html.indexOf('src="./src/solar-aura-weapon.js?') < html.indexOf('src="./src/black-weapon.js"'));
+  assert.ok(html.indexOf('src="./src/solar-aura-weapon.js?') < html.indexOf('src="./src/black-weapon.js?'));
   assert.ok(html.indexOf('src="./src/black-weapon.js?') < html.indexOf('src="./src/blue-black-weapon.js?'));
   assert.ok(html.indexOf('src="./src/blue-black-weapon.js?') < html.indexOf('src="./src/white-weapon.js"'));
   assert.ok(html.indexOf('src="./src/white-weapon.js"') < html.indexOf('src="./src/red-white-weapon.js?'));
