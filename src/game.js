@@ -36,6 +36,10 @@ const W = 1280;
     if (!arcLaserRules) throw new Error("NeonWings-Pan arc laser P runtime missing");
     const stasisRules = window.NeonStasisWeapon;
     if (!stasisRules) throw new Error("NeonWings-Pan stasis P runtime missing");
+    const eclipseRules = window.NeonEclipseWeapon;
+    if (!eclipseRules) throw new Error("NeonWings-Pan eclipse P runtime missing");
+    const recruitRules = window.NeonRecruitWeapon;
+    if (!recruitRules) throw new Error("NeonWings-Pan recruit P runtime missing");
     const collision = window.NeonCollision;
     if (!collision) throw new Error("NeonWings collision runtime missing");
     const enemyBehaviors = window.NeonEnemyBehaviors;
@@ -68,6 +72,9 @@ const W = 1280;
       orangeExplosions: orangeRules.RULES.maxExplosionEffects,
       magneticFields: magnetRules.RULES.maxFields,
       magneticBursts: magnetRules.RULES.maxBursts,
+      shockwaves: eclipseRules.RULES.maxWaves,
+      allies: recruitRules.RULES.maxAllies,
+      allyBullets: recruitRules.RULES.maxAllyBullets,
       missiles: 48,
       enemies: enemyBehaviors.CONFIG.maxEnemies
     });
@@ -1103,6 +1110,9 @@ const W = 1280;
         orangeExplosions: [],
         magneticFields: [],
         magneticBursts: [],
+        shockwaves: [],
+        allies: [],
+        allyBullets: [],
         boss: null,
 
         stars: Array.from({ length: 110 }, () => ({
@@ -1186,6 +1196,14 @@ const W = 1280;
       game.stats.kills += 1;
       if (rewards.dropsPowerup) maybeDropPowerup(e);
       announceDriveReady(result.ready);
+      if ((game.weaponType === "recruit" || source === "recruit") &&
+          recruitRules.canConvert(e, game.stageMode, game.allies.length)) {
+        // Conversion occurs exactly once AFTER the enemy's regular kill/score/
+        // drop credit. A team change NEVER inserts anything into game.enemies:
+        // collision with the player and BOMB/enemy attack logic cannot harm it.
+        e.recruited = true;
+        game.allies.push(recruitRules.createAlly(e));
+      }
     }
 
     function awardBossKill(source = "shot") {
@@ -1295,6 +1313,9 @@ const W = 1280;
       game.transition = 0;
       game.enemies.length = 0;
       game.enemyBullets.length = 0;
+      game.shockwaves.length = 0;
+      game.allies.length = 0;
+      game.allyBullets.length = 0;
       game.boss = null;
       sfx("gameOver");
       haptic("gameOver", 0.78, 0.70, 300, 0.8);
@@ -1835,7 +1856,7 @@ const W = 1280;
       "P_BLUE", "P_PURPLE", "P_YELLOW", "P_RED", "P_GREEN",
       "P_BLACK", "P_WHITE", "P_GRAY", "P_PINK", "P_ORANGE",
       "P_BROWN", "P_LIME", "P_SKY", "P_DARK_RED", "P_RAINBOW",
-      "P_MAGNET", "P_ARC_LASER", "P_STASIS"
+      "P_MAGNET", "P_ARC_LASER", "P_STASIS", "P_ECLIPSE", "P_RECRUIT"
     ]);
     function randomPowerType() {
       return POWER_TYPES[Math.min(POWER_TYPES.length - 1,
@@ -1860,6 +1881,8 @@ const W = 1280;
       if (type === "magnet") return { name: "MAGNET", short: "MAGNET", color: "#ff6f91", core: "#c8efff" };
       if (type === "arcLaser") return { name: "PIERCING ARC", short: "ARC LASER", color: "#9ee9ff", core: "#ffffff" };
       if (type === "stasis") return { name: "TIME FREEZE", short: "STASIS", color: "#d6dce6", core: "#ffffff" };
+      if (type === "eclipse") return { name: "SHOCKWAVE", short: "ECLIPSE", color: "#d83553", core: "#ff7896" };
+      if (type === "recruit") return { name: "ALLIANCE", short: "RECRUIT", color: "#fa79d2", core: "#81c4ff" };
       return { name: "LINE", short: "BLUE", color: "#38e8ff", core: "#e8fdff" };
     }
 
@@ -1881,6 +1904,8 @@ const W = 1280;
       if (powerupType === "P_MAGNET") return "magnet";
       if (powerupType === "P_ARC_LASER") return "arcLaser";
       if (powerupType === "P_STASIS") return "stasis";
+      if (powerupType === "P_ECLIPSE") return "eclipse";
+      if (powerupType === "P_RECRUIT") return "recruit";
       return "blue";
     }
 
@@ -1902,6 +1927,8 @@ const W = 1280;
       if (game.weaponType === "magnet") return "P_MAGNET";
       if (game.weaponType === "arcLaser") return "P_ARC_LASER";
       if (game.weaponType === "stasis") return "P_STASIS";
+      if (game.weaponType === "eclipse") return "P_ECLIPSE";
+      if (game.weaponType === "recruit") return "P_RECRUIT";
       return "P_BLUE";
     }
 
@@ -1981,6 +2008,15 @@ const W = 1280;
       if (p.type === "P_ARC_LASER" && !arcLaserRules.canEquip(game.weaponType)) {
         if (!(p.lockHintCooldown > 0)) {
           showMessage("ARC LASER  REQUIRES BROWN P", 1.1);
+          p.lockHintCooldown = 1.2;
+        }
+        return false;
+      }
+      // ECLIPSE can ONLY evolve from DARK RED (not ordinary RED); invalid
+      // pickups remain in the world and do not grant level or score.
+      if (p.type === "P_ECLIPSE" && !eclipseRules.canEquip(game.weaponType)) {
+        if (!(p.lockHintCooldown > 0)) {
+          showMessage("ECLIPSE  REQUIRES DARK RED P", 1.1);
           p.lockHintCooldown = 1.2;
         }
         return false;
@@ -2086,11 +2122,16 @@ const W = 1280;
           const wt = powerupWeaponType(p.type);
           const meta = weaponMeta(wt);
           rect(-23, -23, 46, 46, "#07111f");
-          if (wt === "magnet" || wt === "arcLaser" || wt === "stasis") {
+          if (wt === "magnet" || wt === "arcLaser" || wt === "stasis" ||
+              wt === "eclipse" || wt === "recruit") {
             const gradient = ctx.createLinearGradient(-19, -19, 19, 19);
             gradient.addColorStop(0, wt === "magnet" ? "#ff4568"
-              : wt === "arcLaser" ? "#8bdfff" : "#020408");
-            gradient.addColorStop(1, wt === "magnet" ? "#a9e8ff" : "#ffffff");
+              : wt === "arcLaser" ? "#8bdfff"
+              : wt === "eclipse" ? "#07080f"
+              : wt === "recruit" ? "#ff85d9" : "#020408");
+            gradient.addColorStop(1, wt === "magnet" ? "#a9e8ff"
+              : wt === "eclipse" ? "#fb385c"
+              : wt === "recruit" ? "#80bfff" : "#ffffff");
             rect(-19, -19, 38, 38, gradient);
           } else rect(-19, -19, 38, 38, meta.color);
           rect(-13, -13, 26, 26, "#081020");
@@ -2111,6 +2152,27 @@ const W = 1280;
               rect(-29, offset, 6, 6, meta.core);
               rect(23, offset, 6, 6, meta.core);
             }
+          } else if (wt === "eclipse") {
+            // Dark-red gate with concentric 360-degree shockwave rings.
+            ctx.strokeStyle = "#ffe4e9";
+            ctx.lineWidth = 2.5;
+            for (const r of [25, 32]) {
+              ctx.beginPath();
+              ctx.arc(0, 0, r, 0, Math.PI * 2);
+              ctx.stroke();
+            }
+            if (!eclipseRules.canEquip(game.weaponType))
+              drawText("DARK RED", 0, 42, 11, "center", "#ffadc0");
+          } else if (wt === "recruit") {
+            // Two linked cyan-and-pink friendly fighter emblems.
+            ctx.strokeStyle = "#d9eaff";
+            ctx.lineWidth = 2.5;
+            ctx.beginPath();
+            ctx.arc(0, 0, 29, 0, Math.PI * 2);
+            ctx.stroke();
+            rect(-32, -4, 9, 8, "#ff7fcf");
+            rect(23, -4, 9, 8, "#82caff");
+            rect(-3, -34, 6, 8, "#ffffff");
           } else if (wt === "darkred") {
             // Three nested deep-crimson strikes distinguish chained hits from
             // ordinary RED P's four fins and star progression.
@@ -2534,6 +2596,23 @@ const W = 1280;
           addPlayerShot(orbit.x, orbit.y, orbit.vx, orbit.vy, orbit.r,
             limeRules.RULES.normalDamage, "#d1f74c", orbit);
         }
+      } else if (type === "eclipse") {
+        // One 360-degree swept penetrating ring per firing action; never
+        // create projectile slots. Capture original damage scale on firing.
+        if (game.shockwaves.length < LIMITS.shockwaves) {
+          game.shockwaves.push(eclipseRules.createWave(
+            game.player,
+            eclipseRules.RULES.normalDamage *
+              combatRules.weaponDamageScale(game.combat, selectedShip().id)
+          ));
+        }
+      } else if (type === "recruit") {
+        // Normal gradient twin bullets. Defeated ordinary enemies become
+        // right-moving friendly units via the centralized kill award path.
+        for (const lane of [-10, 12]) {
+          addPlayerShot(muzzleX, baseY + lane, 1100, 0, 9,
+            recruitRules.RULES.normalDamage, "#f783d8", { recruitShot: true });
+        }
       } else if (type === "stasis") {
         // Starter-grade twin bullets. Its special is a 3s all-enemy freeze
         // ONLY when a real BOMB is consumed, never on regular bullet hits.
@@ -2683,9 +2762,10 @@ const W = 1280;
     function getFireCooldown() {
       if (game.weaponType === "red") return redRules.RULES.volleySeconds;
       if (game.weaponType === "rainbow") return rainbowRules.RULES.shotCooldownSeconds;
+      if (game.weaponType === "eclipse") return eclipseRules.RULES.cooldownSeconds;
       if (game.weaponType === "yellow") return Math.max(0.17, 0.25 - game.weaponLevel * 0.025);
       if (game.weaponType === "purple") return Math.max(0.10, 0.145 - game.weaponLevel * 0.012);
-      return Math.max(0.07, 0.115 - (game.weaponType === "green" || game.weaponType === "black" || game.weaponType === "white" || game.weaponType === "gray" || game.weaponType === "pink" || game.weaponType === "orange" || game.weaponType === "lime" || game.weaponType === "brown" || game.weaponType === "sky" || game.weaponType === "darkred" || game.weaponType === "magnet" || game.weaponType === "stasis" || game.weaponType === "arcLaser" ? 1 : game.weaponLevel) * 0.014);
+      return Math.max(0.07, 0.115 - (game.weaponType === "green" || game.weaponType === "black" || game.weaponType === "white" || game.weaponType === "gray" || game.weaponType === "pink" || game.weaponType === "orange" || game.weaponType === "lime" || game.weaponType === "brown" || game.weaponType === "sky" || game.weaponType === "darkred" || game.weaponType === "magnet" || game.weaponType === "stasis" || game.weaponType === "arcLaser" || game.weaponType === "recruit" ? 1 : game.weaponLevel) * 0.014);
     }
 
     function findMissileTarget(m) {
@@ -2733,7 +2813,7 @@ const W = 1280;
       return a;
     }
 
-    function damageEnemy(e, amount, x, y, c = "#64f4ff") {
+    function damageEnemy(e, amount, x, y, c = "#64f4ff", recruitOnKill = false) {
       if (e.hp <= 0) return;
 
       const shield = enemyBehaviors.applyFrontalShield(e, amount, game.player.x);
@@ -2760,7 +2840,7 @@ const W = 1280;
       if (e.hp <= 0) {
         sfx("explode");
         hapticExplosion();
-        awardEnemyKill(e);
+        awardEnemyKill(e, recruitOnKill ? "recruit" : "shot");
         game.shake = Math.max(game.shake, 8);
 
         for (let i = 0; i < 26; i++) addParticle(e.x, e.y, rand(-240, 190), rand(-220, 220), rand(0.25, 0.70), i % 2 ? e.core : e.color);
@@ -2795,6 +2875,9 @@ const W = 1280;
       game.magneticFields.length = 0;
       game.magneticBursts.length = 0;
       game.enemyBullets.length = Math.min(game.enemyBullets.length, 8);
+      // Recruited fighters continue into this Boss encounter, but old wave
+      // rings must never carry through to a newly created boss.
+      game.shockwaves.length = 0;
 
       startBgm();
 
@@ -3035,6 +3118,9 @@ const W = 1280;
       game.missiles.length = 0;
       game.magneticFields.length = 0;
       game.magneticBursts.length = 0;
+      game.shockwaves.length = 0;
+      game.allies.length = 0;
+      game.allyBullets.length = 0;
       game.powerups.length = 0;
       game.world.phase = "idle";
       game.world.hazard = null;
@@ -3597,6 +3683,97 @@ const W = 1280;
       game.enemies = game.enemies.filter(e => e.hp > 0 && e.x > -120);
     }
 
+    // A 360-degree ring is a true swept area, not a finite spray of angled
+    // pellets. Every target (including shielded enemies and Boss hull/parts)
+    // is marked once per wave; killing a wave target cannot splash a newly
+    // created splitter child or the Boss entering this frame.
+    function updateShockwaves(dt) {
+      if (!(dt > 0)) return;
+      for (const wave of game.shockwaves.slice()) {
+        if (!game.shockwaves.includes(wave) || !eclipseRules.advance(wave, dt))
+          continue;
+        const stageAtStart = game.stageMode;
+        const victims = game.enemies.slice();
+        for (const enemy of victims) {
+          if (!game.shockwaves.includes(wave) || game.stageMode !== stageAtStart)
+            break;
+          if (!eclipseRules.markEnemy(wave, enemy)) continue;
+          damageEnemy(enemy, wave.power, enemy.x, enemy.y, "#ff425e");
+        }
+        const boss = game.boss;
+        if (game.stageMode === stageAtStart &&
+            game.shockwaves.includes(wave) && boss &&
+            eclipseRules.markBoss(wave, boss)) {
+          // The wave penetrates every regular enemy, but strikes a given
+          // Boss once: prefer a turret whose circle intersects this ring.
+          const part = (boss.parts || []).find(p => p.hp > 0 &&
+            eclipseRules.crossesCircle(wave, boss.x + p.x, boss.y + p.y, p.r));
+          damageBoss(wave.power, boss.x, boss.y, "#ff7086", part || null);
+        }
+      }
+      game.shockwaves = game.shockwaves.filter(w =>
+        w.radius < eclipseRules.RULES.maxRadius);
+      game.enemies = game.enemies.filter(e => e.hp > 0 && e.x > -120);
+    }
+
+    // Friendly silhouettes are never inserted back into game.enemies, so the
+    // player/enemy bullet collision loops CANNOT mistake them for hostiles.
+    // This is a separate, capped 10-second ally simulation and projectile lane.
+    function updateAllies(dt) {
+      for (const ally of game.allies) {
+        if (ally.life <= 0) continue;
+        recruitRules.advance(ally, dt);
+        if (ally.x > W + ally.r || ally.life <= 0) continue;
+        if (ally.shootCd <= 0 && game.allyBullets.length < LIMITS.allyBullets) {
+          game.allyBullets.push(recruitRules.createShot(
+            ally, combatRules.weaponDamageScale(game.combat, selectedShip().id)));
+          ally.shootCd = recruitRules.RULES.shootIntervalSeconds;
+        }
+      }
+      game.allies = game.allies.filter(a => a.life > 0 && a.x - a.r < W + 100);
+    }
+
+    function updateAllyBullets(dt) {
+      for (const shot of game.allyBullets) {
+        if (!(shot.life > 0) || shot.dead) continue;
+        shot.previousX = shot.x;
+        shot.previousY = shot.y;
+        shot.x += shot.vx * dt;
+        shot.y += shot.vy * dt;
+        shot.life -= dt;
+        if (shot.life <= 0) continue;
+        const stageBefore = game.stageMode;
+        for (const enemy of game.enemies.slice()) {
+          if (enemy.hp <= 0 || !collision.sweptCircleHit(
+            shot.previousX, shot.previousY, shot.x, shot.y,
+            enemy.x, enemy.y, shot.r + enemy.r
+          )) continue;
+          shot.dead = true;
+          // An ally's kill can recruit another unit, but ALL conversions are
+          // deduplicated and max-capped via awardEnemyKill().
+          damageEnemy(enemy, shot.power, shot.x, shot.y, "#85d8ff", true);
+          break;
+        }
+        if (shot.dead || stageBefore !== game.stageMode) continue;
+        const boss = game.boss;
+        if (boss?.active && boss.hp > 0) {
+          const part = bossParts.findHit(boss,
+            shot.previousX, shot.previousY, shot.x, shot.y, shot.r);
+          if (part || collision.sweptAabbHit(
+            shot.previousX, shot.previousY, shot.x, shot.y,
+            boss.x - boss.rx - shot.r, boss.x + boss.rx + shot.r,
+            boss.y - boss.ry - shot.r, boss.y + boss.ry + shot.r
+          )) {
+            shot.dead = true;
+            damageBoss(shot.power, shot.x, shot.y, "#9addff", part);
+          }
+        }
+      }
+      game.allyBullets = game.allyBullets.filter(b =>
+        !b.dead && b.life > 0 && b.x < W + 80 &&
+        b.y > -60 && b.y < H + 60);
+    }
+
     function updatePlayerBullets(dt) {
       for (const b of game.bullets) {
         if (b.dead) continue;
@@ -3664,7 +3841,8 @@ const W = 1280;
               return e.hp > 0;
             }, Math.random);
           } else {
-            damageEnemy(e, damage * grayRules.damageMultiplier(grayOutcome), b.x, b.y, b.c);
+            damageEnemy(e, damage * grayRules.damageMultiplier(grayOutcome), b.x, b.y, b.c,
+              b.recruitShot === true);
           }
           if (b.dead) break;
         }
@@ -3957,6 +4135,9 @@ const W = 1280;
     function finishBossReward() {
       if (!game.pendingStageAdvance) return;
       game.stasisRemaining = 0;
+      game.shockwaves.length = 0;
+      game.allies.length = 0;
+      game.allyBullets.length = 0;
 
       if (game.mode === "bossRush" && game.pendingStageAdvance.kind === "complete") {
         game.highScore = saveModeHighScore(game.mode, game.score);
@@ -4163,6 +4344,11 @@ const W = 1280;
 
       updateEnemies(dt);
       updateBoss(dt);
+      // The world-anchored ring, allies and their bullets all freeze in pause
+      // /reward/transition; only active simulation time advances them.
+      updateShockwaves(dt);
+      updateAllies(dt);
+      updateAllyBullets(dt);
       // Settle previous fields BEFORE player hits can spawn new ones this frame.
       updateMagneticFields(dt);
       updateBrownLaser(dt, firing);
@@ -4330,6 +4516,17 @@ const W = 1280;
         // LIME uses the SAME ordinary rectangular bullet sprite as BLUE.
         // Its only visual difference is the lime-colored core; the *path*,
         // not the projectile model, curves into an orbit.
+        if (b.recruitShot) {
+          const gradient = ctx.createLinearGradient(-9, -7, 36, 7);
+          gradient.addColorStop(0, "#ff86d9");
+          gradient.addColorStop(1, "#82bfff");
+          ctx.shadowColor = "#d2b4fa";
+          ctx.shadowBlur = 16;
+          rect(-9, -7, 38, 14, gradient);
+          rect(9, -2, 25, 4, "#ffffff");
+          ctx.restore();
+          continue;
+        }
         if (b.stasisShot) {
           const gradient = ctx.createLinearGradient(-8, -7, 33, 7);
           gradient.addColorStop(0, "#20252e");
@@ -4574,6 +4771,70 @@ const W = 1280;
       ctx.restore();
     }
 
+    function drawShockwaves() {
+      for (const wave of game.shockwaves) {
+        const progress = Math.min(1, wave.radius / eclipseRules.RULES.maxRadius);
+        const alpha = Math.max(0.13, (1 - progress) * .85);
+        ctx.save();
+        ctx.globalAlpha = alpha;
+        ctx.shadowColor = "#ff315c";
+        ctx.shadowBlur = 28;
+        ctx.strokeStyle = "#e12d52";
+        ctx.lineWidth = 17;
+        ctx.beginPath();
+        ctx.arc(wave.x, wave.y, wave.radius, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.shadowBlur = 9;
+        ctx.strokeStyle = "#07080d";
+        ctx.lineWidth = 9;
+        ctx.beginPath();
+        ctx.arc(wave.x, wave.y, wave.radius, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+        ctx.strokeStyle = "#ff9aaf";
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(wave.x, wave.y, wave.radius, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.restore();
+      }
+    }
+
+    function drawAllies() {
+      for (const ally of game.allies) {
+        // Reuse the defeated enemy's original silhouette but replace its
+        // hostile palette with visible pink/blue friendly team colors.
+        drawEnemy(ally);
+        ctx.save();
+        ctx.globalAlpha = Math.min(1, ally.life / 1.5);
+        ctx.strokeStyle = "#84d1ff";
+        ctx.shadowColor = "#fa7ed5";
+        ctx.shadowBlur = 12;
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        ctx.arc(ally.x, ally.y, ally.r + 8, 0, Math.PI * 2);
+        ctx.stroke();
+        drawText("ALLY", ally.x, ally.y - ally.r - 24,
+          15, "center", "#fbc4ed");
+        ctx.restore();
+      }
+    }
+
+    function drawAllyBullets() {
+      for (const bullet of game.allyBullets) {
+        ctx.save();
+        ctx.translate(bullet.x, bullet.y);
+        ctx.shadowColor = "#a6dfff";
+        ctx.shadowBlur = 16;
+        const gradient = ctx.createLinearGradient(-8, -5, 27, 5);
+        gradient.addColorStop(0, "#ff89db");
+        gradient.addColorStop(1, "#85c7ff");
+        rect(-8, -6, 30, 12, gradient);
+        rect(8, -2, 17, 4, "#ffffff");
+        ctx.restore();
+      }
+    }
+
     function drawGreenAura() {
       if (game.weaponType !== "green" ||
           (game.stageMode !== "WAVE" && game.stageMode !== "BOSS")) return;
@@ -4742,6 +5003,10 @@ const W = 1280;
         ? "ARC LASER  PIERCE + CONDUCT"
         : game.weaponType === "stasis"
         ? "STASIS BOMB  FREEZE 3S"
+        : game.weaponType === "eclipse"
+        ? "ECLIPSE  360° PIERCING WAVE"
+        : game.weaponType === "recruit"
+        ? `RECRUIT  ALLIES ${game.allies.length}/${LIMITS.allies}`
         : `${meta.short} WEAPON  LV.${game.weaponLevel}`, 656, 80, 21, "left",
         game.weaponType === "black" ? "#9cccff" : meta.color);
 
@@ -5231,16 +5496,19 @@ const W = 1280;
       worlds.drawHazard(ctx, game.world, W, H);
       drawGreenAura();
       drawMagneticFields();
+      drawShockwaves();
       drawLimeOrbitRing();
       drawOverdriveAura();
       drawBombFlash();
 
       drawPlayerBullets();
+      drawAllyBullets();
       drawBrownLaser();
       drawMissiles();
       drawEnemyBullets();
 
       for (const e of game.enemies) drawEnemy(e);
+      drawAllies();
       drawBossWarning(game.boss);
       drawBoss(game.boss);
       drawStasisFreeze();
