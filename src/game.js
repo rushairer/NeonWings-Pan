@@ -16,6 +16,8 @@ const W = 1280;
     if (!blackRules) throw new Error("NeonWings-Pan black P runtime missing");
     const whiteRules = window.NeonWhiteWeapon;
     if (!whiteRules) throw new Error("NeonWings-Pan white P runtime missing");
+    const redWhiteRules = window.NeonRedWhiteWeapon;
+    if (!redWhiteRules) throw new Error("NeonWings-Pan red-white P runtime missing");
     const grayRules = window.NeonGrayWeapon;
     if (!grayRules) throw new Error("NeonWings-Pan gray P runtime missing");
     const pinkRules = window.NeonPinkWeapon;
@@ -1859,7 +1861,7 @@ const W = 1280;
       "P_BLACK", "P_WHITE", "P_GRAY", "P_PINK", "P_ORANGE",
       "P_BROWN", "P_LIME", "P_SKY", "P_DARK_RED", "P_RAINBOW",
       "P_MAGNET", "P_ARC_LASER", "P_STASIS", "P_ECLIPSE", "P_RECRUIT",
-      "P_SOLAR"
+      "P_SOLAR", "P_RED_WHITE"
     ]);
     function randomPowerType() {
       return POWER_TYPES[Math.min(POWER_TYPES.length - 1,
@@ -1870,6 +1872,7 @@ const W = 1280;
       if (type === "purple") return { name: "SPREAD", short: "PURPLE", color: "#c084ff", core: "#f3d7ff" };
       if (type === "yellow") return { name: "MISSILE", short: "YELLOW", color: "#ffd76b", core: "#fff4b7" };
       if (type === "red") return { name: "SCATTER", short: "RED", color: "#ff3d5f", core: "#ffe3e8" };
+      if (type === "redwhite") return { name: "ARC SCATTER", short: "RED-WHITE", color: "#ff6479", core: "#ffffff" };
       if (type === "green") return { name: "AURA", short: "GREEN", color: "#43ff87", core: "#e0ffed" };
       if (type === "solar") return { name: "SOLAR AURA", short: "SOLAR", color: "#ff544e", core: "#ffe779" };
       if (type === "black") return { name: "SLOW", short: "BLACK", color: "#191e2a", core: "#dce9ff" };
@@ -1894,6 +1897,7 @@ const W = 1280;
       if (powerupType === "P_PURPLE") return "purple";
       if (powerupType === "P_YELLOW") return "yellow";
       if (powerupType === "P_RED") return "red";
+      if (powerupType === "P_RED_WHITE") return "redwhite";
       if (powerupType === "P_GREEN") return "green";
       if (powerupType === "P_SOLAR") return "solar";
       if (powerupType === "P_BLACK") return "black";
@@ -1918,6 +1922,7 @@ const W = 1280;
       if (game.weaponType === "purple") return "P_PURPLE";
       if (game.weaponType === "yellow") return "P_YELLOW";
       if (game.weaponType === "red") return "P_RED";
+      if (game.weaponType === "redwhite") return "P_RED_WHITE";
       if (game.weaponType === "green") return "P_GREEN";
       if (game.weaponType === "solar") return "P_SOLAR";
       if (game.weaponType === "black") return "P_BLACK";
@@ -2036,6 +2041,15 @@ const W = 1280;
         }
         return false;
       }
+      // WHITE or RED may evolve into the shared-star RED-WHITE weapon.
+      // Collecting it from unrelated P types is a NO-OP and leaves the item.
+      if (p.type === "P_RED_WHITE" && !redWhiteRules.canEquip(game.weaponType)) {
+        if (!(p.lockHintCooldown > 0)) {
+          showMessage("RED-WHITE  REQUIRES RED OR WHITE P", 1.1);
+          p.lockHintCooldown = 1.2;
+        }
+        return false;
+      }
       p.life = 0;
 
       if (p.type.startsWith("P_")) {
@@ -2138,17 +2152,20 @@ const W = 1280;
           const meta = weaponMeta(wt);
           rect(-23, -23, 46, 46, "#07111f");
           if (wt === "magnet" || wt === "arcLaser" || wt === "stasis" ||
-              wt === "eclipse" || wt === "recruit" || wt === "solar") {
+              wt === "eclipse" || wt === "recruit" || wt === "solar" ||
+              wt === "redwhite") {
             const gradient = ctx.createLinearGradient(-19, -19, 19, 19);
             gradient.addColorStop(0, wt === "magnet" ? "#ff4568"
               : wt === "arcLaser" ? "#8bdfff"
               : wt === "eclipse" ? "#07080f"
               : wt === "recruit" ? "#ff85d9"
-              : wt === "solar" ? "#ff3d4f" : "#020408");
+              : wt === "solar" ? "#ff3d4f"
+              : wt === "redwhite" ? "#ff3957" : "#020408");
             gradient.addColorStop(1, wt === "magnet" ? "#a9e8ff"
               : wt === "eclipse" ? "#fb385c"
               : wt === "recruit" ? "#80bfff"
-              : wt === "solar" ? "#ffe04c" : "#ffffff");
+              : wt === "solar" ? "#ffe04c"
+              : wt === "redwhite" ? "#f9fcff" : "#ffffff");
             rect(-19, -19, 38, 38, gradient);
           } else rect(-19, -19, 38, 38, meta.color);
           rect(-13, -13, 26, 26, "#081020");
@@ -2163,6 +2180,21 @@ const W = 1280;
             rect(2, -29, 6, 6, meta.core);
             rect(-8, 23, 6, 6, meta.core);
             rect(2, 23, 6, 6, meta.core);
+          } else if (wt === "redwhite") {
+            // A crossed red/white lightning reticle advertises the fusion.
+            ctx.strokeStyle = "#f6faff";
+            ctx.lineWidth = 2.5;
+            ctx.beginPath();
+            ctx.arc(0, 0, 29, 0, Math.PI * 2);
+            ctx.moveTo(-22, -7);
+            ctx.lineTo(-5, -7);
+            ctx.lineTo(-11, 9);
+            ctx.lineTo(6, 9);
+            ctx.stroke();
+            rect(-31, -3, 9, 7, "#ff4a67");
+            rect(22, -3, 9, 7, "#ffffff");
+            if (!redWhiteRules.canEquip(game.weaponType))
+              drawText("RED/WHITE", 0, 42, 11, "center", "#ffb4c5");
           } else if (wt === "red") {
             // Four short side fins mark standard RED P and its star system.
             for (const offset of [-11, 5]) {
@@ -2753,10 +2785,22 @@ const W = 1280;
         // swapping weapons and only attach the status on actual collisions.
         addPlayerShot(muzzleX, baseY - 10, 1100, 0, 9, 1.15, "#121522", { blackSlow: true });
         addPlayerShot(muzzleX, baseY + 12, 1100, 0, 9, 1.15, "#121522", { blackSlow: true });
-      } else if (type === "red") {
-        // Two fixed parallel crimson lanes; only the P-specific streak changes cadence.
-        addPlayerShot(muzzleX, baseY - 13, 1120, 0, 8, 1.15, "#ff3d5f", { redNormal: true });
-        addPlayerShot(muzzleX, baseY + 13, 1120, 0, 8, 1.15, "#ff3d5f", { redNormal: true });
+      } else if (type === "red" || type === "redwhite") {
+        // Same EXACT twin lanes / red volley counts, different projectiles:
+        // RED-WHITE fires real WHITE penetrating electricity with independent
+        // victim ledgers; original RED remains unchanged.
+        if (type === "redwhite") {
+          for (const lane of redWhiteRules.RULES.normalLanes) {
+            addPlayerShot(muzzleX, baseY + lane,
+              redWhiteRules.RULES.normalSpeed, 0,
+              redWhiteRules.RULES.normalRadius,
+              redWhiteRules.RULES.normalDamage, "#f7fbff",
+              redWhiteRules.createShot());
+          }
+        } else {
+          addPlayerShot(muzzleX, baseY - 13, 1120, 0, 8, 1.15, "#ff3d5f", { redNormal: true });
+          addPlayerShot(muzzleX, baseY + 13, 1120, 0, 8, 1.15, "#ff3d5f", { redNormal: true });
+        }
       } else if (type === "purple") {
         const fan = overdrive
           ? (level === 1 ? [-0.42, -0.21, 0, 0.21, 0.42]
@@ -2796,7 +2840,7 @@ const W = 1280;
     }
 
     function getFireCooldown() {
-      if (game.weaponType === "red") return redRules.RULES.volleySeconds;
+      if (game.weaponType === "red" || game.weaponType === "redwhite") return redRules.RULES.volleySeconds;
       if (game.weaponType === "rainbow") return rainbowRules.RULES.shotCooldownSeconds;
       if (game.weaponType === "eclipse") return eclipseRules.RULES.cooldownSeconds;
       if (game.weaponType === "yellow") return Math.max(0.17, 0.25 - game.weaponLevel * 0.025);
@@ -4335,12 +4379,18 @@ const W = 1280;
           ? pinkRules.fire(game.pinkWeapon, getFireCooldown(), Math.random)
           : null;
         firePlayerWeapons(pinkVolley?.special || false);
-        if (game.weaponType === "red") {
+        if (game.weaponType === "red" || game.weaponType === "redwhite") {
+          // BOTH weapons operate the SAME RED volley/stars/special object.
+          // Store the fan's conductive origin only when it FIRST triggers:
+          // an already active fan keeps its projectile type after P swaps.
+          const electric = game.weaponType === "redwhite";
           const volley = redRules.fire(game.redWeapon, Math.random());
           game.fireCooldown = volley.cooldown;
           if (volley.triggered) {
+            if (electric) redWhiteRules.markTriggeredFan(game.redWeapon);
             sfx("overdriveReady");
-            showMessage("RED P  /  SCATTER FAN ENGAGED", 1.1);
+            showMessage(electric ? "RED-WHITE P  /  ELECTRIC FAN ENGAGED"
+              : "RED P  /  SCATTER FAN ENGAGED", 1.1);
           }
         } else if (game.weaponType === "gray") {
           // Count each dual-bullet firing action as ONE volley.
@@ -4357,16 +4407,22 @@ const W = 1280;
       // switches weapons; only active combat time advances its three-second clock.
       const fan = redRules.tick(game.redWeapon, dt, (angle, index) => {
         const muzzleY = game.player.y + (index % 2 === 0 ? -7 : 7);
+        const electric = redWhiteRules.specialIsElectric(game.redWeapon);
         addPlayerShot(game.player.x + 60, muzzleY,
           Math.cos(angle) * 1060, Math.sin(angle) * 1060,
-          5, 0.38, "#ff4264", { redSpecial: true });
+          5, 0.38, electric ? "#f7fcff" : "#ff4264",
+          electric ? redWhiteRules.createShot(true) : { redSpecial: true });
       });
       if (fan.upgraded) {
         sfx("pickupP");
-        if (game.weaponType === "red")
-          showMessage(`RED P  STAR UP  ${game.redWeapon.stars}/5`, 1.6);
-      } else if (fan.completed && game.weaponType === "red") {
-        showMessage("RED P  MAX 5 STARS", 1.0);
+        if (game.weaponType === "red" || game.weaponType === "redwhite") {
+          const name = game.weaponType === "red" ? "RED P" : "RED-WHITE P";
+          showMessage(`${name}  STAR UP  ${game.redWeapon.stars}/5`, 1.6);
+        }
+      } else if (fan.completed &&
+          (game.weaponType === "red" || game.weaponType === "redwhite")) {
+        const name = game.weaponType === "red" ? "RED P" : "RED-WHITE P";
+        showMessage(`${name}  MAX 5 STARS`, 1.0);
       }
 
       if (game.stageMode === "WAVE") {
@@ -5035,6 +5091,8 @@ const W = 1280;
         ? "BLACK SLOW  50% / 5.0S"
         : game.weaponType === "white"
         ? "WHITE ARC 60% 1-3 HOPS"
+        : game.weaponType === "redwhite"
+        ? "RED-WHITE ARC 60% HOPS"
         : game.weaponType === "gray"
         ? "GRAY 20/5/75  1.5X"
         : game.weaponType === "pink"
@@ -5106,12 +5164,15 @@ const W = 1280;
         drawText(`GRAZES ${combat.grazes}  /  BEST ${combat.maxCombo}`, W - 336, H - 37, 19, "left", "#e7fbff");
       }
 
-      // Keep red star STATE across weapon swaps, but ONLY render its HUD on RED P.
-      if (game.weaponType === "red") {
+      // ONE shared RED star state. WHITE alone does not display RED stars,
+      // while RED and its RED-WHITE fusion both display/use the same counter.
+      if (game.weaponType === "red" || game.weaponType === "redwhite") {
+        const electric = game.weaponType === "redwhite";
         ctx.fillStyle = "rgba(23, 3, 16, .70)";
         ctx.fillRect(552, H - 94, 354, 72);
         const stars = "★".repeat(game.redWeapon.stars) + "☆".repeat(5 - game.redWeapon.stars);
-        drawText(`RED P  ${stars}`, 570, H - 66, 22, "left", "#ff5574");
+        drawText(`${electric ? "RED-WHITE" : "RED"} P  ${stars}`,
+          570, H - 66, 22, "left", electric ? "#ffd2d9" : "#ff5574");
         drawText(game.redWeapon.special
           ? `FAN ${game.redWeapon.special.emitted}/250  /  3.0s`
           : `${redRules.RULES.baseVolleys + game.redWeapon.stars} VOLLEYS  /  0.4s REST`,

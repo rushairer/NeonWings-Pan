@@ -11,6 +11,7 @@ const greenWeapon = require("../src/green-weapon.js");
 const solarAuraWeapon = require("../src/solar-aura-weapon.js");
 const blackWeapon = require("../src/black-weapon.js");
 const whiteWeapon = require("../src/white-weapon.js");
+const redWhiteWeapon = require("../src/red-white-weapon.js");
 const grayWeapon = require("../src/gray-weapon.js");
 const pinkWeapon = require("../src/pink-weapon.js");
 const orangeWeapon = require("../src/orange-weapon.js");
@@ -50,7 +51,7 @@ function boot() {
   const canvas = { style: {}, getContext: () => ctx };
   const storage = new Map();
   const window = {
-    NeonPlatform: platform, NeonController: controller, NeonCombat: combat, NeonRedWeapon: redWeapon, NeonGreenWeapon: greenWeapon, NeonSolarAuraWeapon: solarAuraWeapon, NeonBlackWeapon: blackWeapon, NeonWhiteWeapon: whiteWeapon, NeonGrayWeapon: grayWeapon, NeonPinkWeapon: pinkWeapon, NeonOrangeWeapon: orangeWeapon, NeonBrownWeapon: brownWeapon, NeonLimeWeapon: limeWeapon, NeonSkyWeapon: skyWeapon, NeonDarkRedWeapon: darkRedWeapon, NeonRainbowWeapon: rainbowWeapon, NeonMagnetWeapon: magnetWeapon, NeonArcLaserWeapon: arcLaserWeapon, NeonStasisWeapon: stasisWeapon, NeonEclipseWeapon: eclipseWeapon, NeonRecruitWeapon: recruitWeapon, NeonCollision: collision, NeonEnemyBehaviors: enemyBehaviors, NeonWorlds: worlds, NeonBossParts: bossParts, NeonModes: modes, NeonRecords: records, NeonSelectLayout: selectLayout,
+    NeonPlatform: platform, NeonController: controller, NeonCombat: combat, NeonRedWeapon: redWeapon, NeonGreenWeapon: greenWeapon, NeonSolarAuraWeapon: solarAuraWeapon, NeonBlackWeapon: blackWeapon, NeonWhiteWeapon: whiteWeapon, NeonRedWhiteWeapon: redWhiteWeapon, NeonGrayWeapon: grayWeapon, NeonPinkWeapon: pinkWeapon, NeonOrangeWeapon: orangeWeapon, NeonBrownWeapon: brownWeapon, NeonLimeWeapon: limeWeapon, NeonSkyWeapon: skyWeapon, NeonDarkRedWeapon: darkRedWeapon, NeonRainbowWeapon: rainbowWeapon, NeonMagnetWeapon: magnetWeapon, NeonArcLaserWeapon: arcLaserWeapon, NeonStasisWeapon: stasisWeapon, NeonEclipseWeapon: eclipseWeapon, NeonRecruitWeapon: recruitWeapon, NeonCollision: collision, NeonEnemyBehaviors: enemyBehaviors, NeonWorlds: worlds, NeonBossParts: bossParts, NeonModes: modes, NeonRecords: records, NeonSelectLayout: selectLayout,
     innerWidth: 1280, innerHeight: 960,
     addEventListener: (name, fn) => events.set(name, fn)
   };
@@ -696,7 +697,7 @@ test("red P is a collectible fourth weapon and fires exactly two parallel red li
   assert.equal(app.eval("game.bullets.every(b => b.vx===1120 && b.vy===0 && b.redNormal)"), true);
   app.eval('game.weaponType="blue";game.bullets.length=0;firePlayerWeapons()');
   assert.equal(app.eval("game.bullets.some(b=>b.redNormal)"), false);
-  app.eval('Math.random=()=>.1666667');
+  app.eval('Math.random=()=>.159091');
   assert.equal(app.eval("randomPowerType()"), "P_RED");
 });
 
@@ -819,7 +820,7 @@ test("green P pickup fires precisely the unupgraded starter bullets at every wea
   app.eval('game.combat.energy=100;activateOverdrive();game.bullets=[];firePlayerWeapons()');
   assert.equal(app.eval('game.bullets.length'), 2);
   assert.equal(app.eval('game.bullets.some(b=>b.lance)'), false);
-  app.eval('Math.random=()=>.2142857');
+  app.eval('Math.random=()=>.204545');
   assert.equal(app.eval('randomPowerType()'), "P_GREEN");
 });
 
@@ -997,7 +998,7 @@ test("BLACK P drop is discoverable and its twin dark shots never inherit blue up
   assert.equal(app.eval("game.bullets.some(b=>b.lance)"), false);
   assert.equal(app.eval("game.missiles.length"), 0);
   assert.ok(Math.abs(app.eval("getFireCooldown()") - 0.101) < 1e-10);
-  app.eval("Math.random=()=>.2619048");
+  app.eval("Math.random=()=>.25");
   assert.equal(app.eval("randomPowerType()"), "P_BLACK");
   app.eval("game.weaponLevel=3;game.powerups=[];dropPlayerPowerOnHit()");
   assert.equal(app.eval('game.powerups.at(-1).type'), "P_BLACK");
@@ -1171,7 +1172,7 @@ test("WHITE P is the seventh drop, fires paired unlimited-penetration bolts and 
   assert.equal(app.eval("game.bullets.every(b=>!b.dead && !b.whiteBossHit)"), true);
   assert.equal(app.eval("game.missiles.length"), 0);
   assert.ok(Math.abs(app.eval("getFireCooldown()") - 0.101) < 1e-10);
-  app.eval("Math.random=()=>.3095238");
+  app.eval("Math.random=()=>.295455");
   assert.equal(app.eval("randomPowerType()"), "P_WHITE");
   app.eval('game.weaponLevel=3;game.powerups=[];dropPlayerPowerOnHit()');
   assert.equal(app.eval("game.powerups.at(-1).type"), "P_WHITE");
@@ -1334,7 +1335,7 @@ test("GRAY P joins eighth-color drops and fires only baseline paired bullets", (
   assert.equal(app.eval('JSON.stringify(game.bullets.map(b=>({vx:b.vx,vy:b.vy,r:b.r,power:b.power})))'),baseline);
   assert.equal(app.eval("game.missiles.length"),0);
   assert.ok(Math.abs(app.eval("getFireCooldown()")-.101)<1e-10);
-  app.eval("Math.random=()=>.3571429");
+  app.eval("Math.random=()=>.340909");
   assert.equal(app.eval("randomPowerType()"),"P_GRAY");
   app.eval("game.powerups=[];dropPlayerPowerOnHit()");
   assert.equal(app.eval("game.powerups.at(-1).type"),"P_GRAY");
@@ -1656,7 +1657,7 @@ test("PINK P is the ninth pickup: one guided bolt at every level, with distinct 
   assert.equal(app.eval("game.bullets[0].life"), pinkWeapon.RULES.bulletLifetimeSeconds);
   assert.equal(app.eval("game.missiles.length"), 0);
   assert.ok(Math.abs(app.eval("getFireCooldown()") - 0.101) < 1e-10);
-  app.eval("Math.random=()=>.4047619");
+  app.eval("Math.random=()=>.386364");
   assert.equal(app.eval("randomPowerType()"), "P_PINK");
   app.eval("game.powerups=[];dropPlayerPowerOnHit()");
   assert.equal(app.eval("game.powerups.at(-1).type"), "P_PINK");
@@ -2034,7 +2035,7 @@ test("ORANGE P is the tenth pickup; two starter-grade shots and its HUD survive 
   assert.equal(app.eval('JSON.stringify(game.bullets.map(b=>({vx:b.vx,vy:b.vy,r:b.r,power:b.power})))'),blue);
   assert.ok(Math.abs(app.eval("getFireCooldown()")-.101)<1e-10);
   assert.equal(app.eval("game.missiles.length"),0);
-  app.eval("Math.random=()=>.452381");
+  app.eval("Math.random=()=>.431818");
   assert.equal(app.eval("randomPowerType()"),"P_ORANGE");
   app.eval('game.powerups=[];dropPlayerPowerOnHit()');
   assert.equal(app.eval('game.powerups.at(-1).type'),"P_ORANGE");
@@ -2250,7 +2251,7 @@ test("BROWN P is a recoverable eleventh pickup and never spawns ordinary bullets
   app.eval('game.weaponLevel=3;firePlayerWeapons()');
   assert.equal(app.eval("game.bullets.length"),0);
   assert.ok(Math.abs(app.eval("getFireCooldown()")-0.101)<1e-10);
-  app.eval('Math.random=()=>.5');
+  app.eval('Math.random=()=>.477273');
   assert.equal(app.eval("randomPowerType()"),"P_BROWN");
   app.eval('game.powerups=[];dropPlayerPowerOnHit()');
   assert.equal(app.eval("game.powerups.at(-1).type"),"P_BROWN");
@@ -2387,7 +2388,7 @@ test("LIME P fires two ordinary twin-lane bullets from the muzzle, not prepositi
   assert.equal(app.eval("game.bullets[0].vx"),1100);
   assert.equal(app.eval("game.bullets[1].vx"),1100);
   assert.equal(app.eval("game.bullets.every(b=>b.r===9 && b.power===1.15 && b.orbitRadius<360)"),true);
-  app.eval("Math.random=()=>.547619");
+  app.eval("Math.random=()=>.522727");
   assert.equal(app.eval("randomPowerType()"),"P_LIME");
   app.eval("game.powerups=[];dropPlayerPowerOnHit()");
   assert.equal(app.eval("game.powerups.at(-1).type"),"P_LIME");
@@ -2650,7 +2651,7 @@ test("SKY P is the 13th collectible and switches damage/homing/slow at actual ga
   assert.ok(low.includes("SKY SEEK  BLACK SLOW"));
   app.eval('game.hp=2;game.bullets=[];firePlayerWeapons()');
   assert.equal(app.eval("game.bullets.every(b=>b.skyHoming&&b.blackSlow)"),true);
-  app.eval('Math.random=()=>.5952381');
+  app.eval('Math.random=()=>.568182');
   assert.equal(app.eval("randomPowerType()"),"P_SKY");
   app.eval('game.weaponLevel=3;game.powerups=[];dropPlayerPowerOnHit()');
   assert.equal(app.eval("game.powerups.at(-1).type"),"P_SKY");
@@ -2804,7 +2805,7 @@ test("DARK RED is the fourteenth pickup with distinct twin 1x bullets and no RED
   assert.equal(app.eval("game.redWeapon.stars"),3);
   assert.equal(app.eval("game.redWeapon.volleys"),0);
   assert.ok(Math.abs(app.eval("getFireCooldown()")-.101)<1e-10);
-  app.eval("Math.random=()=>.6428571");
+  app.eval("Math.random=()=>.613636");
   assert.equal(app.eval("randomPowerType()"),"P_DARK_RED");
   app.eval("game.powerups=[];dropPlayerPowerOnHit()");
   assert.equal(app.eval("game.powerups.at(-1).type"),"P_DARK_RED");
@@ -2817,11 +2818,11 @@ test("DARK RED is the fourteenth pickup with distinct twin 1x bullets and no RED
     "DARK RED must never expose ordinary RED star HUD");
 });
 
-test("SOLAR extends the uniform P pool to all 21 types",()=>{
+test("RED-WHITE extends uniform P drop pool to all 22 types",()=>{
   const app=boot();
   const expected=[
     "P_BLUE","P_PURPLE","P_YELLOW","P_RED","P_GREEN","P_BLACK","P_WHITE",
-    "P_GRAY","P_PINK","P_ORANGE","P_BROWN","P_LIME","P_SKY","P_DARK_RED","P_RAINBOW","P_MAGNET","P_ARC_LASER","P_STASIS","P_ECLIPSE","P_RECRUIT","P_SOLAR"
+    "P_GRAY","P_PINK","P_ORANGE","P_BROWN","P_LIME","P_SKY","P_DARK_RED","P_RAINBOW","P_MAGNET","P_ARC_LASER","P_STASIS","P_ECLIPSE","P_RECRUIT","P_SOLAR","P_RED_WHITE"
   ];
   for(let i=0;i<expected.length;i++){
     const roll=(i+.5)/expected.length;
@@ -3196,7 +3197,7 @@ test("RAINBOW P is the 15th collectible, recoverable, with a distinct 8-color ic
   assert.equal(app.eval("game.bullets.every(b=>b.grayImpact)"),true);
   assert.equal(app.eval("game.redWeapon.stars"),3);
   assert.equal(app.eval("getFireCooldown()"),.4);
-  app.eval('Math.random=()=>.6904762');
+  app.eval('Math.random=()=>.659091');
   assert.equal(app.eval("randomPowerType()"),"P_RAINBOW");
   app.eval('game.powerups=[];dropPlayerPowerOnHit()');
   assert.equal(app.eval("game.powerups.at(-1).type"),"P_RAINBOW");
@@ -4451,4 +4452,343 @@ test("SOLAR pickup/ring are truly red-yellow gradients, visually radius 360, dra
     'drawGreenAura();return radii;})()'
   ].join("\n"));
   assert.equal(hidden.length,0);
+});
+
+
+test("RED-WHITE P is gated to RED/WHITE, rejects unrelated P and preserves RED shared stars",()=>{
+  const app=boot();
+  app.eval([
+    'game.state="PLAYING";game.weaponType="blue";game.weaponLevel=1;',
+    'game.redWeapon.stars=3;game.score=0;',
+    'game.powerups=[{type:"P_RED_WHITE",x:175,y:480,r:24,life:20,',
+    'vx:0,vy:0,t:0,safeTimer:0}];updatePowerups(.01);'
+  ].join("\n"));
+  assert.equal(app.eval("game.weaponType"),"blue");
+  assert.equal(app.eval("game.weaponLevel"),1);
+  assert.equal(app.eval("game.score"),0);
+  assert.equal(app.eval("game.redWeapon.stars"),3);
+  assert.equal(app.eval("game.powerups.length"),1);
+  assert.ok(app.eval('game.message.includes("REQUIRES RED OR WHITE P")'));
+  const hint=app.eval("game.messageTimer");
+  app.eval('updatePowerups(.01)');
+  assert.ok(app.eval("game.messageTimer")<=hint);
+  app.eval('collectPowerup({type:"P_RED",x:250,y:480,life:1})');
+  assert.equal(app.eval("game.weaponType"),"red");
+  app.eval('updatePowerups(.01)');
+  assert.equal(app.eval("game.weaponType"),"redwhite");
+  assert.equal(app.eval("game.powerups.length"),0);
+  assert.equal(app.eval("game.weaponLevel"),3);
+  assert.equal(app.eval("game.redWeapon.stars"),3);
+  assert.equal(app.eval("weaponMeta().name"),"ARC SCATTER");
+  const points=app.eval("game.score");
+  app.eval('collectPowerup({type:"P_RED_WHITE",x:250,y:480,life:1})');
+  assert.equal(app.eval("game.weaponType"),"redwhite");
+  assert.equal(app.eval("game.redWeapon.stars"),3);
+  assert.ok(app.eval("game.score")>points);
+  app.eval('game.powerups=[];dropPlayerPowerOnHit()');
+  assert.equal(app.eval("game.powerups.at(-1).type"),"P_RED_WHITE");
+  app.eval('collectPowerup({type:"P_GREEN",x:250,y:480,life:1})');
+  const score=app.eval("game.score");
+  app.eval('const locked={type:"P_RED_WHITE",x:300,y:480,life:9};collectPowerup(locked);game.lockedLife=locked.life');
+  assert.equal(app.eval("game.weaponType"),"green");
+  assert.equal(app.eval("game.score"),score);
+  assert.equal(app.eval("game.lockedLife"),9);
+});
+
+test("RED-WHITE can also evolve directly from WHITE, without changing stored RED stars",()=>{
+  const app=boot();
+  app.eval([
+    'game.state="PLAYING";game.weaponType="white";game.redWeapon.stars=4;',
+    'game.weaponLevel=2;collectPowerup({type:"P_RED_WHITE",x:200,y:480,life:1});'
+  ].join("\n"));
+  assert.equal(app.eval("game.weaponType"),"redwhite");
+  assert.equal(app.eval("game.weaponLevel"),3);
+  assert.equal(app.eval("game.redWeapon.stars"),4);
+  assert.equal(app.eval("game.redWeapon.volleys"),0);
+  assert.equal(app.eval("redWhiteRules.RULES.baseVolleys+game.redWeapon.stars"),9);
+  assert.equal(app.eval("getFireCooldown()"),0.1);
+});
+
+test("RED-WHITE ordinary volley uses RED dual lanes and true WHITE penetrating electricity",()=>{
+  const app=boot();
+  app.eval([
+    'game.state="PLAYING";game.stageMode="WAVE";game.weaponType="redwhite";',
+    'game.player.x=175;game.player.y=480;game.weaponLevel=3;',
+    'firePlayerWeapons();'
+  ].join("\n"));
+  assert.equal(app.eval("game.bullets.length"),2);
+  assert.equal(app.eval("game.bullets[0].y"),467);
+  assert.equal(app.eval("game.bullets[1].y"),493);
+  assert.equal(app.eval("game.bullets.every(b=>b.vx===1120&&b.vy===0&&b.r===9&&b.power===1.15)"),true);
+  assert.equal(app.eval("game.bullets.every(b=>b.whiteConductive&&b.redWhiteShot&&b.hitEnemies.length===0&&!b.whiteBossHit)"),true);
+  assert.notEqual(app.eval("game.bullets[0].hitEnemies"),app.eval("game.bullets[1].hitEnemies"));
+  assert.equal(app.eval("game.missiles.length"),0);
+  assert.ok(Math.abs(app.eval("getFireCooldown()")-.1)<1e-10);
+  app.eval('game.combat.energy=100;activateOverdrive();game.bullets=[];firePlayerWeapons()');
+  assert.equal(app.eval("game.bullets.length"),2);
+  assert.ok(app.eval("game.bullets.every(b=>b.power>1.15)"));
+  assert.equal(app.eval("game.bullets.some(b=>b.lance)"),false);
+});
+
+test("RED-WHITE keeps RED 5+star shot streak, 0.4s rest and independent 10% fan trigger",()=>{
+  const app=boot();
+  app.eval([
+    'game.state="PLAYING";game.stageMode="WAVE";game.weaponType="redwhite";',
+    'game.spawnTimer=999;game.formationTimer=999;game.invuln=999;',
+    'keys.Space=true;Math.random=()=>.99;'
+  ].join("\n"));
+  for(let i=0;i<4;i++)app.eval('game.fireCooldown=0;updatePlaying(.001)');
+  assert.equal(app.eval("game.redWeapon.volleys"),4);
+  assert.equal(app.eval("game.fireCooldown"),.1);
+  app.eval('game.fireCooldown=0;updatePlaying(.001)');
+  assert.equal(app.eval("game.redWeapon.volleys"),0);
+  assert.equal(app.eval("game.fireCooldown"),.4);
+  app.eval('game.redWeapon.stars=2');
+  for(let i=0;i<7;i++)app.eval('game.fireCooldown=0;updatePlaying(.001)');
+  assert.equal(app.eval("game.redWeapon.volleys"),0);
+  assert.equal(app.eval("game.fireCooldown"),.4);
+  assert.equal(app.eval("game.redWeapon.special"),null);
+  app.eval('game.redWeapon.stars=2;game.fireCooldown=0;Math.random=()=>.099999;updatePlaying(.001);keys.Space=false');
+  assert.equal(app.eval("game.redWeapon.special.redWhite"),true);
+  assert.equal(app.eval("game.redWeapon.stars"),2);
+  app.eval('redRules.switchWeapon(game.redWeapon)');
+  assert.equal(app.eval("game.redWeapon.stars"),2);
+  assert.equal(app.eval("game.redWeapon.volleys"),0);
+});
+
+test("RED-WHITE direct hit penetrates, conducts 60% at radius 360 and avoids double damage",()=>{
+  const app=boot();
+  app.eval([
+    'game.state="PLAYING";game.stageMode="WAVE";game.weaponType="redwhite";',
+    'game.player.x=175;game.player.y=480;Math.random=()=>.99;',
+    'game.enemies=[',
+    ' {kind:"scout",x:430,y:467,r:20,hp:100,maxHp:100,score:25,color:"#fff",core:"#fff"},',
+    ' {kind:"scout",x:740,y:467,r:20,hp:100,maxHp:100,score:25,color:"#fff",core:"#fff"},',
+    ' {kind:"scout",x:1170,y:467,r:20,hp:100,maxHp:100,score:25,color:"#fff",core:"#fff"}',
+    '];firePlayerWeapons();game.bullets=game.bullets.slice(0,1);',
+    'updatePlayerBullets(.18);'
+  ].join("\n"));
+  assert.ok(Math.abs(app.eval("game.enemies[0].hp")-98.85)<1e-9);
+  assert.ok(Math.abs(app.eval("game.enemies[1].hp")-99.31)<1e-9);
+  assert.equal(app.eval("game.enemies[2].hp"),100);
+  assert.equal(app.eval("game.bullets.length"),1);
+  assert.equal(app.eval("game.bullets[0].hitEnemies.length"),2);
+  const second=app.eval("game.enemies[1].hp");
+  app.eval('updatePlayerBullets(.29)');
+  assert.equal(app.eval("game.enemies[1].hp"),second);
+  app.eval('updatePlayerBullets(.39)');
+  assert.ok(app.eval("game.enemies[2].hp")<100);
+  assert.equal(app.eval("game.enemies[1].hp"),second);
+});
+
+test("RED-WHITE inherits WHITE multi-hop 50%-then-10% rules and per-projectile ledger",()=>{
+  const app=boot();
+  app.eval([
+    'game.state="PLAYING";game.weaponType="redwhite";',
+    'game.player.x=175;game.player.y=480;Math.random=()=>0;',
+    'game.enemies=[430,800,1170,1540].map(x=>({kind:"scout",x,y:467,',
+    'r:20,hp:100,maxHp:100,score:25,color:"#fff",core:"#fff"}));',
+    'firePlayerWeapons();game.bullets=game.bullets.slice(0,1);',
+    'updatePlayerBullets(.18);'
+  ].join("\n"));
+  assert.ok(Math.abs(app.eval("game.enemies[0].hp")-98.85)<1e-9);
+  for(let i=1;i<=3;i++)assert.ok(Math.abs(app.eval("game.enemies["+i+"].hp")-99.31)<1e-9);
+  assert.equal(app.eval("game.bullets[0].hitEnemies.length"),4);
+  assert.equal(app.eval("game.electricArcs.length"),4);
+  assert.equal(app.eval("game.bullets[0].whiteBossHit"),false);
+});
+
+test("RED-WHITE WHITE-bullet contact respects shields and Boss turret vs hull once",()=>{
+  const app=boot();
+  app.eval([
+    'game.state="PLAYING";game.stageMode="WAVE";game.weaponType="redwhite";',
+    'game.player.x=175;game.player.y=480;Math.random=()=>.99;',
+    'game.enemies=[enemyBehaviors.initializeEnemy({kind:"shield",',
+    'x:430,y:467,r:36,hp:100,maxHp:100,score:30,color:"#fff",core:"#fff"})];',
+    'game.enemies[0].shieldHp=10;game.enemies[0].shieldMax=10;',
+    'firePlayerWeapons();game.bullets=game.bullets.slice(0,1);',
+    'updatePlayerBullets(.18);'
+  ].join("\n"));
+  assert.equal(app.eval("game.enemies[0].hp"),100);
+  assert.ok(Math.abs(app.eval("game.enemies[0].shieldHp")-8.85)<1e-9);
+  app.eval([
+    'game.bullets=[];game.enemies=[];',
+    'game.stageMode="BOSS";',
+    'game.boss={active:true,x:760,y:467,rx:100,ry:80,',
+    'hp:200,maxHp:200,parts:[{id:"GUN",x:-155,y:0,r:28,hp:80,maxHp:80}],',
+    'color:"#fff",core:"#fff"};',
+    'firePlayerWeapons();game.bullets=game.bullets.slice(0,1);',
+    'updatePlayerBullets(.35);'
+  ].join("\n"));
+  assert.ok(app.eval("game.boss.parts[0].hp")<80);
+  assert.equal(app.eval("game.boss.hp"),200);
+  assert.equal(app.eval("game.bullets[0].whiteBossHit"),true);
+  const hp=app.eval("game.boss.parts[0].hp");
+  app.eval('updatePlayerBullets(.3)');
+  assert.equal(app.eval("game.boss.parts[0].hp"),hp);
+  assert.equal(app.eval("game.boss.hp"),200);
+});
+
+test("RED-WHITE electric fan emits 250 genuine conductive bolts in 3 active seconds and gains ONE RED star",()=>{
+  const app=boot();
+  app.eval([
+    'game.state="PLAYING";game.stageMode="WAVE";game.weaponType="redwhite";',
+    'game.spawnTimer=999;game.formationTimer=999;game.invuln=999;',
+    'game.fanLog=[];const originalEmit=addPlayerShot;',
+    'addPlayerShot=(...args)=>{if(args[7]?.redWhiteFan)',
+    'game.fanLog.push({vx:args[2],vy:args[3],power:args[5],',
+    'conductive:args[7].whiteConductive});originalEmit(...args)};',
+    'game.fireCooldown=0;keys.Space=true;Math.random=()=>0;',
+    'updatePlaying(.01);keys.Space=false;'
+  ].join("\n"));
+  assert.equal(app.eval("game.redWeapon.special.redWhite"),true);
+  assert.equal(app.eval("game.redWeapon.stars"),0);
+  app.eval('game.state="PAUSED";updatePlaying(6)');
+  assert.equal(app.eval("game.fanLog.length"),0);
+  assert.equal(app.eval("game.redWeapon.stars"),0);
+  app.eval('game.state="PLAYING";game.stageMode="TRANSITION";game.transition=10;updatePlaying(5)');
+  assert.equal(app.eval("game.fanLog.length"),0);
+  app.eval('game.stageMode="WAVE";updatePlaying(1)');
+  assert.equal(app.eval("game.redWeapon.stars"),0);
+  assert.ok(app.eval("game.fanLog.length")>0);
+  app.eval('updatePlaying(2)');
+  assert.equal(app.eval("game.fanLog.length"),250);
+  assert.equal(app.eval("game.redWeapon.stars"),1);
+  assert.equal(app.eval("game.redWeapon.special"),null);
+  assert.equal(app.eval("game.fanLog.every(b=>b.power===.38&&b.conductive)"),true);
+  assert.equal(app.eval("game.fanLog.every(b=>Math.abs(Math.atan2(b.vy,b.vx))<=Math.PI/18+1e-10)"),true);
+  assert.equal(app.eval("game.bullets.every(b=>b.whiteConductive||b.redNormal)"),true);
+});
+
+test("RED-WHITE fan stays ELECTRIC after P swap; a RED-started fan stays RED after fusion",()=>{
+  for(const start of ["red","redwhite"]){
+    const app=boot();
+    app.eval([
+      'game.state="PLAYING";game.stageMode="WAVE";game.weaponType="'+start+'";',
+      'game.spawnTimer=999;game.formationTimer=999;game.invuln=999;',
+      'game.fireCooldown=0;keys.Space=true;Math.random=()=>0;updatePlaying(.01);',
+      'keys.Space=false;'
+    ].join("\n"));
+    assert.equal(app.eval("Boolean(game.redWeapon.special.redWhite)"),start==="redwhite");
+    app.eval('collectPowerup({type:"P_'+(start==="red"?"RED_WHITE":"RED")+'",x:250,y:480,life:1});');
+    assert.equal(app.eval("game.weaponType"),start==="red"?"redwhite":"red");
+    app.eval('updatePlaying(.15)');
+    const stats=app.eval([
+      '(()=>{const fan=game.bullets.filter(b=>b.redSpecial||b.redWhiteFan);',
+      'return {count:fan.length,electric:fan.filter(b=>b.redWhiteFan&&b.whiteConductive).length,',
+      'red:fan.filter(b=>b.redSpecial&&!b.whiteConductive).length};})()'
+    ].join("\n"));
+    assert.ok(stats.count>0);
+    assert.equal(start==="redwhite"?stats.electric:stats.red,stats.count);
+    app.eval('updatePlaying(2.85)');
+    assert.equal(app.eval("game.redWeapon.stars"),1);
+    assert.equal(app.eval("game.redWeapon.special"),null);
+  }
+});
+
+test("RED and RED-WHITE display SAME star count; WHITE alone hides it, HP hit removes one",()=>{
+  const app=boot();
+  app.eval('game.state="PLAYING";game.weaponType="red";game.redWeapon.stars=4;');
+  const hud=app.eval([
+    '(()=>{const labels=[];ctx.fillText=t=>labels.push(String(t));',
+    'drawHud();return labels;})()'
+  ].join("\n"));
+  assert.ok(hud.some(x=>x.includes("RED P")&&x.includes("★★★★☆")));
+  app.eval('collectPowerup({type:"P_RED_WHITE",x:250,y:480,life:1});');
+  assert.equal(app.eval("game.redWeapon.stars"),4);
+  const labels=app.eval([
+    '(()=>{const labels=[];ctx.fillText=t=>labels.push(String(t));',
+    'drawHud();return labels;})()'
+  ].join("\n"));
+  assert.ok(labels.some(x=>x.includes("RED-WHITE P")&&x.includes("★★★★☆")));
+  assert.ok(labels.includes("RED-WHITE ARC 60% HOPS"));
+  app.eval('game.invuln=0;damagePlayer()');
+  assert.equal(app.eval("game.redWeapon.stars"),3);
+  const damaged=app.eval([
+    '(()=>{const labels=[];ctx.fillText=t=>labels.push(String(t));',
+    'drawHud();return labels;})()'
+  ].join("\n"));
+  assert.ok(damaged.some(x=>x.includes("RED-WHITE P")&&x.includes("★★★☆☆")));
+  app.eval('collectPowerup({type:"P_WHITE",x:250,y:480,life:1});');
+  const hidden=app.eval([
+    '(()=>{const labels=[];ctx.fillText=t=>labels.push(String(t));',
+    'drawHud();return labels;})()'
+  ].join("\n"));
+  assert.equal(hidden.some(x=>x.includes("RED-WHITE P")||x.includes("RED P")),false);
+  assert.equal(app.eval("game.redWeapon.stars"),3);
+  app.eval('collectPowerup({type:"P_RED",x:250,y:480,life:1})');
+  assert.equal(app.eval("game.redWeapon.stars"),3);
+});
+
+test("RED-WHITE special caps at five stars, and real BOMB alone never awards a star",()=>{
+  const app=boot();
+  app.eval([
+    'game.state="PLAYING";game.stageMode="WAVE";game.weaponType="redwhite";',
+    'game.invuln=999;game.spawnTimer=999;game.formationTimer=999;',
+    'game.redWeapon.stars=5;useBomb();'
+  ].join("\n"));
+  assert.equal(app.eval("game.redWeapon.stars"),5);
+  app.eval('redRules.fire(game.redWeapon,0);redWhiteRules.markTriggeredFan(game.redWeapon);updatePlaying(3)');
+  assert.equal(app.eval("game.redWeapon.stars"),5);
+  assert.equal(app.eval("game.redWeapon.special"),null);
+  assert.ok(app.eval('game.message.includes("MAX 5 STARS")'));
+});
+
+test("RED-WHITE gradient icon and original WHITE projectile rendering are visual-only",()=>{
+  const app=boot();
+  const image=app.eval([
+    '(()=>{game.state="PLAYING";game.stageMode="WAVE";',
+    'game.weaponType="redwhite";',
+    'game.enemies=[{kind:"scout",x:580,y:480,r:25,hp:100,maxHp:100,',
+    'score:30,color:"#fff",core:"#fff"}];',
+    'game.powerups=[{type:"P_RED_WHITE",x:400,y:640,t:0,life:10}];',
+    'firePlayerWeapons();const colors=[],usedFill=[],labels=[];',
+    'ctx.createLinearGradient=()=>({addColorStop:(p,c)=>colors.push(c)});',
+    'ctx.fillRect=()=>usedFill.push(ctx.fillStyle);',
+    'ctx.fillText=t=>labels.push(String(t));',
+    'const hp=game.enemies[0].hp;',
+    'drawPowerups();drawPlayerBullets();drawHud();drawFrame(.016);',
+    'return {hp,after:game.enemies[0].hp,colors,usedFill,labels};})()'
+  ].join("\n"));
+  assert.equal(image.hp,image.after);
+  assert.ok(image.colors.includes("#ff3957"));
+  assert.ok(image.colors.includes("#f9fcff"));
+  assert.ok(image.usedFill.includes("#8bdbff"),
+    "RED-WHITE shots use the authentic WHITE projectile sprite");
+  assert.ok(image.labels.some(x=>x.includes("RED-WHITE P")));
+});
+
+test("RED-WHITE fan respects existing 360 bullet and 96 arc FX budgets",()=>{
+  const app=boot();
+  app.eval([
+    'game.state="PLAYING";game.stageMode="WAVE";game.weaponType="redwhite";',
+    'game.spawnTimer=999;game.formationTimer=999;game.invuln=999;',
+    'redRules.fire(game.redWeapon,0);redWhiteRules.markTriggeredFan(game.redWeapon);',
+    'redRules.tick(game.redWeapon,3,(a)=>addPlayerShot(game.player.x+60,game.player.y,',
+    ' Math.cos(a)*1060,Math.sin(a)*1060,5,.38,"#f7fcff",redWhiteRules.createShot(true)));'
+  ].join("\n"));
+  assert.equal(app.eval("game.bullets.length"),250);
+  assert.equal(app.eval("game.bullets.every(b=>b.whiteConductive&&b.redWhiteFan)"),true);
+  app.eval('game.bullets=Array.from({length:360},(_,i)=>({x:300,y:100+i*.6,vx:1,vy:0,power:1.15}));firePlayerWeapons()');
+  assert.equal(app.eval("game.bullets.length"),360);
+  app.eval('for(let i=0;i<125;i++)addElectricArc(100,100,200+i,200)');
+  assert.equal(app.eval("game.electricArcs.length"),96);
+});
+
+test("RED-WHITE existing RED and WHITE normal weapons remain unchanged after fusion swaps",()=>{
+  const app=boot();
+  app.eval('game.state="PLAYING";game.weaponType="red";firePlayerWeapons()');
+  assert.equal(app.eval("game.bullets.length"),2);
+  assert.equal(app.eval("game.bullets.every(b=>b.redNormal&&!b.whiteConductive)"),true);
+  app.eval([
+    'game.bullets=[];collectPowerup({type:"P_RED_WHITE",x:250,y:480,life:1});',
+    'firePlayerWeapons();'
+  ].join("\n"));
+  assert.equal(app.eval("game.bullets.every(b=>b.whiteConductive&&b.redWhiteShot)"),true);
+  app.eval('game.bullets=[];collectPowerup({type:"P_WHITE",x:250,y:480,life:1});firePlayerWeapons()');
+  assert.equal(app.eval("game.bullets.length"),2);
+  assert.equal(app.eval("game.bullets.every(b=>b.whiteConductive&&!b.redWhiteShot)"),true);
+  app.eval('game.bullets=[];collectPowerup({type:"P_RED",x:250,y:480,life:1});firePlayerWeapons()');
+  assert.equal(app.eval("game.bullets.length"),2);
+  assert.equal(app.eval("game.bullets.every(b=>b.redNormal&&!b.whiteConductive)"),true);
 });

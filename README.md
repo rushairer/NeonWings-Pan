@@ -29,6 +29,18 @@ A controller-first, five-stage, side-scrolling neon arcade shooter built with br
 - **v26.2.0 NeonWings-Pan exclusive:** red P twin-line fire, a 250-projectile ±10° special fan triggered on 10% of eligible volleys, and an independent 0–5 star progression.
 - **v26.3.0 NeonWings-Pan exclusive:** green P retains starter-grade dual shots and adds a passive neon halo dealing area damage to nearby enemies once per second.
 
+## v26.17.0 — RED-WHITE FUSION 红白渐变导电散射武器
+
+新增第 **22** 种 P 武器：**RED-WHITE ARC SCATTER（红色→白色渐变）**，只有**当前正在使用红色 RED P 或白色 WHITE P**时才能拾取变成该武器；已经装备 RED-WHITE 时再次拾取可正常升级或恢复。其他武器无法领取，掉落仍留在场上，不增加分数或等级，仅提示需要红色或白色 P。
+
+- **弹幕发射数量与节奏完全继承红色 RED P**：每轮双发平行子弹，连续 `5＋星级` 轮（每轮间隔 `0.1 秒`）后休息 `0.4 秒`。红色与红白渐变**共用同一星级，最多五星**；不是两套独立星级。
+- **每一枚子弹都变成白色 WHITE P 的真实穿透导电子弹**：直击原有伤害，穿透并可命中多个敌人；命中后以 360 范围产生第一跳导电，第二跳有 50% 概率，第三跳为第二跳成功后的 10% 概率；连锁伤害为该枚子弹伤害的 60%。每颗子弹独立命中记录，单颗子弹不会重复伤害同一敌人或 Boss。BOSS 弱点及护盾沿用原伤害管线。
+- **红色散射大招也继承**：每轮 10% 触发概率，大招在 3 秒内射出 **250 枚白色穿透导电子弹**，使用原 RED 大招的 ±10° 扇角、弹速和 0.38 基础攻击力。大招完成时共享星级＋1（最多五星），并非按 BOMB 即刻升星。大招启动后即使切换回 RED/WHITE/其他武器，已启动的弹幕仍保持启动时的类型，大招照常完成并升级同一个星级。
+- RED 或 RED-WHITE 装备时会显示同一排五星 HUD；普通 WHITE/其他武器不会显示 RED 星级，但星级保持。角色正常受到 HP 伤害时仍扣一颗共享星级（有星级时）。
+- 新增红白渐变 P 外观以及 22 种 P 的等概率掉落，并保留原 RED 和 WHITE 的全部普通武器效果。
+
+版本：`v26.17.0`。体验：https://rushairer.github.io/NeonWings-Pan/?v=26.17.0
+
 ## v26.16.0 — SOLAR AURA 红→黄渐变光环
 
 新增第 **21** 种 P 武器：**SOLAR AURA（红色→黄色渐变）**。这是绿色武器 GREEN P 的专属进化。必须**当前装备 GREEN P**，才能拾取地图上的 `P_SOLAR`，并变成红黄光环；已装备 SOLAR 时重新拾取同款可继续升级等级或恢复。其他武器（包含 RED/YELLOW）无法直接领取，P 掉落物不会消失，也不会改变得分或等级，只提示「REQUIRES GREEN P」。
