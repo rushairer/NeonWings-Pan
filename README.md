@@ -29,6 +29,20 @@ A controller-first, five-stage, side-scrolling neon arcade shooter built with br
 - **v26.2.0 NeonWings-Pan exclusive:** red P twin-line fire, a 250-projectile ±10° special fan triggered on 10% of eligible volleys, and an independent 0–5 star progression.
 - **v26.3.0 NeonWings-Pan exclusive:** green P retains starter-grade dual shots and adds a passive neon halo dealing area damage to nearby enemies once per second.
 
+## v26.21.0 — PURPLE-WHITE 紫白渐变五重锁定激光
+
+新增第 **26 种 P 武器：PURPLE-WHITE PENTA LOCK（紫色→白色渐变）**。只能在**当前使用普通紫色 PURPLE P 或普通棕色 BROWN P** 时拾取；已装备 PURPLE-WHITE 时再次拾取可正常升级和恢复。普通白色、黄色、棕黄折射、浅蓝白导电激光等其他武器无法直接获得；未满足前置条件时拾取物不会消失，也不改变得分、等级或武器射击状态。
+
+**五条独立紫白渐变激光**：持续按住开火，五条光束从战机前方不同发射口自动锁定前方的有效敌人/Boss 炮台；每条均沿用棕色激光的前方目标、最大 **1300 游戏坐标**射程、途中首个碰撞物阻挡（不会穿透）、**每 0.101 秒造成一次普通 1.15 基础伤害**。不生成额外物理子弹或导弹，沿用原棕色激光的一套连续开火计时器。
+
+**多目标优先，目标少时火力汇聚**：最多优先命中 5 个不同的有效目标；只有 1 个时，5 条光束全部锁定它，合计造成 **5 × 1.15 = 5.75 点基础伤害/次**；有 2 个时优先各分配 3、2 条，分别造成 **3.45、2.30 点/次**；有 3 个时优先 2、2、1 条，有 4 个时 2、1、1、1 条，5 个及以上时尽量分给 5 个不同目标。只有当前方向真正可见且无遮挡的目标才有资格获得一条锁定；若后方目标被敌人遮挡，光束不会穿透过去凑足 5 个目标。伤害值继续按所选战机、Overdrive 加成。每个目标一轮只结算一次合并伤害，**不会把 5 倍汇聚再额外乘 5 变成 25 倍**。
+
+对正面护盾、Boss 弱点炮台、Boss 机体及分裂敌人，都保留已有的击中处理和得分规则；Boss 炮台可独立分配光束，但同一 Boss 本体不会在一轮内重复结算。当某个目标死亡时，剩余光束可以重新分配给其他目标；暂停、过场、松开开火和切换武器时停止对应的持续攻击。原紫色扇形子弹、棕色单束激光、棕黄折射激光与浅蓝白导电激光均保持原效果。
+
+新增紫白渐变 P、五路紫白渐变能量光束和 `PENTA LOCK 5 BEAMS` HUD，并加入 **26 种 P 等概率掉落池**；25 个以内的最近候选目标和实际绘制的五条光束均有限制，防止密集敌群下的目标选择与视觉特效数量无界增长。
+
+**版本：** `v26.21.0`。在线体验：https://rushairer.github.io/NeonWings-Pan/?v=26.21.0
+
 ## v26.20.0 — BROWN-YELLOW 棕黄渐变折射锁定激光
 
 新增第 **25 种 P 武器：BROWN-YELLOW REFRACT LASER（棕色→黄色渐变）**。**只能在当前装备棕色 BROWN P 时获得**（已装备 BROWN-YELLOW 可重复拾取恢复/升级）；普通黄色、浅蓝白 ARC LASER 等其他武器都不允许直接拾取。无资格拾取时 P 不消失、不加分、不换武器，并显示提示「REQUIRES BROWN P」。

@@ -18,6 +18,7 @@ const pinkWeapon = require("../src/pink-weapon.js");
 const orangeWeapon = require("../src/orange-weapon.js");
 const redOrangeWeapon = require("../src/red-orange-weapon.js");
 const brownWeapon = require("../src/brown-weapon.js");
+const purpleWhiteWeapon = require("../src/purple-white-weapon.js");
 const brownYellowWeapon = require("../src/brown-yellow-weapon.js");
 const limeWeapon = require("../src/lime-weapon.js");
 const skyWeapon = require("../src/sky-weapon.js");
@@ -59,7 +60,7 @@ function boot(options = {}) {
     NeonCombat: combat,
     NeonRedWeapon: redWeapon,
     NeonGreenWeapon: greenWeapon, NeonSolarAuraWeapon: solarAuraWeapon,
-    NeonBlackWeapon: blackWeapon, NeonWhiteWeapon: whiteWeapon, NeonRedWhiteWeapon: redWhiteWeapon, NeonGrayWeapon: grayWeapon, NeonGrayFlameWeapon: grayFlameWeapon, NeonPinkWeapon: pinkWeapon, NeonOrangeWeapon: orangeWeapon, NeonRedOrangeWeapon: redOrangeWeapon, NeonBrownWeapon: brownWeapon, NeonBrownYellowWeapon: brownYellowWeapon, NeonLimeWeapon: limeWeapon, NeonSkyWeapon: skyWeapon, NeonDarkRedWeapon: darkRedWeapon, NeonRainbowWeapon: rainbowWeapon, NeonMagnetWeapon: magnetWeapon, NeonArcLaserWeapon: arcLaserWeapon, NeonStasisWeapon: stasisWeapon, NeonEclipseWeapon: eclipseWeapon, NeonRecruitWeapon: recruitWeapon,
+    NeonBlackWeapon: blackWeapon, NeonWhiteWeapon: whiteWeapon, NeonRedWhiteWeapon: redWhiteWeapon, NeonGrayWeapon: grayWeapon, NeonGrayFlameWeapon: grayFlameWeapon, NeonPinkWeapon: pinkWeapon, NeonOrangeWeapon: orangeWeapon, NeonRedOrangeWeapon: redOrangeWeapon, NeonBrownWeapon: brownWeapon, NeonPurpleWhiteWeapon: purpleWhiteWeapon, NeonBrownYellowWeapon: brownYellowWeapon, NeonLimeWeapon: limeWeapon, NeonSkyWeapon: skyWeapon, NeonDarkRedWeapon: darkRedWeapon, NeonRainbowWeapon: rainbowWeapon, NeonMagnetWeapon: magnetWeapon, NeonArcLaserWeapon: arcLaserWeapon, NeonStasisWeapon: stasisWeapon, NeonEclipseWeapon: eclipseWeapon, NeonRecruitWeapon: recruitWeapon,
     NeonCollision: collision,
     NeonEnemyBehaviors: enemyBehaviors,
     NeonWorlds: worlds,
@@ -158,7 +159,8 @@ test("static HTML loads platform before game and doesn't embed legacy code", () 
   assert.ok(html.indexOf('src="./src/pink-weapon.js"') < html.indexOf('src="./src/orange-weapon.js"'));
   assert.ok(html.indexOf('src="./src/orange-weapon.js"') < html.indexOf('src="./src/red-orange-weapon.js?'));
   assert.ok(html.indexOf('src="./src/red-orange-weapon.js?') < html.indexOf('src="./src/brown-weapon.js"'));
-  assert.ok(html.indexOf('src="./src/brown-weapon.js"') < html.indexOf('src="./src/brown-yellow-weapon.js?'));
+  assert.ok(html.indexOf('src="./src/brown-weapon.js"') < html.indexOf('src="./src/purple-white-weapon.js?'));
+  assert.ok(html.indexOf('src="./src/purple-white-weapon.js?') < html.indexOf('src="./src/brown-yellow-weapon.js?'));
   assert.ok(html.indexOf('src="./src/brown-yellow-weapon.js?') < html.indexOf('src="./src/lime-weapon.js?'));
   assert.ok(html.indexOf('src="./src/lime-weapon.js?') < html.indexOf('src="./src/sky-weapon.js?'));
   assert.ok(html.indexOf('src="./src/sky-weapon.js?') < html.indexOf('src="./src/dark-red-weapon.js?'));
@@ -358,7 +360,7 @@ test("BROWN-YELLOW P is a versioned BROWN-only static module with correct boot o
   const html=fs.readFileSync(path.join(__dirname,"../index.html"),"utf8");
   const build=fs.readFileSync(path.join(__dirname,"../scripts/build.mjs"),"utf8");
   const pkg=require("../package.json");
-  assert.equal(pkg.version,"26.20.0");
+  assert.match(pkg.version,/^\d+\.\d+\.\d+$/);
   assert.ok(html.includes('src="./src/brown-yellow-weapon.js?v='+pkg.version+'"'));
   assert.ok(html.includes('src="./src/game.js?v='+pkg.version+'"'));
   assert.ok(html.indexOf('src="./src/brown-weapon.js"') <
@@ -369,4 +371,22 @@ test("BROWN-YELLOW P is a versioned BROWN-only static module with correct boot o
   assert.ok(pkg.scripts.check.includes('node --check src/brown-yellow-weapon.js'));
   assert.equal(brownYellowWeapon.RULES.normalDamage,brownWeapon.RULES.normalDamage);
   assert.equal(brownYellowWeapon.RULES.secondsPerTick,brownWeapon.RULES.secondsPerTick);
+});
+
+test("PURPLE-WHITE 5-way beam loads after BROWN and deploys as versioned 26.21.0",()=>{
+  const html=fs.readFileSync(path.join(__dirname,"../index.html"),"utf8");
+  const build=fs.readFileSync(path.join(__dirname,"../scripts/build.mjs"),"utf8");
+  const pkg=require("../package.json");
+  assert.equal(pkg.version,"26.21.0");
+  assert.ok(html.includes('src="./src/purple-white-weapon.js?v='+pkg.version+'"'));
+  assert.ok(html.includes('src="./src/game.js?v='+pkg.version+'"'));
+  assert.ok(html.indexOf('src="./src/brown-weapon.js"') <
+    html.indexOf('src="./src/purple-white-weapon.js?'));
+  assert.ok(html.indexOf('src="./src/purple-white-weapon.js?') <
+    html.indexOf('src="./src/game.js?'));
+  assert.ok(build.includes('"src/purple-white-weapon.js"'));
+  assert.ok(pkg.scripts.check.includes('node --check src/purple-white-weapon.js'));
+  assert.equal(purpleWhiteWeapon.RULES.normalDamage,brownWeapon.RULES.normalDamage);
+  assert.equal(purpleWhiteWeapon.RULES.secondsPerTick,brownWeapon.RULES.secondsPerTick);
+  assert.equal(purpleWhiteWeapon.RULES.beams,5);
 });
