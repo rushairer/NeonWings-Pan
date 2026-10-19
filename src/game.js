@@ -20,6 +20,8 @@ const W = 1280;
     if (!redWhiteRules) throw new Error("NeonWings-Pan red-white P runtime missing");
     const grayRules = window.NeonGrayWeapon;
     if (!grayRules) throw new Error("NeonWings-Pan gray P runtime missing");
+    const grayFlameRules = window.NeonGrayFlameWeapon;
+    if (!grayFlameRules) throw new Error("NeonWings-Pan gray flame P runtime missing");
     const pinkRules = window.NeonPinkWeapon;
     if (!pinkRules) throw new Error("NeonWings-Pan pink P runtime missing");
     const orangeRules = window.NeonOrangeWeapon;
@@ -1685,6 +1687,35 @@ const W = 1280;
       drawText("STUN", 0, -ringY - 26, 18, "center", "#ffeaaa");
     }
 
+    function drawGrayFlame(rx, ry, burn) {
+      if (!(burn?.remaining > 0)) return;
+      // Bounded procedural fire is cosmetic: no RNG, mutations, or extra hits.
+      ctx.save();
+      ctx.globalAlpha = Math.min(1, burn.remaining) *
+        (0.83 + 0.17 * Math.sin(game.t * 19));
+      ctx.shadowColor = "#ff512f";
+      ctx.shadowBlur = 17;
+      const width = Math.max(14, rx * .45);
+      for (let i = -1; i <= 1; i++) {
+        const x = i * width, y = -ry * .67 + (i ? 5 : -1);
+        const height = 22 + 7 * Math.sin(game.t * 16 + i * 2);
+        const gradient = ctx.createLinearGradient(x, y + 12, x, y - height);
+        gradient.addColorStop(0, "#e52638");
+        gradient.addColorStop(.60, "#ff6839");
+        gradient.addColorStop(1, "#ffe290");
+        ctx.fillStyle = gradient;
+        ctx.beginPath();
+        ctx.moveTo(x - 10, y + 14);
+        ctx.quadraticCurveTo(x - 15, y - 5, x + 1, y - height);
+        ctx.quadraticCurveTo(x + 13, y - 2, x + 11, y + 14);
+        ctx.closePath();
+        ctx.fill();
+      }
+      ctx.restore();
+      drawText("BURN " + burn.remaining.toFixed(1) + "S",
+        0, -ry - 42, 15, "center", "#ffb184");
+    }
+
     function drawEnemy(e) {
       ctx.save();
       ctx.translate(e.x, e.y);
@@ -1750,6 +1781,7 @@ const W = 1280;
 
       if (blackRules.isSlowed(e)) drawSlowGlow(e.r + 25, e.r + 21);
       if (grayRules.isStunned(e)) drawGrayStun(e.r + 9, e.r + 9, e.grayStunRemaining);
+      if (grayFlameRules.burning(e)) drawGrayFlame(e.r, e.r, e.grayFlame);
       ctx.restore();
     }
 
@@ -1861,7 +1893,7 @@ const W = 1280;
       "P_BLACK", "P_WHITE", "P_GRAY", "P_PINK", "P_ORANGE",
       "P_BROWN", "P_LIME", "P_SKY", "P_DARK_RED", "P_RAINBOW",
       "P_MAGNET", "P_ARC_LASER", "P_STASIS", "P_ECLIPSE", "P_RECRUIT",
-      "P_SOLAR", "P_RED_WHITE"
+      "P_SOLAR", "P_RED_WHITE", "P_GRAY_FLAME"
     ]);
     function randomPowerType() {
       return POWER_TYPES[Math.min(POWER_TYPES.length - 1,
@@ -1878,6 +1910,7 @@ const W = 1280;
       if (type === "black") return { name: "SLOW", short: "BLACK", color: "#191e2a", core: "#dce9ff" };
       if (type === "white") return { name: "CONDUCT", short: "WHITE", color: "#f1faff", core: "#bde9ff" };
       if (type === "gray") return { name: "IMPACT", short: "GRAY", color: "#929ba9", core: "#f0f3ff" };
+      if (type === "grayflame") return { name: "INFERNO IMPACT", short: "GRAY FLAME", color: "#ff5265", core: "#ffb2a4" };
       if (type === "pink") return { name: "SEEKER", short: "PINK", color: "#ff79c8", core: "#fff1fb" };
       if (type === "orange") return { name: "BURST", short: "ORANGE", color: "#ff922e", core: "#fff0d3" };
       if (type === "brown") return { name: "LOCK LASER", short: "BROWN", color: "#9a6042", core: "#ffe3c4" };
@@ -1903,6 +1936,7 @@ const W = 1280;
       if (powerupType === "P_BLACK") return "black";
       if (powerupType === "P_WHITE") return "white";
       if (powerupType === "P_GRAY") return "gray";
+      if (powerupType === "P_GRAY_FLAME") return "grayflame";
       if (powerupType === "P_PINK") return "pink";
       if (powerupType === "P_ORANGE") return "orange";
       if (powerupType === "P_BROWN") return "brown";
@@ -1928,6 +1962,7 @@ const W = 1280;
       if (game.weaponType === "black") return "P_BLACK";
       if (game.weaponType === "white") return "P_WHITE";
       if (game.weaponType === "gray") return "P_GRAY";
+      if (game.weaponType === "grayflame") return "P_GRAY_FLAME";
       if (game.weaponType === "pink") return "P_PINK";
       if (game.weaponType === "orange") return "P_ORANGE";
       if (game.weaponType === "brown") return "P_BROWN";
@@ -2050,6 +2085,14 @@ const W = 1280;
         }
         return false;
       }
+      // GRAY FLAME evolves only from GRAY; invalid pickups are not consumed.
+      if (p.type === "P_GRAY_FLAME" && !grayFlameRules.canEquip(game.weaponType)) {
+        if (!(p.lockHintCooldown > 0)) {
+          showMessage("GRAY FLAME  REQUIRES GRAY P", 1.1);
+          p.lockHintCooldown = 1.2;
+        }
+        return false;
+      }
       p.life = 0;
 
       if (p.type.startsWith("P_")) {
@@ -2153,19 +2196,21 @@ const W = 1280;
           rect(-23, -23, 46, 46, "#07111f");
           if (wt === "magnet" || wt === "arcLaser" || wt === "stasis" ||
               wt === "eclipse" || wt === "recruit" || wt === "solar" ||
-              wt === "redwhite") {
+              wt === "redwhite" || wt === "grayflame") {
             const gradient = ctx.createLinearGradient(-19, -19, 19, 19);
             gradient.addColorStop(0, wt === "magnet" ? "#ff4568"
               : wt === "arcLaser" ? "#8bdfff"
               : wt === "eclipse" ? "#07080f"
               : wt === "recruit" ? "#ff85d9"
               : wt === "solar" ? "#ff3d4f"
-              : wt === "redwhite" ? "#ff3957" : "#020408");
+              : wt === "redwhite" ? "#ff3957"
+              : wt === "grayflame" ? "#e92840" : "#020408");
             gradient.addColorStop(1, wt === "magnet" ? "#a9e8ff"
               : wt === "eclipse" ? "#fb385c"
               : wt === "recruit" ? "#80bfff"
               : wt === "solar" ? "#ffe04c"
-              : wt === "redwhite" ? "#f9fcff" : "#ffffff");
+              : wt === "redwhite" ? "#f9fcff"
+              : wt === "grayflame" ? "#777e90" : "#ffffff");
             rect(-19, -19, 38, 38, gradient);
           } else rect(-19, -19, 38, 38, meta.color);
           rect(-13, -13, 26, 26, "#081020");
@@ -2276,6 +2321,20 @@ const W = 1280;
             rect(18, 18, 9, 9, "#ffffff");
             rect(-4, -32, 8, 8, "#9fdfff");
             rect(7, 24, 8, 8, "#9fdfff");
+          } else if (wt === "grayflame") {
+            // Red/gray flaming reticle distinct from standard GRAY.
+            ctx.strokeStyle = "#ffb284";
+            ctx.shadowColor = "#ff563b";
+            ctx.shadowBlur = 9;
+            ctx.lineWidth = 2.5;
+            ctx.beginPath();
+            ctx.arc(0, 0, 30, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.shadowBlur = 0;
+            rect(-32, -4, 9, 8, "#ff4457");
+            rect(23, -4, 9, 8, "#a8acb8");
+            if (!grayFlameRules.canEquip(game.weaponType))
+              drawText("GRAY", 0, 43, 12, "center", "#ffb4a2");
           } else if (wt === "gray") {
             ctx.strokeStyle = "#f1f4ff";
             ctx.lineWidth = 3;
@@ -2776,10 +2835,16 @@ const W = 1280;
               darkRedRules.RULES.missileDamageMultiplier,
             { darkRedSpecial: true });
         }
-      } else if (type === "gray") {
-        // Each actual gray bullet contact independently chooses one effect.
-        addPlayerShot(muzzleX, baseY - 10, 1100, 0, 9, 1.15, "#abb3c0", { grayImpact: true });
-        addPlayerShot(muzzleX, baseY + 12, 1100, 0, 9, 1.15, "#abb3c0", { grayImpact: true });
+      } else if (type === "gray" || type === "grayflame") {
+        // Exact GRAY twin lanes, effect RNG and five-volley cooldown.
+        // Only the fusion has a SECOND, independent on-hit ignition roll.
+        const fire = type === "grayflame";
+        for (const lane of [-10, 12]) {
+          addPlayerShot(muzzleX, baseY + lane, 1100, 0, 9, 1.15,
+            fire ? "#fa6470" : "#abb3c0",
+            fire ? { grayImpact: true, grayFlameShot: true }
+              : { grayImpact: true });
+        }
       } else if (type === "black") {
         // Baseline twin lanes; black bullets retain their slow marker after
         // swapping weapons and only attach the status on actual collisions.
@@ -3321,11 +3386,14 @@ const W = 1280;
           ctx.moveTo(16, -16); ctx.lineTo(-16, 16);
           ctx.stroke();
         }
+        if (grayFlameRules.burning(part))
+          drawGrayFlame(part.r, part.r, part.grayFlame);
         ctx.restore();
       }
 
       if (blackRules.isSlowed(b)) drawSlowGlow(b.rx + 30, b.ry + 25);
       if (grayRules.isStunned(b)) drawGrayStun(b.rx, b.ry, b.grayStunRemaining);
+      if (grayFlameRules.burning(b)) drawGrayFlame(b.rx, b.ry, b.grayFlame);
       ctx.restore();
 
       if (b.active) {
@@ -3854,6 +3922,57 @@ const W = 1280;
         b.y > -60 && b.y < H + 60);
     }
 
+    // Independent 20% proc AFTER an actual GRAY FLAME bullet contact.
+    // Gray's own 20/5/75 impact roll and normal direct-hit strength stay intact.
+    function igniteGrayFlame(bullet, target) {
+      if (bullet.grayFlameShot && target?.hp > 0)
+        return grayFlameRules.ignite(target, Math.random(), bullet.power);
+      return false;
+    }
+
+    // DoTs attach to original living targets, never world coordinates or
+    // future spawned enemies. The unamplified original bullet power carries
+    // ship/Overdrive scaling; ordinary shield/Boss/score rules still apply.
+    // No tick occurs on the frame a new hit first ignites its victim.
+    function updateGrayFlames(dt) {
+      if (!(dt > 0) || stasisRules.frozen(game.stasisRemaining)) return;
+      const stage = game.stageMode;
+      if (stage !== "WAVE" && stage !== "BOSS") return;
+      for (const e of game.enemies.slice()) {
+        if (game.stageMode !== stage) return;
+        if (!grayFlameRules.burning(e)) continue;
+        grayFlameRules.advance(e.grayFlame, dt, () => {
+          if (e.hp <= 0 || !game.enemies.includes(e) ||
+              game.stageMode !== stage) return false;
+          damageEnemy(e, e.grayFlame.power, e.x, e.y, "#ff6a3f");
+          return e.hp > 0 && game.enemies.includes(e) && game.stageMode === stage;
+        });
+      }
+      if (game.stageMode !== stage) return;
+      const boss = game.boss;
+      if (!boss || !boss.active || !(boss.hp > 0)) return;
+      // One status per original turret; breaking a mount never transfers its
+      // remaining burn to Boss hull. Boss hull has its own independent status.
+      for (const part of (boss.parts || []).slice()) {
+        if (game.boss !== boss || !boss.active || boss.hp <= 0) return;
+        if (!grayFlameRules.burning(part)) continue;
+        grayFlameRules.advance(part.grayFlame, dt, () => {
+          if (game.boss !== boss || !boss.active || boss.hp <= 0 ||
+              part.hp <= 0) return false;
+          damageBoss(part.grayFlame.power,
+            boss.x + part.x, boss.y + part.y, "#ff7547", part);
+          return game.boss === boss && boss.active && boss.hp > 0 && part.hp > 0;
+        });
+      }
+      if (game.boss === boss && boss.active && grayFlameRules.burning(boss)) {
+        grayFlameRules.advance(boss.grayFlame, dt, () => {
+          if (game.boss !== boss || !boss.active || boss.hp <= 0) return false;
+          damageBoss(boss.grayFlame.power, boss.x, boss.y, "#ff7547");
+          return game.boss === boss && boss.active && boss.hp > 0;
+        });
+      }
+    }
+
     function updatePlayerBullets(dt) {
       for (const b of game.bullets) {
         if (b.dead) continue;
@@ -3924,6 +4043,7 @@ const W = 1280;
             damageEnemy(e, damage * grayRules.damageMultiplier(grayOutcome), b.x, b.y, b.c,
               b.recruitShot === true);
           }
+          igniteGrayFlame(b, e);
           if (b.dead) break;
         }
 
@@ -3953,6 +4073,7 @@ const W = 1280;
             } else {
               damageBoss(damage * grayRules.damageMultiplier(grayOutcome), b.x, b.y, b.c, part);
             }
+            if (game.boss === boss) igniteGrayFlame(b, part);
           } else if (collision.sweptAabbHit(
             b.previousX, b.previousY, b.x, b.y,
             boss.x - boss.rx - b.r, boss.x + boss.rx + b.r,
@@ -3973,6 +4094,7 @@ const W = 1280;
             } else {
               damageBoss(damage * grayRules.damageMultiplier(grayOutcome), b.x, b.y, b.c);
             }
+            if (game.boss === boss) igniteGrayFlame(b, boss);
           }
         }
       }
@@ -4392,8 +4514,8 @@ const W = 1280;
             showMessage(electric ? "RED-WHITE P  /  ELECTRIC FAN ENGAGED"
               : "RED P  /  SCATTER FAN ENGAGED", 1.1);
           }
-        } else if (game.weaponType === "gray") {
-          // Count each dual-bullet firing action as ONE volley.
+        } else if (game.weaponType === "gray" || game.weaponType === "grayflame") {
+          // Both variants count each two-bullet firing action as ONE GRAY volley.
           game.fireCooldown = grayRules.fire(game.grayWeapon, getFireCooldown()).cooldown;
         } else if (pinkVolley) {
           // 0.4s rest on every second single pink bullet, even after a proc.
@@ -4441,6 +4563,8 @@ const W = 1280;
         }
       }
 
+      // Advance previous flames before new bullets land: never DOT on proc frame.
+      updateGrayFlames(dt);
       updateEnemies(dt);
       updateBoss(dt);
       // The world-anchored ring, allies and their bullets all freeze in pause
@@ -4681,6 +4805,17 @@ const W = 1280;
           rect(-9, -9, 54, 18, "#8bdbff");
           rect(-5, -5, 51, 10, "#ffffff");
           rect(10, -2, 36, 4, "#d7faff");
+          ctx.restore();
+          continue;
+        }
+        if (b.grayFlameShot) {
+          const gradient = ctx.createLinearGradient(-7, -7, 34, 7);
+          gradient.addColorStop(0, "#f33250");
+          gradient.addColorStop(1, "#a5aab4");
+          ctx.shadowColor = "#ff673f";
+          ctx.shadowBlur = 17;
+          rect(-6, -7, 40, 14, gradient);
+          rect(0, -3, 32, 6, "#ffb9a4");
           ctx.restore();
           continue;
         }
@@ -5095,6 +5230,8 @@ const W = 1280;
         ? "RED-WHITE ARC 60% HOPS"
         : game.weaponType === "gray"
         ? "GRAY 20/5/75  1.5X"
+        : game.weaponType === "grayflame"
+        ? "GRAY FLAME  20%  5S"
         : game.weaponType === "pink"
         ? "PINK SEEK  2/.4S  15%x25"
         : game.weaponType === "orange"

@@ -7,6 +7,16 @@ Independently maintained from NeonWings commit `5ebcb1de1adb288b41a3c5e387f747bc
 - [x] Configure standalone Pages workflow
 - [ ] Verify site deployment and controller tests on hardware
 
+## v26.18.0 — GRAY FLAME P / red-gray burn
+
+- [x] Add twenty-third P color with red-gray gradient, exclusive GRAY prerequisite and persistent rejected pickups
+- [x] Preserve all three GRAY impact outcomes and the five-volley / 0.4-second burst timing
+- [x] On real GRAY FLAME bullet hits, independently proc a 20% five-second attached burn, refresh rather than stack
+- [x] Apply precisely ten 0.5-second burn ticks at 0.6x original scaled normal shot strength through normal shields, scores and Boss turret/hull damage
+- [x] Persist burns across weapon swaps and freeze clocks during pause/transition/STASIS; stop on death, stage and turret destruction
+- [x] Include procedural red-orange flames, red-gray gradient bolts/pickups, 23-way P drops and regression tests
+- [ ] Verify mixed fire/stun visuals, handheld FPS, and gameplay balance on real hardware
+
 ## v26.17.0 — RED-WHITE P shared stars + conductive RED fan
 
 - [x] Add 22nd RED→WHITE gradient P that can be collected only while RED or WHITE or already this fusion is currently equipped; rejected drops remain in world

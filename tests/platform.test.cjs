@@ -13,6 +13,7 @@ const blackWeapon = require("../src/black-weapon.js");
 const whiteWeapon = require("../src/white-weapon.js");
 const redWhiteWeapon = require("../src/red-white-weapon.js");
 const grayWeapon = require("../src/gray-weapon.js");
+const grayFlameWeapon = require("../src/gray-flame-weapon.js");
 const pinkWeapon = require("../src/pink-weapon.js");
 const orangeWeapon = require("../src/orange-weapon.js");
 const brownWeapon = require("../src/brown-weapon.js");
@@ -56,7 +57,7 @@ function boot(options = {}) {
     NeonCombat: combat,
     NeonRedWeapon: redWeapon,
     NeonGreenWeapon: greenWeapon, NeonSolarAuraWeapon: solarAuraWeapon,
-    NeonBlackWeapon: blackWeapon, NeonWhiteWeapon: whiteWeapon, NeonRedWhiteWeapon: redWhiteWeapon, NeonGrayWeapon: grayWeapon, NeonPinkWeapon: pinkWeapon, NeonOrangeWeapon: orangeWeapon, NeonBrownWeapon: brownWeapon, NeonLimeWeapon: limeWeapon, NeonSkyWeapon: skyWeapon, NeonDarkRedWeapon: darkRedWeapon, NeonRainbowWeapon: rainbowWeapon, NeonMagnetWeapon: magnetWeapon, NeonArcLaserWeapon: arcLaserWeapon, NeonStasisWeapon: stasisWeapon, NeonEclipseWeapon: eclipseWeapon, NeonRecruitWeapon: recruitWeapon,
+    NeonBlackWeapon: blackWeapon, NeonWhiteWeapon: whiteWeapon, NeonRedWhiteWeapon: redWhiteWeapon, NeonGrayWeapon: grayWeapon, NeonGrayFlameWeapon: grayFlameWeapon, NeonPinkWeapon: pinkWeapon, NeonOrangeWeapon: orangeWeapon, NeonBrownWeapon: brownWeapon, NeonLimeWeapon: limeWeapon, NeonSkyWeapon: skyWeapon, NeonDarkRedWeapon: darkRedWeapon, NeonRainbowWeapon: rainbowWeapon, NeonMagnetWeapon: magnetWeapon, NeonArcLaserWeapon: arcLaserWeapon, NeonStasisWeapon: stasisWeapon, NeonEclipseWeapon: eclipseWeapon, NeonRecruitWeapon: recruitWeapon,
     NeonCollision: collision,
     NeonEnemyBehaviors: enemyBehaviors,
     NeonWorlds: worlds,
@@ -150,7 +151,8 @@ test("static HTML loads platform before game and doesn't embed legacy code", () 
   assert.ok(html.indexOf('src="./src/black-weapon.js"') < html.indexOf('src="./src/white-weapon.js"'));
   assert.ok(html.indexOf('src="./src/white-weapon.js"') < html.indexOf('src="./src/red-white-weapon.js?'));
   assert.ok(html.indexOf('src="./src/red-white-weapon.js?') < html.indexOf('src="./src/gray-weapon.js"'));
-  assert.ok(html.indexOf('src="./src/gray-weapon.js"') < html.indexOf('src="./src/pink-weapon.js"'));
+  assert.ok(html.indexOf('src="./src/gray-weapon.js"') < html.indexOf('src="./src/gray-flame-weapon.js?'));
+  assert.ok(html.indexOf('src="./src/gray-flame-weapon.js?') < html.indexOf('src="./src/pink-weapon.js"'));
   assert.ok(html.indexOf('src="./src/pink-weapon.js"') < html.indexOf('src="./src/orange-weapon.js"'));
   assert.ok(html.indexOf('src="./src/orange-weapon.js"') < html.indexOf('src="./src/brown-weapon.js"'));
   assert.ok(html.indexOf('src="./src/brown-weapon.js"') < html.indexOf('src="./src/lime-weapon.js?'));
@@ -295,7 +297,7 @@ test("RED-WHITE P runtime is versioned and loaded after RED/WHITE before game",(
   const html=fs.readFileSync(path.join(__dirname,"../index.html"),"utf8");
   const build=fs.readFileSync(path.join(__dirname,"../scripts/build.mjs"),"utf8");
   const pkg=require("../package.json");
-  assert.equal(pkg.version,"26.17.0");
+  assert.match(pkg.version,/^\d+\.\d+\.\d+$/);
   assert.ok(html.includes('src="./src/red-white-weapon.js?v='+pkg.version+'"'));
   assert.ok(html.includes('src="./src/game.js?v='+pkg.version+'"'));
   assert.ok(html.indexOf('src="./src/red-weapon.js"') <
@@ -309,4 +311,22 @@ test("RED-WHITE P runtime is versioned and loaded after RED/WHITE before game",(
   assert.equal(redWhiteWeapon.RULES.specialShots,redWeapon.RULES.specialShots);
   assert.equal(redWhiteWeapon.RULES.secondaryDamageFactor,
     whiteWeapon.RULES.secondaryDamageFactor);
+});
+
+test("GRAY FLAME P loads after GRAY and is bundled/versioned for Pages",()=>{
+  const html=fs.readFileSync(path.join(__dirname,"../index.html"),"utf8");
+  const build=fs.readFileSync(path.join(__dirname,"../scripts/build.mjs"),"utf8");
+  const pkg=require("../package.json");
+  assert.equal(pkg.version,"26.18.0");
+  assert.ok(html.includes('src="./src/gray-flame-weapon.js?v='+pkg.version+'"'));
+  assert.ok(html.includes('src="./src/game.js?v='+pkg.version+'"'));
+  assert.ok(html.indexOf('src="./src/gray-weapon.js"') <
+    html.indexOf('src="./src/gray-flame-weapon.js?'));
+  assert.ok(html.indexOf('src="./src/gray-flame-weapon.js?') <
+    html.indexOf('src="./src/game.js?'));
+  assert.ok(build.includes('"src/gray-flame-weapon.js"'));
+  assert.ok(pkg.scripts.check.includes('node --check src/gray-flame-weapon.js'));
+  assert.equal(grayFlameWeapon.canEquip("gray"),true);
+  assert.equal(grayFlameWeapon.RULES.volleysBeforeRest,
+    grayWeapon.RULES.volleysBeforeRest);
 });
