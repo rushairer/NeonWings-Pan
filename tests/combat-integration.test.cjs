@@ -18,6 +18,7 @@ const pinkWeapon = require("../src/pink-weapon.js");
 const orangeWeapon = require("../src/orange-weapon.js");
 const redOrangeWeapon = require("../src/red-orange-weapon.js");
 const brownWeapon = require("../src/brown-weapon.js");
+const brownYellowWeapon = require("../src/brown-yellow-weapon.js");
 const limeWeapon = require("../src/lime-weapon.js");
 const skyWeapon = require("../src/sky-weapon.js");
 const darkRedWeapon = require("../src/dark-red-weapon.js");
@@ -53,7 +54,7 @@ function boot() {
   const canvas = { style: {}, getContext: () => ctx };
   const storage = new Map();
   const window = {
-    NeonPlatform: platform, NeonController: controller, NeonCombat: combat, NeonRedWeapon: redWeapon, NeonGreenWeapon: greenWeapon, NeonSolarAuraWeapon: solarAuraWeapon, NeonBlackWeapon: blackWeapon, NeonWhiteWeapon: whiteWeapon, NeonRedWhiteWeapon: redWhiteWeapon, NeonGrayWeapon: grayWeapon, NeonGrayFlameWeapon: grayFlameWeapon, NeonPinkWeapon: pinkWeapon, NeonOrangeWeapon: orangeWeapon, NeonRedOrangeWeapon: redOrangeWeapon, NeonBrownWeapon: brownWeapon, NeonLimeWeapon: limeWeapon, NeonSkyWeapon: skyWeapon, NeonDarkRedWeapon: darkRedWeapon, NeonRainbowWeapon: rainbowWeapon, NeonMagnetWeapon: magnetWeapon, NeonArcLaserWeapon: arcLaserWeapon, NeonStasisWeapon: stasisWeapon, NeonEclipseWeapon: eclipseWeapon, NeonRecruitWeapon: recruitWeapon, NeonCollision: collision, NeonEnemyBehaviors: enemyBehaviors, NeonWorlds: worlds, NeonBossParts: bossParts, NeonModes: modes, NeonRecords: records, NeonSelectLayout: selectLayout,
+    NeonPlatform: platform, NeonController: controller, NeonCombat: combat, NeonRedWeapon: redWeapon, NeonGreenWeapon: greenWeapon, NeonSolarAuraWeapon: solarAuraWeapon, NeonBlackWeapon: blackWeapon, NeonWhiteWeapon: whiteWeapon, NeonRedWhiteWeapon: redWhiteWeapon, NeonGrayWeapon: grayWeapon, NeonGrayFlameWeapon: grayFlameWeapon, NeonPinkWeapon: pinkWeapon, NeonOrangeWeapon: orangeWeapon, NeonRedOrangeWeapon: redOrangeWeapon, NeonBrownWeapon: brownWeapon, NeonBrownYellowWeapon: brownYellowWeapon, NeonLimeWeapon: limeWeapon, NeonSkyWeapon: skyWeapon, NeonDarkRedWeapon: darkRedWeapon, NeonRainbowWeapon: rainbowWeapon, NeonMagnetWeapon: magnetWeapon, NeonArcLaserWeapon: arcLaserWeapon, NeonStasisWeapon: stasisWeapon, NeonEclipseWeapon: eclipseWeapon, NeonRecruitWeapon: recruitWeapon, NeonCollision: collision, NeonEnemyBehaviors: enemyBehaviors, NeonWorlds: worlds, NeonBossParts: bossParts, NeonModes: modes, NeonRecords: records, NeonSelectLayout: selectLayout,
     innerWidth: 1280, innerHeight: 960,
     addEventListener: (name, fn) => events.set(name, fn)
   };
@@ -699,7 +700,7 @@ test("red P is a collectible fourth weapon and fires exactly two parallel red li
   assert.equal(app.eval("game.bullets.every(b => b.vx===1120 && b.vy===0 && b.redNormal)"), true);
   app.eval('game.weaponType="blue";game.bullets.length=0;firePlayerWeapons()');
   assert.equal(app.eval("game.bullets.some(b=>b.redNormal)"), false);
-  app.eval('Math.random=()=>.145833');
+  app.eval('Math.random=()=>.14');
   assert.equal(app.eval("randomPowerType()"), "P_RED");
 });
 
@@ -822,7 +823,7 @@ test("green P pickup fires precisely the unupgraded starter bullets at every wea
   app.eval('game.combat.energy=100;activateOverdrive();game.bullets=[];firePlayerWeapons()');
   assert.equal(app.eval('game.bullets.length'), 2);
   assert.equal(app.eval('game.bullets.some(b=>b.lance)'), false);
-  app.eval('Math.random=()=>.1875');
+  app.eval('Math.random=()=>.18');
   assert.equal(app.eval('randomPowerType()'), "P_GREEN");
 });
 
@@ -1000,7 +1001,7 @@ test("BLACK P drop is discoverable and its twin dark shots never inherit blue up
   assert.equal(app.eval("game.bullets.some(b=>b.lance)"), false);
   assert.equal(app.eval("game.missiles.length"), 0);
   assert.ok(Math.abs(app.eval("getFireCooldown()") - 0.101) < 1e-10);
-  app.eval("Math.random=()=>.229167");
+  app.eval("Math.random=()=>.22");
   assert.equal(app.eval("randomPowerType()"), "P_BLACK");
   app.eval("game.weaponLevel=3;game.powerups=[];dropPlayerPowerOnHit()");
   assert.equal(app.eval('game.powerups.at(-1).type'), "P_BLACK");
@@ -1174,7 +1175,7 @@ test("WHITE P is the seventh drop, fires paired unlimited-penetration bolts and 
   assert.equal(app.eval("game.bullets.every(b=>!b.dead && !b.whiteBossHit)"), true);
   assert.equal(app.eval("game.missiles.length"), 0);
   assert.ok(Math.abs(app.eval("getFireCooldown()") - 0.101) < 1e-10);
-  app.eval("Math.random=()=>.270833");
+  app.eval("Math.random=()=>.26");
   assert.equal(app.eval("randomPowerType()"), "P_WHITE");
   app.eval('game.weaponLevel=3;game.powerups=[];dropPlayerPowerOnHit()');
   assert.equal(app.eval("game.powerups.at(-1).type"), "P_WHITE");
@@ -1337,7 +1338,7 @@ test("GRAY P joins eighth-color drops and fires only baseline paired bullets", (
   assert.equal(app.eval('JSON.stringify(game.bullets.map(b=>({vx:b.vx,vy:b.vy,r:b.r,power:b.power})))'),baseline);
   assert.equal(app.eval("game.missiles.length"),0);
   assert.ok(Math.abs(app.eval("getFireCooldown()")-.101)<1e-10);
-  app.eval("Math.random=()=>.3125");
+  app.eval("Math.random=()=>.30");
   assert.equal(app.eval("randomPowerType()"),"P_GRAY");
   app.eval("game.powerups=[];dropPlayerPowerOnHit()");
   assert.equal(app.eval("game.powerups.at(-1).type"),"P_GRAY");
@@ -1659,7 +1660,7 @@ test("PINK P is the ninth pickup: one guided bolt at every level, with distinct 
   assert.equal(app.eval("game.bullets[0].life"), pinkWeapon.RULES.bulletLifetimeSeconds);
   assert.equal(app.eval("game.missiles.length"), 0);
   assert.ok(Math.abs(app.eval("getFireCooldown()") - 0.101) < 1e-10);
-  app.eval("Math.random=()=>.354167");
+  app.eval("Math.random=()=>.34");
   assert.equal(app.eval("randomPowerType()"), "P_PINK");
   app.eval("game.powerups=[];dropPlayerPowerOnHit()");
   assert.equal(app.eval("game.powerups.at(-1).type"), "P_PINK");
@@ -2037,7 +2038,7 @@ test("ORANGE P is the tenth pickup; two starter-grade shots and its HUD survive 
   assert.equal(app.eval('JSON.stringify(game.bullets.map(b=>({vx:b.vx,vy:b.vy,r:b.r,power:b.power})))'),blue);
   assert.ok(Math.abs(app.eval("getFireCooldown()")-.101)<1e-10);
   assert.equal(app.eval("game.missiles.length"),0);
-  app.eval("Math.random=()=>.395833");
+  app.eval("Math.random=()=>.38");
   assert.equal(app.eval("randomPowerType()"),"P_ORANGE");
   app.eval('game.powerups=[];dropPlayerPowerOnHit()');
   assert.equal(app.eval('game.powerups.at(-1).type'),"P_ORANGE");
@@ -2253,7 +2254,7 @@ test("BROWN P is a recoverable eleventh pickup and never spawns ordinary bullets
   app.eval('game.weaponLevel=3;firePlayerWeapons()');
   assert.equal(app.eval("game.bullets.length"),0);
   assert.ok(Math.abs(app.eval("getFireCooldown()")-0.101)<1e-10);
-  app.eval('Math.random=()=>.4375');
+  app.eval('Math.random=()=>.42');
   assert.equal(app.eval("randomPowerType()"),"P_BROWN");
   app.eval('game.powerups=[];dropPlayerPowerOnHit()');
   assert.equal(app.eval("game.powerups.at(-1).type"),"P_BROWN");
@@ -2390,7 +2391,7 @@ test("LIME P fires two ordinary twin-lane bullets from the muzzle, not prepositi
   assert.equal(app.eval("game.bullets[0].vx"),1100);
   assert.equal(app.eval("game.bullets[1].vx"),1100);
   assert.equal(app.eval("game.bullets.every(b=>b.r===9 && b.power===1.15 && b.orbitRadius<360)"),true);
-  app.eval("Math.random=()=>.479167");
+  app.eval("Math.random=()=>.46");
   assert.equal(app.eval("randomPowerType()"),"P_LIME");
   app.eval("game.powerups=[];dropPlayerPowerOnHit()");
   assert.equal(app.eval("game.powerups.at(-1).type"),"P_LIME");
@@ -2653,7 +2654,7 @@ test("SKY P is the 13th collectible and switches damage/homing/slow at actual ga
   assert.ok(low.includes("SKY SEEK  BLACK SLOW"));
   app.eval('game.hp=2;game.bullets=[];firePlayerWeapons()');
   assert.equal(app.eval("game.bullets.every(b=>b.skyHoming&&b.blackSlow)"),true);
-  app.eval('Math.random=()=>.520833');
+  app.eval('Math.random=()=>.5');
   assert.equal(app.eval("randomPowerType()"),"P_SKY");
   app.eval('game.weaponLevel=3;game.powerups=[];dropPlayerPowerOnHit()');
   assert.equal(app.eval("game.powerups.at(-1).type"),"P_SKY");
@@ -2807,7 +2808,7 @@ test("DARK RED is the fourteenth pickup with distinct twin 1x bullets and no RED
   assert.equal(app.eval("game.redWeapon.stars"),3);
   assert.equal(app.eval("game.redWeapon.volleys"),0);
   assert.ok(Math.abs(app.eval("getFireCooldown()")-.101)<1e-10);
-  app.eval("Math.random=()=>.5625");
+  app.eval("Math.random=()=>.54");
   assert.equal(app.eval("randomPowerType()"),"P_DARK_RED");
   app.eval("game.powerups=[];dropPlayerPowerOnHit()");
   assert.equal(app.eval("game.powerups.at(-1).type"),"P_DARK_RED");
@@ -2820,11 +2821,11 @@ test("DARK RED is the fourteenth pickup with distinct twin 1x bullets and no RED
     "DARK RED must never expose ordinary RED star HUD");
 });
 
-test("RED-ORANGE extends uniform P drop pool to all 24 types",()=>{
+test("BROWN-YELLOW extends uniform P drop pool to all 25 types",()=>{
   const app=boot();
   const expected=[
     "P_BLUE","P_PURPLE","P_YELLOW","P_RED","P_GREEN","P_BLACK","P_WHITE",
-    "P_GRAY","P_PINK","P_ORANGE","P_BROWN","P_LIME","P_SKY","P_DARK_RED","P_RAINBOW","P_MAGNET","P_ARC_LASER","P_STASIS","P_ECLIPSE","P_RECRUIT","P_SOLAR","P_RED_WHITE","P_GRAY_FLAME","P_RED_ORANGE"
+    "P_GRAY","P_PINK","P_ORANGE","P_BROWN","P_LIME","P_SKY","P_DARK_RED","P_RAINBOW","P_MAGNET","P_ARC_LASER","P_STASIS","P_ECLIPSE","P_RECRUIT","P_SOLAR","P_RED_WHITE","P_GRAY_FLAME","P_RED_ORANGE","P_BROWN_YELLOW"
   ];
   for(let i=0;i<expected.length;i++){
     const roll=(i+.5)/expected.length;
@@ -3199,7 +3200,7 @@ test("RAINBOW P is the 15th collectible, recoverable, with a distinct 8-color ic
   assert.equal(app.eval("game.bullets.every(b=>b.grayImpact)"),true);
   assert.equal(app.eval("game.redWeapon.stars"),3);
   assert.equal(app.eval("getFireCooldown()"),.4);
-  app.eval('Math.random=()=>.604167');
+  app.eval('Math.random=()=>.58');
   assert.equal(app.eval("randomPowerType()"),"P_RAINBOW");
   app.eval('game.powerups=[];dropPlayerPowerOnHit()');
   assert.equal(app.eval("game.powerups.at(-1).type"),"P_RAINBOW");
@@ -5474,4 +5475,318 @@ test("original RED, RED-WHITE and ORANGE projectile effects remain isolated afte
   assert.equal(app.eval("game.bullets.every(b=>b.whiteConductive&&b.redWhiteShot&&!b.orangeBlast)"),true);
   app.eval('game.bullets=[];collectPowerup({type:"P_RED",x:240,y:480,life:1});firePlayerWeapons()');
   assert.equal(app.eval("game.bullets.every(b=>b.redNormal&&!b.orangeBlast)"),true);
+});
+
+
+test("BROWN-YELLOW P only collects from currently equipped BROWN or itself, other pickups persist",()=>{
+  const app=boot();
+  app.eval([
+    'game.state="PLAYING";game.weaponType="yellow";game.weaponLevel=1;game.score=0;',
+    'game.brownWeapon.elapsed=.05;',
+    'game.powerups=[{type:"P_BROWN_YELLOW",x:175,y:480,r:24,life:30,',
+    'vx:0,vy:0,t:0,safeTimer:0}];updatePowerups(.01);'
+  ].join("\n"));
+  assert.equal(app.eval("game.weaponType"),"yellow");
+  assert.equal(app.eval("game.powerups.length"),1);
+  assert.equal(app.eval("game.weaponLevel"),1);
+  assert.equal(app.eval("game.score"),0);
+  assert.equal(app.eval("game.brownWeapon.elapsed"),.05);
+  assert.ok(app.eval('game.message.includes("REQUIRES BROWN P")'));
+  const hint=app.eval("game.messageTimer");
+  app.eval("updatePowerups(.01)");
+  assert.ok(app.eval("game.messageTimer")<=hint);
+  app.eval('collectPowerup({type:"P_BROWN",x:200,y:480,life:1});');
+  assert.equal(app.eval("game.weaponType"),"brown");
+  app.eval("updatePowerups(.01)");
+  assert.equal(app.eval("game.weaponType"),"brownyellow");
+  assert.equal(app.eval("game.powerups.length"),0);
+  assert.equal(app.eval("game.weaponLevel"),3);
+  assert.equal(app.eval("weaponMeta().name"),"REFRACT LASER");
+  app.eval("firePlayerWeapons()");
+  assert.equal(app.eval("game.bullets.length"),0);
+  assert.equal(app.eval("game.missiles.length"),0);
+  app.eval("game.powerups=[];dropPlayerPowerOnHit()");
+  assert.equal(app.eval("game.powerups.at(-1).type"),"P_BROWN_YELLOW");
+  app.eval('collectPowerup({type:"P_BROWN_YELLOW",x:200,y:480,life:1})');
+  assert.equal(app.eval("game.weaponType"),"brownyellow");
+  app.eval('collectPowerup({type:"P_ARC_LASER",x:200,y:480,life:10})');
+  assert.equal(app.eval("game.weaponType"),"brownyellow",
+    "Other BROWN-specific evolutions require an actual BROWN predecessor");
+  app.eval('collectPowerup({type:"P_BLUE",x:200,y:480,life:1})');
+  const score=app.eval("game.score");
+  app.eval('const wrong={type:"P_BROWN_YELLOW",x:200,y:480,life:9};collectPowerup(wrong);game.wrongLife=wrong.life');
+  assert.equal(app.eval("game.weaponType"),"blue");
+  assert.equal(app.eval("game.score"),score);
+  assert.equal(app.eval("game.wrongLife"),9);
+});
+
+test("BROWN-YELLOW maintains zero bullets, continuous Brown 0.101s tick and 1300 range",()=>{
+  const app=boot();
+  app.eval([
+    'game.state="PLAYING";game.stageMode="WAVE";game.weaponType="brownyellow";',
+    'game.weaponLevel=3;game.player.x=175;game.player.y=480;',
+    'game.enemies=[',
+    '{kind:"scout",x:460,y:480,r:25,hp:100,maxHp:100,score:20,color:"#fff",core:"#eee"},',
+    '{kind:"scout",x:740,y:480,r:25,hp:100,maxHp:100,score:20,color:"#fff",core:"#eee"}',
+    '];firePlayerWeapons();updateBrownLaser(.100,true);'
+  ].join("\n"));
+  assert.equal(app.eval("game.bullets.length"),0);
+  assert.equal(app.eval("game.missiles.length"),0);
+  assert.equal(app.eval("getFireCooldown()"),.101);
+  assert.equal(app.eval("game.enemies[0].hp"),100);
+  assert.equal(app.eval("game.enemies[1].hp"),100);
+  assert.equal(app.eval("game.brownBeam.x"),435);
+  assert.equal(app.eval("game.brownBeam.startX"),235);
+  assert.equal(app.eval("game.brownBeam.refraction.target"),app.eval("game.enemies[1]"));
+  app.eval("updateBrownLaser(.001,true)");
+  assert.ok(Math.abs(app.eval("game.enemies[0].hp")-98.85)<1e-9);
+  assert.ok(Math.abs(app.eval("game.enemies[1].hp")-98.85)<1e-9);
+  assert.equal(app.eval("game.bullets.length"),0);
+});
+
+test("BROWN-YELLOW one refraction hits ONE nearby second enemy and never chains into third",()=>{
+  const app=boot();
+  app.eval([
+    'game.state="PLAYING";game.stageMode="WAVE";game.weaponType="brownyellow";',
+    'game.player.x=175;game.player.y=480;',
+    'game.enemies=[',
+    '{kind:"scout",x:460,y:480,r:25,hp:100,maxHp:100,score:20,color:"#fff",core:"#eee"},',
+    '{kind:"scout",x:700,y:600,r:25,hp:100,maxHp:100,score:20,color:"#fff",core:"#eee"},',
+    '{kind:"scout",x:1000,y:600,r:25,hp:100,maxHp:100,score:20,color:"#fff",core:"#eee"}',
+    '];updateBrownLaser(.101,true);'
+  ].join("\n"));
+  assert.equal(app.eval("game.brownBeam.target"),app.eval("game.enemies[0]"));
+  assert.equal(app.eval("game.brownBeam.refraction.target"),app.eval("game.enemies[1]"));
+  assert.equal(app.eval("game.enemies[0].hp"),98.85);
+  assert.equal(app.eval("game.enemies[1].hp"),98.85);
+  assert.equal(app.eval("game.enemies[2].hp"),100);
+  assert.equal(app.eval("game.brownBeam.refraction.refraction"),undefined);
+});
+
+test("BROWN-YELLOW with a single live enemy behaves EXACTLY as BROWN with no second ray",()=>{
+  const app=boot();
+  app.eval([
+    'game.state="PLAYING";game.stageMode="WAVE";game.weaponType="brownyellow";',
+    'game.enemies=[{kind:"scout",x:530,y:480,r:25,hp:100,maxHp:100,',
+    'score:20,color:"#fff",core:"#eee"}];',
+    'updateBrownLaser(.101,true);'
+  ].join("\n"));
+  assert.equal(app.eval("game.brownBeam.refraction"),null);
+  assert.ok(Math.abs(app.eval("game.enemies[0].hp")-98.85)<1e-9);
+  assert.equal(app.eval("game.bullets.length"),0);
+});
+
+test("BROWN-YELLOW second beam may bend backward to nearest DIFFERENT living enemy",()=>{
+  const app=boot();
+  app.eval([
+    'game.state="PLAYING";game.stageMode="WAVE";game.weaponType="brownyellow";',
+    'game.player.x=175;game.player.y=480;',
+    'game.enemies=[',
+    '{kind:"scout",x:460,y:480,r:25,hp:100,maxHp:100,score:20,color:"#fff",core:"#eee"},',
+    '{kind:"scout",x:300,y:740,r:25,hp:100,maxHp:100,score:20,color:"#fff",core:"#eee"}',
+    '];updateBrownLaser(.101,true);'
+  ].join("\n"));
+  assert.equal(app.eval("game.brownBeam.target"),app.eval("game.enemies[0]"));
+  assert.equal(app.eval("game.brownBeam.refraction.target"),app.eval("game.enemies[1]"));
+  assert.ok(app.eval("game.brownBeam.refraction.x")<app.eval("game.brownBeam.x"));
+  assert.ok(Math.abs(app.eval("game.enemies[0].hp")-98.85)<1e-9);
+  assert.ok(Math.abs(app.eval("game.enemies[1].hp")-98.85)<1e-9);
+});
+
+test("BROWN-YELLOW frontal shield blocks first ray normally; secondary still gets 1.15 hit",()=>{
+  const app=boot();
+  app.eval([
+    'game.state="PLAYING";game.stageMode="WAVE";game.weaponType="brownyellow";',
+    'game.player.x=175;game.player.y=480;',
+    'game.enemies=[',
+    'enemyBehaviors.initializeEnemy({kind:"shield",x:460,y:480,r:39,',
+    'hp:100,maxHp:100,score:30,color:"#fff",core:"#eee"}),',
+    '{kind:"scout",x:730,y:560,r:25,hp:100,maxHp:100,score:20,color:"#fff",core:"#eee"}',
+    '];game.enemies[0].shieldHp=10;game.enemies[0].shieldMax=10;',
+    'updateBrownLaser(.101,true);'
+  ].join("\n"));
+  assert.ok(Math.abs(app.eval("game.enemies[0].shieldHp")-8.85)<1e-9);
+  assert.equal(app.eval("game.enemies[0].hp"),100);
+  assert.ok(Math.abs(app.eval("game.enemies[1].hp")-98.85)<1e-9);
+});
+
+test("BROWN-YELLOW blocks SECOND ray against a closer shield and does not pierce third enemy",()=>{
+  const app=boot();
+  app.eval([
+    'game.state="PLAYING";game.stageMode="WAVE";game.weaponType="brownyellow";',
+    'game.player.x=175;game.player.y=480;',
+    'game.enemies=[',
+    '{kind:"scout",x:460,y:480,r:25,hp:100,maxHp:100,score:20,color:"#fff",core:"#eee"},',
+    'enemyBehaviors.initializeEnemy({kind:"shield",x:680,y:480,r:39,',
+    'hp:100,maxHp:100,score:30,color:"#fff",core:"#eee"}),',
+    '{kind:"scout",x:980,y:480,r:25,hp:100,maxHp:100,score:20,color:"#fff",core:"#eee"}',
+    '];game.enemies[1].shieldHp=10;game.enemies[1].shieldMax=10;',
+    'updateBrownLaser(.101,true);'
+  ].join("\n"));
+  assert.equal(app.eval("game.brownBeam.refraction.target"),app.eval("game.enemies[1]"));
+  assert.ok(Math.abs(app.eval("game.enemies[0].hp")-98.85)<1e-9);
+  assert.ok(Math.abs(app.eval("game.enemies[1].shieldHp")-8.85)<1e-9);
+  assert.equal(app.eval("game.enemies[1].hp"),100);
+  assert.equal(app.eval("game.enemies[2].hp"),100);
+});
+
+test("BROWN-YELLOW secondary laser hits distinct Boss turret weakpoint but never hits hull twice",()=>{
+  const app=boot();
+  app.eval([
+    'game.state="PLAYING";game.stageMode="BOSS";game.weaponType="brownyellow";',
+    'game.player.x=175;game.player.y=480;',
+    'game.enemies=[{kind:"scout",x:460,y:480,r:25,hp:100,maxHp:100,',
+    'score:20,color:"#fff",core:"#eee"}];',
+    'game.boss={active:true,x:870,y:480,rx:110,ry:80,hp:200,maxHp:200,',
+    'parts:[{id:"TURRET",x:-155,y:0,r:25,hp:100,maxHp:100}],',
+    'color:"#fff",core:"#eee"};',
+    'updateBrownLaser(.101,true);'
+  ].join("\n"));
+  assert.equal(app.eval("game.brownBeam.kind"),"enemy");
+  assert.equal(app.eval("game.brownBeam.refraction.kind"),"turret");
+  assert.equal(app.eval("game.brownBeam.refraction.target"),app.eval("game.boss"));
+  assert.ok(Math.abs(app.eval("game.boss.parts[0].hp")-
+    (100-1.15*bossParts.BALANCE.weakPointDamageScale))<1e-9);
+  assert.equal(app.eval("game.boss.hp"),200);
+  assert.ok(Math.abs(app.eval("game.enemies[0].hp")-98.85)<1e-9);
+});
+
+test("BROWN-YELLOW refraction from Boss turret hits another enemy without striking Boss again",()=>{
+  const app=boot();
+  app.eval([
+    'game.state="PLAYING";game.stageMode="BOSS";game.weaponType="brownyellow";',
+    'game.player.x=175;game.player.y=480;',
+    'game.boss={active:true,x:680,y:480,rx:110,ry:80,hp:200,maxHp:200,',
+    'parts:[{id:"TURRET",x:-155,y:0,r:25,hp:100,maxHp:100}],',
+    'color:"#fff",core:"#eee"};',
+    'game.enemies=[{kind:"scout",x:960,y:650,r:25,hp:100,maxHp:100,',
+    'score:20,color:"#fff",core:"#eee"}];',
+    'updateBrownLaser(.101,true);'
+  ].join("\n"));
+  assert.equal(app.eval("game.brownBeam.kind"),"turret");
+  assert.equal(app.eval("game.brownBeam.refraction.kind"),"enemy");
+  assert.equal(app.eval("game.brownBeam.refraction.target"),app.eval("game.enemies[0]"));
+  assert.ok(app.eval("game.boss.parts[0].hp")<100);
+  assert.equal(app.eval("game.boss.hp"),200);
+  assert.ok(Math.abs(app.eval("game.enemies[0].hp")-98.85)<1e-9);
+  app.eval("game.enemies=[];updateBrownLaser(.101,true)");
+  assert.equal(app.eval("game.brownBeam.refraction"),null);
+});
+
+test("BROWN-YELLOW one shared laser clock ticks BOTH targets with same Overdrive factor",()=>{
+  const app=boot();
+  app.eval([
+    'game.state="PLAYING";game.stageMode="WAVE";game.weaponType="brownyellow";',
+    'game.player.x=175;game.player.y=480;',
+    'game.enemies=[',
+    '{kind:"scout",x:460,y:480,r:25,hp:100,maxHp:100,score:20,color:"#fff",core:"#eee"},',
+    '{kind:"scout",x:740,y:570,r:25,hp:100,maxHp:100,score:20,color:"#fff",core:"#eee"}',
+    '];game.combat.energy=100;activateOverdrive();',
+    'updateBrownLaser(.303,true);'
+  ].join("\n"));
+  assert.equal(app.eval("game.bullets.length"),0);
+  const damage1=100-app.eval("game.enemies[0].hp");
+  const damage2=100-app.eval("game.enemies[1].hp");
+  assert.ok(Math.abs(damage1-damage2)<1e-9);
+  assert.ok(damage1>3*1.15);
+  assert.equal(app.eval("game.brownWeapon.elapsed")<1e-8,true);
+});
+
+test("BROWN-YELLOW releases FIRE immediately, pauses and clears refraction on weapon change",()=>{
+  const app=boot();
+  app.eval([
+    'game.state="PLAYING";game.stageMode="WAVE";game.weaponType="brown";',
+    'game.spawnTimer=999;game.formationTimer=999;game.invuln=999;',
+    'game.enemies=[',
+    '{kind:"scout",x:520,y:480,r:25,hp:100,maxHp:100,',
+    'score:30,color:"#fff",core:"#fff",vx:0,vy:0,t:0,wave:0,shootCd:999,shootBase:999},',
+    '{kind:"scout",x:820,y:600,r:25,hp:100,maxHp:100,',
+    'score:30,color:"#fff",core:"#fff",vx:0,vy:0,t:0,wave:0,shootCd:999,shootBase:999}',
+    '];collectPowerup({type:"P_BROWN_YELLOW",x:300,y:480,life:1});',
+    'keys.Space=true;updatePlaying(.06);updatePlaying(.05);'
+  ].join("\n"));
+  assert.ok(Math.abs(app.eval("game.enemies[0].hp")-98.85)<1e-8);
+  assert.ok(Math.abs(app.eval("game.enemies[1].hp")-98.85)<1e-8);
+  const hp=app.eval("game.enemies[0].hp");
+  app.eval('game.state="PAUSED";updatePlaying(2)');
+  assert.equal(app.eval("game.enemies[0].hp"),hp);
+  app.eval('game.state="PLAYING";game.stageMode="TRANSITION";game.transition=10;updatePlaying(2)');
+  assert.equal(app.eval("game.enemies[0].hp"),hp);
+  app.eval('game.stageMode="WAVE";keys.Space=false;updatePlaying(.02)');
+  assert.equal(app.eval("game.brownBeam"),null);
+  assert.equal(app.eval("game.brownWeapon.elapsed"),0);
+  app.eval('collectPowerup({type:"P_BROWN",x:300,y:480,life:1});');
+  assert.equal(app.eval("game.weaponType"),"brown");
+  app.eval('updateBrownLaser(.101,true)');
+  assert.ok(Math.abs(app.eval("game.enemies[0].hp")-(hp-1.15))<1e-8);
+  assert.ok(Math.abs(app.eval("game.enemies[1].hp")-98.85)<1e-8,
+    "Original BROWN retains first-obstruction-only behavior after switching");
+});
+
+test("BROWN-YELLOW can't refract to just-spawned splitter children in original laser tick",()=>{
+  const app=boot();
+  app.eval([
+    'game.state="PLAYING";game.stageMode="WAVE";game.weaponType="brownyellow";',
+    'game.player.x=175;game.player.y=480;',
+    'game.enemies=[',
+    '{kind:"splitter",x:460,y:480,r:35,hp:1,maxHp:1,',
+    'score:30,color:"#fff",core:"#eee"},',
+    '{kind:"scout",x:730,y:540,r:25,hp:100,maxHp:100,',
+    'score:30,color:"#fff",core:"#eee"}',
+    '];updateBrownLaser(.101,true);'
+  ].join("\n"));
+  assert.equal(app.eval("game.stats.kills"),1);
+  assert.equal(app.eval("game.enemies.filter(e=>e.minion).length"),2);
+  assert.equal(app.eval("game.enemies.filter(e=>e.minion).every(e=>e.hp===e.maxHp)"),true);
+  assert.ok(Math.abs(app.eval("game.enemies.find(e=>!e.minion&&e.hp>0).hp")-98.85)<1e-8);
+});
+
+test("BROWN-YELLOW gradient pickup and both laser lines are cosmetic and do not modify health",()=>{
+  const app=boot();
+  const v=app.eval([
+    '(()=>{game.state="PLAYING";game.stageMode="WAVE";',
+    'game.weaponType="brownyellow";game.player.x=175;game.player.y=480;',
+    'game.enemies=[',
+    '{kind:"scout",x:460,y:480,r:25,hp:100,maxHp:100,score:20,color:"#fff",core:"#eee"},',
+    '{kind:"scout",x:710,y:590,r:25,hp:100,maxHp:100,score:20,color:"#fff",core:"#eee"}',
+    '];game.powerups=[{type:"P_BROWN_YELLOW",x:500,y:680,life:20,t:0}];',
+    'updateBrownLaser(.04,true);',
+    'const colors=[],lines=[],labels=[];',
+    'ctx.createLinearGradient=()=>({addColorStop:(p,c)=>colors.push(c)});',
+    'ctx.lineTo=(x,y)=>lines.push([x,y]);',
+    'ctx.fillText=t=>labels.push(String(t));',
+    'const hp=game.enemies.map(e=>e.hp),time=game.brownWeapon.elapsed;',
+    'drawPowerups();drawBrownLaser();drawHud();',
+    'return {hp,after:game.enemies.map(e=>e.hp),time,end:game.brownWeapon.elapsed,',
+    'colors,lines,labels,beam:game.brownBeam};})()'
+  ].join("\n"));
+  assert.deepEqual(v.hp,v.after);
+  assert.equal(v.time,v.end);
+  assert.ok(v.lines.some(([x,y])=>Math.abs(x-v.beam.x)<1e-8&&Math.abs(y-v.beam.y)<1e-8));
+  assert.ok(v.lines.some(([x,y])=>Math.abs(x-v.beam.refraction.x)<1e-8&&Math.abs(y-v.beam.refraction.y)<1e-8));
+  for(const col of ["#88502e","#ffda52","#91603d","#ffd26c","#fff17c"])
+    assert.ok(v.colors.includes(col),col);
+  assert.ok(v.labels.includes("REFRACT LASER  1 HOP"));
+});
+
+test("BROWN-YELLOW leaves ordinary BROWN and cyan-white ARC LASER independent",()=>{
+  const app=boot();
+  app.eval([
+    'game.state="PLAYING";game.stageMode="WAVE";game.player.x=175;',
+    'game.enemies=[',
+    '{kind:"scout",x:460,y:480,r:25,hp:100,maxHp:100,score:20,color:"#fff",core:"#eee"},',
+    '{kind:"scout",x:740,y:480,r:25,hp:100,maxHp:100,score:20,color:"#fff",core:"#eee"}',
+    '];game.weaponType="brown";updateBrownLaser(.101,true);'
+  ].join("\n"));
+  assert.equal(app.eval("game.brownBeam.refraction"),undefined);
+  assert.ok(Math.abs(app.eval("game.enemies[0].hp")-98.85)<1e-9);
+  assert.equal(app.eval("game.enemies[1].hp"),100);
+  app.eval('collectPowerup({type:"P_ARC_LASER",x:200,y:480,life:1});updateBrownLaser(.101,true)');
+  assert.equal(app.eval("game.weaponType"),"arcLaser");
+  assert.equal(app.eval("game.brownBeam.arcLaser"),true);
+  assert.ok(app.eval("game.enemies[1].hp")<100);
+  app.eval('collectPowerup({type:"P_BROWN",x:200,y:480,life:1});');
+  app.eval('collectPowerup({type:"P_BROWN_YELLOW",x:200,y:480,life:1});');
+  assert.equal(app.eval("game.weaponType"),"brownyellow");
+  assert.equal(app.eval("game.bullets.length"),0);
 });

@@ -30,6 +30,8 @@ const W = 1280;
     if (!redOrangeRules) throw new Error("NeonWings-Pan red-orange P runtime missing");
     const brownRules = window.NeonBrownWeapon;
     if (!brownRules) throw new Error("NeonWings-Pan brown P runtime missing");
+    const brownYellowRules = window.NeonBrownYellowWeapon;
+    if (!brownYellowRules) throw new Error("NeonWings-Pan brown-yellow P runtime missing");
     const limeRules = window.NeonLimeWeapon;
     if (!limeRules) throw new Error("NeonWings-Pan lime P runtime missing");
     const skyRules = window.NeonSkyWeapon;
@@ -1895,7 +1897,7 @@ const W = 1280;
       "P_BLACK", "P_WHITE", "P_GRAY", "P_PINK", "P_ORANGE",
       "P_BROWN", "P_LIME", "P_SKY", "P_DARK_RED", "P_RAINBOW",
       "P_MAGNET", "P_ARC_LASER", "P_STASIS", "P_ECLIPSE", "P_RECRUIT",
-      "P_SOLAR", "P_RED_WHITE", "P_GRAY_FLAME", "P_RED_ORANGE"
+      "P_SOLAR", "P_RED_WHITE", "P_GRAY_FLAME", "P_RED_ORANGE", "P_BROWN_YELLOW"
     ]);
     function randomPowerType() {
       return POWER_TYPES[Math.min(POWER_TYPES.length - 1,
@@ -1917,6 +1919,7 @@ const W = 1280;
       if (type === "pink") return { name: "SEEKER", short: "PINK", color: "#ff79c8", core: "#fff1fb" };
       if (type === "orange") return { name: "BURST", short: "ORANGE", color: "#ff922e", core: "#fff0d3" };
       if (type === "brown") return { name: "LOCK LASER", short: "BROWN", color: "#9a6042", core: "#ffe3c4" };
+      if (type === "brownyellow") return { name: "REFRACT LASER", short: "BROWN-YELLOW", color: "#e6b24d", core: "#fff2a6" };
       if (type === "lime") return { name: "ORBIT", short: "LIME", color: "#c7f542", core: "#fbffd4" };
       if (type === "sky") return { name: "ADAPT", short: "SKY", color: "#86d9ff", core: "#e7f9ff" };
       if (type === "darkred") return { name: "CHAIN", short: "DARK RED", color: "#981332", core: "#ffe0e8" };
@@ -1944,6 +1947,7 @@ const W = 1280;
       if (powerupType === "P_PINK") return "pink";
       if (powerupType === "P_ORANGE") return "orange";
       if (powerupType === "P_BROWN") return "brown";
+      if (powerupType === "P_BROWN_YELLOW") return "brownyellow";
       if (powerupType === "P_LIME") return "lime";
       if (powerupType === "P_SKY") return "sky";
       if (powerupType === "P_DARK_RED") return "darkred";
@@ -1971,6 +1975,7 @@ const W = 1280;
       if (game.weaponType === "pink") return "P_PINK";
       if (game.weaponType === "orange") return "P_ORANGE";
       if (game.weaponType === "brown") return "P_BROWN";
+      if (game.weaponType === "brownyellow") return "P_BROWN_YELLOW";
       if (game.weaponType === "lime") return "P_LIME";
       if (game.weaponType === "sky") return "P_SKY";
       if (game.weaponType === "darkred") return "P_DARK_RED";
@@ -2054,6 +2059,15 @@ const W = 1280;
     }
 
     function collectPowerup(p) {
+      // BROWN-YELLOW is a BROWN-exclusive one-refraction upgrade. Picking it
+      // with any other currently equipped P never consumes its pickup.
+      if (p.type === "P_BROWN_YELLOW" && !brownYellowRules.canEquip(game.weaponType)) {
+        if (!(p.lockHintCooldown > 0)) {
+          showMessage("REFRACT LASER  REQUIRES BROWN P", 1.1);
+          p.lockHintCooldown = 1.2;
+        }
+        return false;
+      }
       // ARC LASER is a *BROWN-only* evolution, not a free equip from other
       // colors. Ineligible pickups remain on the playfield for later collection.
       if (p.type === "P_ARC_LASER" && !arcLaserRules.canEquip(game.weaponType)) {
@@ -2211,7 +2225,8 @@ const W = 1280;
           rect(-23, -23, 46, 46, "#07111f");
           if (wt === "magnet" || wt === "arcLaser" || wt === "stasis" ||
               wt === "eclipse" || wt === "recruit" || wt === "solar" ||
-              wt === "redwhite" || wt === "grayflame" || wt === "redorange") {
+              wt === "redwhite" || wt === "grayflame" || wt === "redorange" ||
+              wt === "brownyellow") {
             const gradient = ctx.createLinearGradient(-19, -19, 19, 19);
             gradient.addColorStop(0, wt === "magnet" ? "#ff4568"
               : wt === "arcLaser" ? "#8bdfff"
@@ -2220,14 +2235,16 @@ const W = 1280;
               : wt === "solar" ? "#ff3d4f"
               : wt === "redwhite" ? "#ff3957"
               : wt === "redorange" ? "#f72f50"
-              : wt === "grayflame" ? "#e92840" : "#020408");
+              : wt === "grayflame" ? "#e92840"
+              : wt === "brownyellow" ? "#88502e" : "#020408");
             gradient.addColorStop(1, wt === "magnet" ? "#a9e8ff"
               : wt === "eclipse" ? "#fb385c"
               : wt === "recruit" ? "#80bfff"
               : wt === "solar" ? "#ffe04c"
               : wt === "redwhite" ? "#f9fcff"
               : wt === "redorange" ? "#ffaf36"
-              : wt === "grayflame" ? "#777e90" : "#ffffff");
+              : wt === "grayflame" ? "#777e90"
+              : wt === "brownyellow" ? "#ffda52" : "#ffffff");
             rect(-19, -19, 38, 38, gradient);
           } else rect(-19, -19, 38, 38, meta.color);
           rect(-13, -13, 26, 26, "#081020");
@@ -2242,6 +2259,22 @@ const W = 1280;
             rect(2, -29, 6, 6, meta.core);
             rect(-8, 23, 6, 6, meta.core);
             rect(2, 23, 6, 6, meta.core);
+          } else if (wt === "brownyellow") {
+            // One angular bend in the beam marks the unique one-refraction P.
+            ctx.strokeStyle = "#ffe080";
+            ctx.shadowColor = "#dfb349";
+            ctx.shadowBlur = 11;
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(-29, 6);
+            ctx.lineTo(0, 6);
+            ctx.lineTo(25, -18);
+            ctx.stroke();
+            ctx.shadowBlur = 0;
+            rect(-32, 2, 9, 8, "#a46b44");
+            rect(23, -23, 7, 9, "#ffe279");
+            if (!brownYellowRules.canEquip(game.weaponType))
+              drawText("BROWN", 0, 43, 12, "center", "#ffd781");
           } else if (wt === "redorange") {
             // A red-to-orange explosion corona distinguishes this RED variant
             // from ordinary orange and from electric RED-WHITE.
@@ -2785,9 +2818,9 @@ const W = 1280;
         }
       } else if (type === "arcLaser") {
         // Upgraded BROWN beam handled by updateBrownLaser(): no shot objects.
-      } else if (type === "brown") {
-        // Brown laser is continuous while held; no projectile is generated.
-        // Laser targeting/damage lives in updateBrownLaser(), not here.
+      } else if (type === "brown" || type === "brownyellow") {
+        // Both BROWN lasers are continuous while held, with ZERO bullet
+        // objects. Their damage and target locking live in updateBrownLaser().
       } else if (type === "orange") {
         // Starter-grade twin lanes. Every orange bullet detonates on its FIRST
         // swept target contact; the 3x area damage replaces separate direct hit.
@@ -2954,7 +2987,7 @@ const W = 1280;
       if (game.weaponType === "eclipse") return eclipseRules.RULES.cooldownSeconds;
       if (game.weaponType === "yellow") return Math.max(0.17, 0.25 - game.weaponLevel * 0.025);
       if (game.weaponType === "purple") return Math.max(0.10, 0.145 - game.weaponLevel * 0.012);
-      return Math.max(0.07, 0.115 - (game.weaponType === "green" || game.weaponType === "black" || game.weaponType === "white" || game.weaponType === "gray" || game.weaponType === "grayflame" || game.weaponType === "pink" || game.weaponType === "orange" || game.weaponType === "lime" || game.weaponType === "brown" || game.weaponType === "sky" || game.weaponType === "darkred" || game.weaponType === "magnet" || game.weaponType === "stasis" || game.weaponType === "arcLaser" || game.weaponType === "recruit" || game.weaponType === "solar" ? 1 : game.weaponLevel) * 0.014);
+      return Math.max(0.07, 0.115 - (game.weaponType === "green" || game.weaponType === "black" || game.weaponType === "white" || game.weaponType === "gray" || game.weaponType === "grayflame" || game.weaponType === "pink" || game.weaponType === "orange" || game.weaponType === "lime" || game.weaponType === "brown" || game.weaponType === "brownyellow" || game.weaponType === "sky" || game.weaponType === "darkred" || game.weaponType === "magnet" || game.weaponType === "stasis" || game.weaponType === "arcLaser" || game.weaponType === "recruit" || game.weaponType === "solar" ? 1 : game.weaponLevel) * 0.014);
     }
 
     function findMissileTarget(m) {
@@ -3738,7 +3771,8 @@ const W = 1280;
     // timer but draws a full-length beam and hits every intersected target.
     function updateBrownLaser(dt, firing) {
       const isArc = game.weaponType === "arcLaser";
-      const active = firing && (game.weaponType === "brown" || isArc) &&
+      const refracting = game.weaponType === "brownyellow";
+      const active = firing && (game.weaponType === "brown" || isArc || refracting) &&
         game.state === "PLAYING" &&
         (game.stageMode === "WAVE" || game.stageMode === "BOSS");
       if (!active) {
@@ -3750,13 +3784,45 @@ const W = 1280;
         x: game.player.x + brownRules.RULES.muzzleOffset,
         y: game.player.y
       };
-      const lock = isArc
+      const acquired = isArc
         ? arcLaserRules.trace(from, game.enemies, game.boss, brownRules)
         : brownRules.acquire(from, game.enemies, game.boss);
+      // The second aim is resolved ONCE per frame before damage: freshly
+      // spawned splitter children and target replacements cannot sneak
+      // into an already chosen laser tick. No independent tick/shot stream.
+      const lock = acquired && refracting
+        ? { ...acquired, refraction: brownYellowRules.refract(
+            acquired, game.enemies, game.boss) }
+        : acquired;
       game.brownBeam = lock;
       brownRules.tick(game.brownWeapon, dt, Boolean(lock), () => {
         if (isArc) {
           applyArcLaserTick(lock);
+        } else if (refracting) {
+          // A primary Brown hit is mandatory. A dead or replaced first
+          // target cannot launch a secondary ray on later ticks this frame.
+          if (!brownYellowRules.isAlive(lock) ||
+              (lock.kind === "enemy" && !game.enemies.includes(lock.target)) ||
+              (lock.kind !== "enemy" && game.boss !== lock.target)) return;
+          const power = brownYellowRules.RULES.normalDamage *
+            combatRules.weaponDamageScale(game.combat, selectedShip().id);
+          if (lock.kind === "enemy")
+            damageEnemy(lock.target, power, lock.x, lock.y, "#d0a05a");
+          else
+            damageBoss(power, lock.x, lock.y, "#d0a05a", lock.part);
+          // Exactly one different victim, chosen using BROWN's nearest
+          // obstacle check on a maximum 1300-unit AFTER-contact segment.
+          // Stage/Boss changes, dead victims and split children never count.
+          const next = lock.refraction;
+          if (!next || game.state !== "PLAYING" ||
+              (game.stageMode !== "WAVE" && game.stageMode !== "BOSS") ||
+              !brownYellowRules.isAlive(next) ||
+              (next.kind === "enemy" && !game.enemies.includes(next.target)) ||
+              (next.kind !== "enemy" && game.boss !== next.target)) return;
+          if (next.kind === "enemy")
+            damageEnemy(next.target, power, next.x, next.y, "#ffde67");
+          else
+            damageBoss(power, next.x, next.y, "#ffde67", next.part);
         } else if (lock.kind === "enemy") {
           if (lock.target.hp > 0)
             damageEnemy(lock.target, brownRules.RULES.normalDamage *
@@ -4541,7 +4607,9 @@ const W = 1280;
       }
 
       const firing = readInput(dt);
-      if (firing && game.weaponType !== "brown" && game.weaponType !== "arcLaser" && game.fireCooldown <= 0) {
+      if (firing && game.weaponType !== "brown" &&
+          game.weaponType !== "arcLaser" &&
+          game.weaponType !== "brownyellow" && game.fireCooldown <= 0) {
         // A PINK firing action always emits one guided bolt. The extra guided
         // missile is a 15% independent proc on THAT action, not on hit/frame.
         const pinkVolley = game.weaponType === "pink"
@@ -4706,10 +4774,76 @@ const W = 1280;
     function drawBrownLaser() {
       const beam = game.brownBeam;
       if (!beam || game.state !== "PLAYING" ||
-          (game.weaponType !== "brown" && game.weaponType !== "arcLaser") ||
+          (game.weaponType !== "brown" && game.weaponType !== "arcLaser" &&
+           game.weaponType !== "brownyellow") ||
           (game.stageMode !== "WAVE" && game.stageMode !== "BOSS")) return;
       ctx.save();
       ctx.lineCap = "round";
+      if (game.weaponType === "brownyellow") {
+        // Warm BROWN base beam ending at the FIRST obstruction, followed by
+        // one YELLOW segment to the independently acquired SECOND target.
+        // Rendering only uses already-computed geometry and NEVER deals hits.
+        const strokeSegment = (a,b,c,d,col0,col1) => {
+          const gradient = ctx.createLinearGradient(a,b,c,d);
+          gradient.addColorStop(0,col0);
+          gradient.addColorStop(1,col1);
+          ctx.strokeStyle = gradient;
+          ctx.beginPath();
+          ctx.moveTo(a,b);
+          ctx.lineTo(c,d);
+          ctx.stroke();
+        };
+        ctx.shadowColor = "#d69b55";
+        ctx.shadowBlur = 23;
+        ctx.strokeStyle = "rgba(160,98,43,.52)";
+        ctx.lineWidth = 17;
+        ctx.beginPath();
+        ctx.moveTo(beam.startX,beam.startY);
+        ctx.lineTo(beam.x,beam.y);
+        ctx.stroke();
+        ctx.lineWidth = 7;
+        strokeSegment(beam.startX,beam.startY,beam.x,beam.y,
+          "#91603d","#ffd26c");
+        ctx.shadowBlur = 0;
+        ctx.lineWidth = 2.5;
+        ctx.strokeStyle = "#fff0c7";
+        ctx.beginPath();
+        ctx.moveTo(beam.startX,beam.startY);
+        ctx.lineTo(beam.x,beam.y);
+        ctx.stroke();
+        ctx.fillStyle = "#ffdf72";
+        ctx.beginPath();
+        ctx.arc(beam.x,beam.y,8+Math.sin(game.t*22)*2,0,Math.PI*2);
+        ctx.fill();
+        const second = beam.refraction;
+        if (second) {
+          ctx.shadowColor = "#f3c74b";
+          ctx.shadowBlur = 22;
+          ctx.strokeStyle = "rgba(255,211,77,.35)";
+          ctx.lineWidth = 17;
+          ctx.beginPath();
+          ctx.moveTo(second.startX,second.startY);
+          ctx.lineTo(second.x,second.y);
+          ctx.stroke();
+          ctx.lineWidth = 7;
+          strokeSegment(second.startX,second.startY,second.x,second.y,
+            "#ffb950","#fff17c");
+          ctx.shadowBlur = 0;
+          ctx.strokeStyle = "#fffbd8";
+          ctx.lineWidth = 2.5;
+          ctx.beginPath();
+          ctx.moveTo(second.startX,second.startY);
+          ctx.lineTo(second.x,second.y);
+          ctx.stroke();
+          ctx.fillStyle = "#fff29a";
+          ctx.beginPath();
+          ctx.arc(second.x,second.y,7+Math.sin(game.t*22)*2,0,Math.PI*2);
+          ctx.fill();
+        }
+        ctx.restore();
+        return;
+      }
+
       if (game.weaponType === "arcLaser") {
         const gradient = ctx.createLinearGradient(
           beam.startX, beam.startY - 12, beam.x, beam.y + 12);
@@ -5311,6 +5445,8 @@ const W = 1280;
         ? "ORANGE BLAST  R100  X3"
         : game.weaponType === "brown"
         ? "BROWN LOCK LASER"
+        : game.weaponType === "brownyellow"
+        ? "REFRACT LASER  1 HOP"
         : game.weaponType === "lime"
         ? "LIME ORBIT  R360"
         : game.weaponType === "sky"
