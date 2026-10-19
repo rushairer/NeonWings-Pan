@@ -29,6 +29,20 @@ A controller-first, five-stage, side-scrolling neon arcade shooter built with br
 - **v26.2.0 NeonWings-Pan exclusive:** red P twin-line fire, a 250-projectile ±10° special fan triggered on 10% of eligible volleys, and an independent 0–5 star progression.
 - **v26.3.0 NeonWings-Pan exclusive:** green P retains starter-grade dual shots and adds a passive neon halo dealing area damage to nearby enemies once per second.
 
+## v26.22.0 — BLUE-BLACK 蓝黑渐变极限减速武器
+
+新增第 **27 种 P 武器：BLUE-BLACK DEEP FREEZE（蓝色→黑色渐变）**。必须**当前正在使用普通黑色 BLACK P** 才能拾取进化；已装备 BLUE-BLACK 可以再次拾取同类升级或找回掉落。普通蓝色、彩色、浅蓝色自适应武器等均不能直接领取；未满足条件时物品不会消失，不增加分数或等级，提示 `REQUIRES BLACK P`。
+
+**完整继承黑色武器的双发子弹数量、初始伤害和开火速度**：每轮两枚 1.15 基础攻击力的子弹，位置分别为机头 Y-10 / Y+12，速度 1100，每 0.101 秒一轮。敌人的正面护盾吸收子弹、Boss 炮台或机体被命中，都会正常触发减速。
+
+**强化减速：命中目标后移动速度和攻击速度同时降低 90%（只剩原速 10%）**，持续 **5 秒**。这包括普通敌人的运动、瞄准射击间隔和航母护卫机发射间隔，以及 Boss 移动、开火和阶段推进。已有敌方子弹的速度不受影响。重复命中刷新 5 秒，不叠加多个独立减速层；原普通黑色武器依然是减少 **50%**，持续 5 秒。目标已经受到 90% 减速时，普通黑色（包括彩色/浅蓝自适应模拟的黑色减速）再次命中，只刷新持续时间，不会意外削弱效果；5 秒耗尽后恢复正常，后续普通黑色命中仍为 50%。
+
+已经射出的蓝黑子弹在玩家切换武器后仍携带 90% 减速标记。暂停、过场、奖励和 STASIS 全体冻结不推进减速时钟；GRAY 击晕期间也不能运动或攻击，但剩余减速秒数按真实战斗时间减少。战机/Overdrive 对普通攻击的原有倍率与 Boss、护盾伤害处理不变。
+
+视觉上新增蓝黑渐变 P 图标、蓝黑渐变子弹，以及目标身体外围的**蓝黑双色减速光环**（普通黑色仍使用原来的蓝色光环）。HUD 显示 `BLUE-BLACK SLOW 90% / 5S`，加入 **27 种 P 等概率掉落池**及掉血后的对应 P 掉落找回。
+
+**版本：** `v26.22.0`。在线体验：https://rushairer.github.io/NeonWings-Pan/?v=26.22.0
+
 ## v26.21.0 — PURPLE-WHITE 紫白渐变五重锁定激光
 
 新增第 **26 种 P 武器：PURPLE-WHITE PENTA LOCK（紫色→白色渐变）**。只能在**当前使用普通紫色 PURPLE P 或普通棕色 BROWN P** 时拾取；已装备 PURPLE-WHITE 时再次拾取可正常升级和恢复。普通白色、黄色、棕黄折射、浅蓝白导电激光等其他武器无法直接获得；未满足前置条件时拾取物不会消失，也不改变得分、等级或武器射击状态。

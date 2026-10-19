@@ -7,6 +7,17 @@ Independently maintained from NeonWings commit `5ebcb1de1adb288b41a3c5e387f747bc
 - [x] Configure standalone Pages workflow
 - [ ] Verify site deployment and controller tests on hardware
 
+## v26.22.0 — BLUE-BLACK gradient 90% slowing shots
+
+- [x] Add 27th collectible BLUE-to-BLACK P as an upgrade available exclusively from ordinary BLACK (or repeat BLUE-BLACK), with persistent rejected drops and safe pickup/recovery mapping
+- [x] Preserve original BLACK dual 1.15 starter-damage bullets, normal 0.101s firing cycle, true hit/shield/Boss weakpoint logic while tagging new bullets for 90% slow
+- [x] Apply a five-second nonstacking 0.1x movement AND attack time scale using a backwards-compatible shared BLACK status. Original BLACK/SKY/Rainbow keep 0.5x reduction
+- [x] Give strongest existing 90% slow precedence over subsequent weaker normal BLACK hits; refresh five-second duration, expire precisely with midframe normal-speed remainder
+- [x] Keep GRAY stun/STASIS freeze and pause/transition compatibility, independent Boss/escort firing timers and launched enemy bullets, preserve on-hit bullet effect after changing P
+- [x] Render blue-black P, blue-black projectile gradients and stronger target/Boss rings without combat-side rendering effects; preserve original blue glow
+- [x] Version both changed BLACK module and new BLUE-BLACK browser module, static build/test VM and 27-way uniform P drops
+- [ ] Manually assess glow readability and extreme slowdown timing in browser/handheld
+
 ## v26.21.0 — PURPLE-WHITE five-lock converging lasers
 
 - [x] Add 26th P as a violet-to-white gradient, collectable only from PURPLE, BROWN or itself; rejected P remains without side effects

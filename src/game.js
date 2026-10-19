@@ -14,6 +14,8 @@ const W = 1280;
     if (!solarRules) throw new Error("NeonWings-Pan solar aura P runtime missing");
     const blackRules = window.NeonBlackWeapon;
     if (!blackRules) throw new Error("NeonWings-Pan black P runtime missing");
+    const blueBlackRules = window.NeonBlueBlackWeapon;
+    if (!blueBlackRules) throw new Error("NeonWings-Pan blue-black P runtime missing");
     const whiteRules = window.NeonWhiteWeapon;
     if (!whiteRules) throw new Error("NeonWings-Pan white P runtime missing");
     const redWhiteRules = window.NeonRedWhiteWeapon;
@@ -1634,17 +1636,32 @@ const W = 1280;
 
     // Cosmetic blue glow is tied only to active BLACK P debuff; it cannot harm
     // enemies, alter projectiles, or change their collision geometry.
-    function drawSlowGlow(rx, ry) {
+    function drawSlowGlow(rx, ry, target) {
+      const enhanced = blueBlackRules.isEnhanced(target);
       ctx.save();
       ctx.globalAlpha = 0.70 + Math.sin(game.t * 11) * 0.16;
-      ctx.strokeStyle = "#50b9ff";
-      ctx.shadowColor = "#178bff";
+      if (enhanced) {
+        const gradient = ctx.createLinearGradient(-rx, -ry, rx, ry);
+        gradient.addColorStop(0, "#2f8dff");
+        gradient.addColorStop(1, "#040816");
+        ctx.strokeStyle = gradient;
+      } else {
+        ctx.strokeStyle = "#50b9ff";
+      }
+      ctx.shadowColor = enhanced ? "#164ace" : "#178bff";
       ctx.shadowBlur = 25;
       ctx.lineWidth = 5;
       ctx.beginPath();
       ctx.ellipse(0, 0, rx, ry, 0, 0, Math.PI * 2);
       ctx.stroke();
-      ctx.strokeStyle = "#d1f3ff";
+      if (enhanced) {
+        const edge=ctx.createLinearGradient(-rx, ry, rx, -ry);
+        edge.addColorStop(0, "#050913");
+        edge.addColorStop(1, "#79baff");
+        ctx.strokeStyle=edge;
+      } else {
+        ctx.strokeStyle="#d1f3ff";
+      }
       ctx.globalAlpha = 0.42 + Math.sin(game.t * 15) * 0.12;
       ctx.lineWidth = 2;
       ctx.shadowBlur = 12;
@@ -1785,7 +1802,7 @@ const W = 1280;
         ctx.restore();
       }
 
-      if (blackRules.isSlowed(e)) drawSlowGlow(e.r + 25, e.r + 21);
+      if (blackRules.isSlowed(e)) drawSlowGlow(e.r + 25, e.r + 21, e);
       if (grayRules.isStunned(e)) drawGrayStun(e.r + 9, e.r + 9, e.grayStunRemaining);
       if (grayFlameRules.burning(e)) drawGrayFlame(e.r, e.r, e.grayFlame);
       ctx.restore();
@@ -1900,7 +1917,7 @@ const W = 1280;
       "P_BROWN", "P_LIME", "P_SKY", "P_DARK_RED", "P_RAINBOW",
       "P_MAGNET", "P_ARC_LASER", "P_STASIS", "P_ECLIPSE", "P_RECRUIT",
       "P_SOLAR", "P_RED_WHITE", "P_GRAY_FLAME", "P_RED_ORANGE", "P_BROWN_YELLOW",
-      "P_PURPLE_WHITE"
+      "P_PURPLE_WHITE", "P_BLUE_BLACK"
     ]);
     function randomPowerType() {
       return POWER_TYPES[Math.min(POWER_TYPES.length - 1,
@@ -1917,6 +1934,7 @@ const W = 1280;
       if (type === "green") return { name: "AURA", short: "GREEN", color: "#43ff87", core: "#e0ffed" };
       if (type === "solar") return { name: "SOLAR AURA", short: "SOLAR", color: "#ff544e", core: "#ffe779" };
       if (type === "black") return { name: "SLOW", short: "BLACK", color: "#191e2a", core: "#dce9ff" };
+      if (type === "blueblack") return { name: "DEEP FREEZE", short: "BLUE-BLACK", color: "#286eff", core: "#b4dfff" };
       if (type === "white") return { name: "CONDUCT", short: "WHITE", color: "#f1faff", core: "#bde9ff" };
       if (type === "gray") return { name: "IMPACT", short: "GRAY", color: "#929ba9", core: "#f0f3ff" };
       if (type === "grayflame") return { name: "INFERNO IMPACT", short: "GRAY FLAME", color: "#ff5265", core: "#ffb2a4" };
@@ -1946,6 +1964,7 @@ const W = 1280;
       if (powerupType === "P_GREEN") return "green";
       if (powerupType === "P_SOLAR") return "solar";
       if (powerupType === "P_BLACK") return "black";
+      if (powerupType === "P_BLUE_BLACK") return "blueblack";
       if (powerupType === "P_WHITE") return "white";
       if (powerupType === "P_GRAY") return "gray";
       if (powerupType === "P_GRAY_FLAME") return "grayflame";
@@ -1975,6 +1994,7 @@ const W = 1280;
       if (game.weaponType === "green") return "P_GREEN";
       if (game.weaponType === "solar") return "P_SOLAR";
       if (game.weaponType === "black") return "P_BLACK";
+      if (game.weaponType === "blueblack") return "P_BLUE_BLACK";
       if (game.weaponType === "white") return "P_WHITE";
       if (game.weaponType === "gray") return "P_GRAY";
       if (game.weaponType === "grayflame") return "P_GRAY_FLAME";
@@ -2065,6 +2085,15 @@ const W = 1280;
     }
 
     function collectPowerup(p) {
+      // BLUE-BLACK is accessible only through ordinary BLACK, not BLUE.
+      // Rejected drops persist and do not change score/weapon levels.
+      if (p.type === "P_BLUE_BLACK" && !blueBlackRules.canEquip(game.weaponType)) {
+        if (!(p.lockHintCooldown > 0)) {
+          showMessage("BLUE-BLACK  REQUIRES BLACK P", 1.1);
+          p.lockHintCooldown = 1.2;
+        }
+        return false;
+      }
       // The five-beam PURPLE-WHITE fusion is a PURPLE-or-BROWN evolution.
       // Invalid users do not consume the pickup, gain a level or reset timers.
       if (p.type === "P_PURPLE_WHITE" && !purpleWhiteRules.canEquip(game.weaponType)) {
@@ -2241,7 +2270,8 @@ const W = 1280;
           if (wt === "magnet" || wt === "arcLaser" || wt === "stasis" ||
               wt === "eclipse" || wt === "recruit" || wt === "solar" ||
               wt === "redwhite" || wt === "grayflame" || wt === "redorange" ||
-              wt === "brownyellow" || wt === "purplewhite") {
+              wt === "brownyellow" || wt === "purplewhite" ||
+              wt === "blueblack") {
             const gradient = ctx.createLinearGradient(-19, -19, 19, 19);
             gradient.addColorStop(0, wt === "magnet" ? "#ff4568"
               : wt === "arcLaser" ? "#8bdfff"
@@ -2252,7 +2282,8 @@ const W = 1280;
               : wt === "redorange" ? "#f72f50"
               : wt === "grayflame" ? "#e92840"
               : wt === "brownyellow" ? "#88502e"
-              : wt === "purplewhite" ? "#7935d8" : "#020408");
+              : wt === "purplewhite" ? "#7935d8"
+              : wt === "blueblack" ? "#276aff" : "#020408");
             gradient.addColorStop(1, wt === "magnet" ? "#a9e8ff"
               : wt === "eclipse" ? "#fb385c"
               : wt === "recruit" ? "#80bfff"
@@ -2261,7 +2292,8 @@ const W = 1280;
               : wt === "redorange" ? "#ffaf36"
               : wt === "grayflame" ? "#777e90"
               : wt === "brownyellow" ? "#ffda52"
-              : wt === "purplewhite" ? "#ffffff" : "#ffffff");
+              : wt === "purplewhite" ? "#ffffff"
+              : wt === "blueblack" ? "#050713" : "#ffffff");
             rect(-19, -19, 38, 38, gradient);
           } else rect(-19, -19, 38, 38, meta.color);
           rect(-13, -13, 26, 26, "#081020");
@@ -2409,6 +2441,21 @@ const W = 1280;
             ctx.beginPath();
             ctx.arc(0, 0, 29, 0, Math.PI * 2);
             ctx.stroke();
+          } else if (wt === "blueblack") {
+            // Twin icy outlines differentiate 90% slow from normal BLACK.
+            ctx.strokeStyle = "#2e8dff";
+            ctx.shadowColor = "#235be7";
+            ctx.shadowBlur = 12;
+            ctx.lineWidth = 3;
+            ctx.strokeRect(-24, -24, 48, 48);
+            ctx.strokeStyle = "#050a1b";
+            ctx.lineWidth = 3;
+            ctx.strokeRect(-29, -29, 58, 58);
+            ctx.shadowBlur = 0;
+            rect(-4, -32, 8, 7, "#459aff");
+            rect(-4, 25, 8, 7, "#091128");
+            if (!blueBlackRules.canEquip(game.weaponType))
+              drawText("BLACK", 0, 43, 12, "center", "#81b9ff");
           } else if (wt === "black") {
             // Dark P pickup needs a cold-blue outline to read on black space.
             ctx.strokeStyle = "#69bfff";
@@ -2947,11 +2994,15 @@ const W = 1280;
             fire ? { grayImpact: true, grayFlameShot: true }
               : { grayImpact: true });
         }
-      } else if (type === "black") {
-        // Baseline twin lanes; black bullets retain their slow marker after
-        // swapping weapons and only attach the status on actual collisions.
-        addPlayerShot(muzzleX, baseY - 10, 1100, 0, 9, 1.15, "#121522", { blackSlow: true });
-        addPlayerShot(muzzleX, baseY + 12, 1100, 0, 9, 1.15, "#121522", { blackSlow: true });
+      } else if (type === "black" || type === "blueblack") {
+        // Identical BLACK twin lanes, power and cadence. Shot provenance
+        // captures strong-slow behavior even after switching weapons.
+        const enhanced = type === "blueblack";
+        for (const lane of [-10, 12]) {
+          addPlayerShot(muzzleX, baseY + lane, 1100, 0, 9, 1.15,
+            enhanced ? "#2760f5" : "#121522",
+            enhanced ? blueBlackRules.createShot() : { blackSlow: true });
+        }
       } else if (type === "red" || type === "redwhite" || type === "redorange") {
         // THREE RED family P types share the SAME two lanes and RED star
         // firing cadence; contact behavior is exclusively determined by
@@ -3020,7 +3071,7 @@ const W = 1280;
       if (game.weaponType === "eclipse") return eclipseRules.RULES.cooldownSeconds;
       if (game.weaponType === "yellow") return Math.max(0.17, 0.25 - game.weaponLevel * 0.025);
       if (game.weaponType === "purple") return Math.max(0.10, 0.145 - game.weaponLevel * 0.012);
-      return Math.max(0.07, 0.115 - (game.weaponType === "green" || game.weaponType === "black" || game.weaponType === "white" || game.weaponType === "gray" || game.weaponType === "grayflame" || game.weaponType === "pink" || game.weaponType === "orange" || game.weaponType === "lime" || game.weaponType === "brown" || game.weaponType === "brownyellow" || game.weaponType === "purplewhite" || game.weaponType === "sky" || game.weaponType === "darkred" || game.weaponType === "magnet" || game.weaponType === "stasis" || game.weaponType === "arcLaser" || game.weaponType === "recruit" || game.weaponType === "solar" ? 1 : game.weaponLevel) * 0.014);
+      return Math.max(0.07, 0.115 - (game.weaponType === "green" || game.weaponType === "black" || game.weaponType === "blueblack" || game.weaponType === "white" || game.weaponType === "gray" || game.weaponType === "grayflame" || game.weaponType === "pink" || game.weaponType === "orange" || game.weaponType === "lime" || game.weaponType === "brown" || game.weaponType === "brownyellow" || game.weaponType === "purplewhite" || game.weaponType === "sky" || game.weaponType === "darkred" || game.weaponType === "magnet" || game.weaponType === "stasis" || game.weaponType === "arcLaser" || game.weaponType === "recruit" || game.weaponType === "solar" ? 1 : game.weaponLevel) * 0.014);
     }
 
     function findMissileTarget(m) {
@@ -3501,7 +3552,7 @@ const W = 1280;
         ctx.restore();
       }
 
-      if (blackRules.isSlowed(b)) drawSlowGlow(b.rx + 30, b.ry + 25);
+      if (blackRules.isSlowed(b)) drawSlowGlow(b.rx + 30, b.ry + 25, b);
       if (grayRules.isStunned(b)) drawGrayStun(b.rx, b.ry, b.grayStunRemaining);
       if (grayFlameRules.burning(b)) drawGrayFlame(b.rx, b.ry, b.grayFlame);
       ctx.restore();
@@ -4214,7 +4265,8 @@ const W = 1280;
           }
           if (b.magneticShot) tryStartMagneticField(b,
             orangeRules.circleImpact(b, e, b.r + e.r));
-          if (b.blackSlow) blackRules.apply(e); // Includes shield-absorbed hits.
+          if (b.blueBlackSlow) blueBlackRules.apply(e);
+          else if (b.blackSlow) blackRules.apply(e); // Includes shield-absorbed hits.
           const grayOutcome = b.grayImpact ? grayRules.apply(e, Math.random(), {
             direction: Math.sign(b.vx), minX: -120, maxX: W + 120
           }) : null;
@@ -4246,7 +4298,8 @@ const W = 1280;
             if (b.magneticShot) tryStartMagneticField(b,
               orangeRules.circleImpact(b,
                 {x: boss.x + part.x, y: boss.y + part.y}, b.r + part.r));
-            if (b.blackSlow) blackRules.apply(boss);
+            if (b.blueBlackSlow) blueBlackRules.apply(boss);
+            else if (b.blackSlow) blackRules.apply(boss);
             const grayOutcome = b.grayImpact ? grayRules.apply(boss, Math.random(), {
               boss: true, direction: Math.sign(b.vx), minX: W - 390, maxX: W - 125
             }) : null;
@@ -4269,7 +4322,8 @@ const W = 1280;
             b.dead = true; // Piercing lances also only hit a Boss once.
             if (b.magneticShot) tryStartMagneticField(b,
               orangeRules.bossImpact(b, boss, b.r) || {x:b.x,y:b.y});
-            if (b.blackSlow) blackRules.apply(boss);
+            if (b.blueBlackSlow) blueBlackRules.apply(boss);
+            else if (b.blackSlow) blackRules.apply(boss);
             const grayOutcome = b.grayImpact ? grayRules.apply(boss, Math.random(), {
               boss: true, direction: Math.sign(b.vx), minX: W - 390, maxX: W - 125
             }) : null;
@@ -5168,6 +5222,18 @@ const W = 1280;
           ctx.restore();
           continue;
         }
+        if (b.blueBlackSlow) {
+          // Purple/blue-black slow projectile retains its icy dark gradient.
+          const gradient=ctx.createLinearGradient(-7, -7, 32, 7);
+          gradient.addColorStop(0, "#358aff");
+          gradient.addColorStop(1, "#040713");
+          ctx.shadowColor = "#235df7";
+          ctx.shadowBlur = 17;
+          rect(-7, -7, 39, 14, gradient);
+          rect(-3, -3, 33, 6, "#2761d7");
+          ctx.restore();
+          continue;
+        }
         if (b.blackSlow) {
           // A dark center with an icy edge remains visible in black arenas.
           ctx.shadowColor = "#469cff";
@@ -5546,6 +5612,8 @@ const W = 1280;
         ? `SOLAR AURA  ${solarRules.RULES.damagePerPulse} DMG/0.1S`
         : game.weaponType === "black"
         ? "BLACK SLOW  50% / 5.0S"
+        : game.weaponType === "blueblack"
+        ? "BLUE-BLACK  SLOW 90% / 5S"
         : game.weaponType === "white"
         ? "WHITE ARC 60% 1-3 HOPS"
         : game.weaponType === "redwhite"
@@ -5753,7 +5821,7 @@ const W = 1280;
       ctx.fillRect(0, 0, W, H);
 
       drawText("NEON WINGS", W / 2, 195, 86, "center", "#e7fbff");
-      drawText("NEONWINGS PAN  /  v26.21.0", W / 2, 270, 28, "center", "#98f5ff");
+      drawText("NEONWINGS PAN  /  v26.22.0", W / 2, 270, 28, "center", "#98f5ff");
       drawText(`HIGH SCORE ${String(highScore()).padStart(6, "0")}`, W / 2, 318, 24, "center", "#fff4b7");
 
       drawPlayerShip(W / 2 - 170, 492, -0.20, false, ships[0]);
