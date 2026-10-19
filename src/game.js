@@ -2910,7 +2910,7 @@ const W = 1280;
       if (game.weaponType === "eclipse") return eclipseRules.RULES.cooldownSeconds;
       if (game.weaponType === "yellow") return Math.max(0.17, 0.25 - game.weaponLevel * 0.025);
       if (game.weaponType === "purple") return Math.max(0.10, 0.145 - game.weaponLevel * 0.012);
-      return Math.max(0.07, 0.115 - (game.weaponType === "green" || game.weaponType === "black" || game.weaponType === "white" || game.weaponType === "gray" || game.weaponType === "pink" || game.weaponType === "orange" || game.weaponType === "lime" || game.weaponType === "brown" || game.weaponType === "sky" || game.weaponType === "darkred" || game.weaponType === "magnet" || game.weaponType === "stasis" || game.weaponType === "arcLaser" || game.weaponType === "recruit" || game.weaponType === "solar" ? 1 : game.weaponLevel) * 0.014);
+      return Math.max(0.07, 0.115 - (game.weaponType === "green" || game.weaponType === "black" || game.weaponType === "white" || game.weaponType === "gray" || game.weaponType === "grayflame" || game.weaponType === "pink" || game.weaponType === "orange" || game.weaponType === "lime" || game.weaponType === "brown" || game.weaponType === "sky" || game.weaponType === "darkred" || game.weaponType === "magnet" || game.weaponType === "stasis" || game.weaponType === "arcLaser" || game.weaponType === "recruit" || game.weaponType === "solar" ? 1 : game.weaponLevel) * 0.014);
     }
 
     function findMissileTarget(m) {
@@ -3949,6 +3949,9 @@ const W = 1280;
         });
       }
       if (game.stageMode !== stage) return;
+      // A burn-killed splitter parent must be removed this very frame;
+      // its newly spawned children stay alive for the NEXT simulation tick.
+      game.enemies = game.enemies.filter(e => e.hp > 0 && e.x > -120);
       const boss = game.boss;
       if (!boss || !boss.active || !(boss.hp > 0)) return;
       // One status per original turret; breaking a mount never transfers its
