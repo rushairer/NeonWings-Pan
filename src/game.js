@@ -2821,9 +2821,10 @@ const W = 1280;
     }
 
     function addPlayerShot(x, y, vx, vy, r = 8, power = 1, c = "#5ae8ff", extra = {}) {
-      // LIME's user-requested unlimited quantity never consumes this shared
-      // ordinary-shot cap. TTL and first impact still reclaim every orbiter.
-      if (!extra.orbiting && game.bullets.reduce((n, b) => n + (!b.orbiting ? 1 : 0), 0)
+      // The entire LIME projectile lifecycle (orbit AND seeking successor) is
+      // exempt from the shared ordinary cap, but both phases have finite TTL.
+      if (!extra.orbiting && !extra.limeHoming &&
+          game.bullets.reduce((n, b) => n + (!b.orbiting && !b.limeHoming ? 1 : 0), 0)
           >= LIMITS.playerBullets) return;
       game.bullets.push({
         x, y, vx, vy, r,
@@ -4032,26 +4033,23 @@ const W = 1280;
       });
     }
 
-    // LIME normal bullets curve outward from the muzzle before circling the
-    // moving player's 360-radius path. Swept sub-segments prevent tunneling
-    // both during their outward flight and after reaching the ring.
-    function updateLimeProjectile(b, dt) {
-      const segments = limeRules.step(b, game.player, dt);
-      if (!segments.length) return;
-      // A bullet may expire at the end of this update. Its last LIVE swept
-      // segment must still be allowed to collide before it is removed.
+    // Shared collision resolver for the outward/orbital path and the later
+    // target-seeking flight. Earliest swept hit wins; shields and Boss turrets
+    // use their original damage pipeline, never extra free hits.
+    function hitLimeSegments(b, segments) {
       for (const seg of segments) {
         const candidates = [];
         const shot = {
           previousX: seg.fromX, previousY: seg.fromY,
           x: seg.toX, y: seg.toY
         };
-        for (const e of game.enemies) {
-          if (e.hp <= 0 || !collision.sweptCircleHit(
-            seg.fromX, seg.fromY, seg.toX, seg.toY, e.x, e.y, b.r + e.r
+        for (const enemy of game.enemies) {
+          if (enemy.hp <= 0 || !collision.sweptCircleHit(
+            seg.fromX, seg.fromY, seg.toX, seg.toY,
+            enemy.x, enemy.y, b.r + enemy.r
           )) continue;
-          candidates.push({target:e,part:null,
-            impact:orangeRules.circleImpact(shot,e,b.r+e.r)});
+          candidates.push({ target: enemy, part: null,
+            impact: orangeRules.circleImpact(shot, enemy, b.r + enemy.r) });
         }
         const boss = game.boss;
         if (boss?.active && boss.hp > 0) {
@@ -4059,30 +4057,71 @@ const W = 1280;
             boss, seg.fromX, seg.fromY, seg.toX, seg.toY, b.r
           );
           if (part) {
-            candidates.push({target:boss,part,
-              impact:orangeRules.circleImpact(shot,
-                {x:boss.x+part.x,y:boss.y+part.y},b.r+part.r)});
+            candidates.push({ target: boss, part,
+              impact: orangeRules.circleImpact(shot,
+                { x: boss.x + part.x, y: boss.y + part.y }, b.r + part.r) });
           } else if (collision.sweptAabbHit(
             seg.fromX, seg.fromY, seg.toX, seg.toY,
-            boss.x-boss.rx-b.r,boss.x+boss.rx+b.r,
-            boss.y-boss.ry-b.r,boss.y+boss.ry+b.r
+            boss.x - boss.rx - b.r, boss.x + boss.rx + b.r,
+            boss.y - boss.ry - b.r, boss.y + boss.ry + b.r
           )) {
-            const impact=orangeRules.bossImpact(shot,boss,b.r);
-            if (impact) candidates.push({target:boss,part:null,impact});
+            const impact = orangeRules.bossImpact(shot, boss, b.r);
+            if (impact) candidates.push({ target: boss, part: null, impact });
           }
         }
         if (!candidates.length) continue;
-        candidates.sort((a,c)=>a.impact.t-c.impact.t);
-        const hit=candidates[0];
-        b.dead=true;
-        b.x=hit.impact.x;b.y=hit.impact.y;
+        candidates.sort((a, c) => a.impact.t - c.impact.t);
+        const hit = candidates[0];
+        b.dead = true;
+        b.x = hit.impact.x;
+        b.y = hit.impact.y;
         if (hit.target === boss) {
-          damageBoss(b.power,b.x,b.y,b.c,hit.part);
+          damageBoss(b.power, b.x, b.y, b.c, hit.part);
         } else {
-          damageEnemy(hit.target,b.power,b.x,b.y,b.c);
+          damageEnemy(hit.target, b.power, b.x, b.y, b.c);
         }
-        return;
+        return true;
       }
+      return false;
+    }
+
+    // Once orbital TTL ends, a living LIME bullet becomes an autonomous
+    // tracker. Reacquire the closest valid enemy/Boss each substep using the
+    // existing SKY target selector and PINK steering; never stay tethered to
+    // the player. The homing phase lasts only 3.6 active seconds.
+    function updateLimeHomingProjectile(b, dt) {
+      const live = Math.min(dt, b.life);
+      if (!(live > 0)) { b.dead = true; return; }
+      // Limit heading changes per step and retain swept collision accuracy
+      // even if one render frame covers unusually large simulation time.
+      const steps = Math.min(limeRules.RULES.maxSegmentsPerStep,
+        Math.max(1, Math.ceil(live / 0.05)));
+      const tick = live / steps;
+      for (let i = 0; i < steps; i++) {
+        const fromX = b.x, fromY = b.y;
+        pinkRules.steer(b, skyRules.selectTarget(b, game.enemies, game.boss), tick);
+        b.previousX = fromX;
+        b.previousY = fromY;
+        b.x += b.vx * tick;
+        b.y += b.vy * tick;
+        if (hitLimeSegments(b, [{ fromX, fromY, toX: b.x, toY: b.y }])) return;
+      }
+      b.life = Math.max(0, b.life - live);
+      if (b.life <= 0) b.dead = true;
+    }
+
+    // Resolve the final orbital segment BEFORE activating seeking mode. For a
+    // coarse dt that overshoots 3.2s, consume the remainder as homing motion
+    // within the same combat frame rather than silently losing simulation time.
+    function updateLimeProjectile(b, dt) {
+      const orbitLeft = b.life;
+      const segments = limeRules.step(b, game.player, dt);
+      if (!segments.length || hitLimeSegments(b, segments)) return;
+      if (b.life > 0) return;
+      if (!limeRules.launchHoming(b,
+          skyRules.selectTarget(b, game.enemies, game.boss))) return;
+      const remaining = dt - Math.min(dt, orbitLeft);
+      if (remaining > 0) updateLimeHomingProjectile(b, remaining);
     }
 
     // Roll exactly once on a REAL ordinary MAGNET projectile collision, even
@@ -4284,7 +4323,7 @@ const W = 1280;
     function updatePlayerBullets(dt) {
       for (const b of game.bullets) {
         if (b.dead) continue;
-        if (b.orbiting) continue; // Orbit moves by angular step, not vx * dt.
+        if (b.orbiting || b.limeHoming) continue; // LIME has its own swept path.
         b.previousX = b.x;
         b.previousY = b.y;
         if (b.skyHoming) {
@@ -4307,6 +4346,10 @@ const W = 1280;
         if (b.dead) continue;
         if (b.orbiting) {
           updateLimeProjectile(b, dt);
+          continue;
+        }
+        if (b.limeHoming) {
+          updateLimeHomingProjectile(b, dt);
           continue;
         }
         if (b.whiteConductive) {
@@ -4410,7 +4453,9 @@ const W = 1280;
         }
       }
 
-      game.bullets = game.bullets.filter(b => !b.dead && (b.orbiting ? b.life > 0 : b.x < W + 80 && b.y > -90 && b.y < H + 90));
+      game.bullets = game.bullets.filter(b => !b.dead &&
+        ((b.orbiting || b.limeHoming) ? b.life > 0 :
+          b.x < W + 80 && b.y > -90 && b.y < H + 90));
     }
 
     function updateEnemyBullets(dt) {
@@ -5150,7 +5195,7 @@ const W = 1280;
       // one lime-type projectile, rather than always showing a passive aura.
       if ((game.weaponType !== "lime" &&
           !(game.weaponType === "rainbow" &&
-            game.bullets.some(b => b.rainbowKind === "orbit"))) ||
+            game.bullets.some(b => b.rainbowKind === "orbit" && b.orbiting))) ||
           (game.stageMode !== "WAVE" && game.stageMode !== "BOSS")) return;
       ctx.save();
       ctx.globalAlpha = 0.30 + Math.sin(game.t*4)*0.05;
@@ -5174,6 +5219,16 @@ const W = 1280;
         // LIME uses the SAME ordinary rectangular bullet sprite as BLUE.
         // Its only visual difference is the lime-colored core; the *path*,
         // not the projectile model, curves into an orbit.
+        if (b.limeHoming) {
+          // Orbit-expired LIME becomes an independent bright lime seeker.
+          ctx.shadowColor = "#dcff65";
+          ctx.shadowBlur = 21;
+          rect(-9, -7, 38, 14, "#b6e035");
+          rect(2, -3, 31, 6, "#f6ffd7");
+          rect(-18, -2, 13, 4, "#a5d52d");
+          ctx.restore();
+          continue;
+        }
         if (b.recruitShot) {
           const gradient = ctx.createLinearGradient(-9, -7, 36, 7);
           gradient.addColorStop(0, "#ff86d9");
@@ -5716,7 +5771,7 @@ const W = 1280;
         : game.weaponType === "brownyellow"
         ? "REFRACT LASER  1 HOP"
         : game.weaponType === "lime"
-        ? "LIME ORBIT  R360"
+        ? "LIME ORBIT → SEEK"
         : game.weaponType === "sky"
         ? (game.hp > skyRules.RULES.thresholdHp ? "SKY BOOST  2.5X" : "SKY SEEK  BLACK SLOW")
         : game.weaponType === "darkred"
@@ -5904,7 +5959,7 @@ const W = 1280;
       ctx.fillRect(0, 0, W, H);
 
       drawText("NEON WINGS", W / 2, 195, 86, "center", "#e7fbff");
-      drawText("NEONWINGS PAN  /  v26.24.0", W / 2, 270, 28, "center", "#98f5ff");
+      drawText("NEONWINGS PAN  /  v26.25.0", W / 2, 270, 28, "center", "#98f5ff");
       drawText(`HIGH SCORE ${String(highScore()).padStart(6, "0")}`, W / 2, 318, 24, "center", "#fff4b7");
 
       drawPlayerShip(W / 2 - 170, 492, -0.20, false, ships[0]);

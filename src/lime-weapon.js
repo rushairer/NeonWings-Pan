@@ -1,6 +1,7 @@
 /* LIME P / ORBIT: fire two NORMAL projectiles from the ship's muzzle.
  * The actual flight path curves smoothly outward, joins the radius-360 orbit
  * and then circles the player's MOVING position. Never spawn at the ring.
+ * At orbit TTL, surviving bullets launch as bounded target-seeking bolts.
  *
  * Deterministic geometry and swept polyline segments; no Canvas/DOM access.
  */
@@ -14,11 +15,14 @@
     outwardSeconds: 0.48,
     radiansPerSecond: 2.8,
     bulletLifetimeSeconds: 3.2,
+    homingLifetimeSeconds: 3.6,
+    homingSpeed: 940,
     bulletRadius: 9,
     normalDamage: 1.15,
     bulletsPerVolley: 2,
     // 2 bullets per 0.101 s for 3.2 s = up to 64 live bullets.
-    // A cap below that evicts the oldest shots before completing a full orbit.
+    // Homing successors remain lifetime-bounded and do not use the ordinary-bullet cap.
+    // A cap below this would evict shots before completing a full orbit.
     maxOrbitingBullets: Infinity, // Unlimited quantity: TTL and hits still reclaim bullets.
     maxSegmentLength: 42,
     maxSegmentsPerStep: 128
@@ -118,13 +122,36 @@
     shot.orbitRadius = nextRadius;
     shot.orbitCenterX = oldCenter.x + displacementX;
     shot.orbitCenterY = oldCenter.y + displacementY;
-    shot.life = Math.max(0, shot.life - dt);
-    if (shot.life <= 0) shot.dead = true;
+    // Do NOT delete at orbit expiry: game code must test the final swept
+    // arc against all enemies and Boss weak points before converting it.
+    shot.life = Math.max(0, shot.life - activeDt);
     return segments;
   }
 
+  // Convert the SAME surviving projectile only once. A target is supplied by
+  // the game, so geometry remains deterministic and independent of the DOM.
+  // With no target, carry on tangentially; later frames reacquire targets.
+  function launchHoming(shot, target = null) {
+    if (!shot?.orbiting || shot.dead || shot.life > 0 || !Number.isFinite(shot.x) ||
+        !Number.isFinite(shot.y)) return false;
+    const valid = target && target.hp > 0 && target.active !== false &&
+      Number.isFinite(target.x) && Number.isFinite(target.y);
+    const dx = valid ? target.x - shot.x : 0;
+    const dy = valid ? target.y - shot.y : 0;
+    const angle = valid && (dx !== 0 || dy !== 0)
+      ? Math.atan2(dy, dx)
+      : Math.atan2(Number.isFinite(shot.vy) ? shot.vy : 0,
+          Number.isFinite(shot.vx) && shot.vx !== 0 ? shot.vx : 1);
+    shot.orbiting = false;
+    shot.limeHoming = true;
+    shot.life = RULES.homingLifetimeSeconds;
+    shot.vx = Math.cos(angle) * RULES.homingSpeed;
+    shot.vy = Math.sin(angle) * RULES.homingSpeed;
+    return true;
+  }
+
   const api = Object.freeze({
-    RULES, position, createShot, radiusAtAge, step
+    RULES, position, createShot, radiusAtAge, step, launchHoming
   });
   root.NeonLimeWeapon = api;
   if (typeof module === "object" && module.exports) module.exports = api;
