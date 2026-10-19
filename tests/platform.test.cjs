@@ -21,6 +21,8 @@ const rainbowWeapon = require("../src/rainbow-weapon.js");
 const magnetWeapon = require("../src/magnet-weapon.js");
 const arcLaserWeapon = require("../src/arc-laser-weapon.js");
 const stasisWeapon = require("../src/stasis-weapon.js");
+const eclipseWeapon = require("../src/eclipse-weapon.js");
+const recruitWeapon = require("../src/recruit-weapon.js");
 const collision = require("../src/collision.js");
 const enemyBehaviors = require("../src/enemy-behaviors.js");
 const worlds = require("../src/worlds.js");
@@ -52,7 +54,7 @@ function boot(options = {}) {
     NeonCombat: combat,
     NeonRedWeapon: redWeapon,
     NeonGreenWeapon: greenWeapon,
-    NeonBlackWeapon: blackWeapon, NeonWhiteWeapon: whiteWeapon, NeonGrayWeapon: grayWeapon, NeonPinkWeapon: pinkWeapon, NeonOrangeWeapon: orangeWeapon, NeonBrownWeapon: brownWeapon, NeonLimeWeapon: limeWeapon, NeonSkyWeapon: skyWeapon, NeonDarkRedWeapon: darkRedWeapon, NeonRainbowWeapon: rainbowWeapon, NeonMagnetWeapon: magnetWeapon, NeonArcLaserWeapon: arcLaserWeapon, NeonStasisWeapon: stasisWeapon,
+    NeonBlackWeapon: blackWeapon, NeonWhiteWeapon: whiteWeapon, NeonGrayWeapon: grayWeapon, NeonPinkWeapon: pinkWeapon, NeonOrangeWeapon: orangeWeapon, NeonBrownWeapon: brownWeapon, NeonLimeWeapon: limeWeapon, NeonSkyWeapon: skyWeapon, NeonDarkRedWeapon: darkRedWeapon, NeonRainbowWeapon: rainbowWeapon, NeonMagnetWeapon: magnetWeapon, NeonArcLaserWeapon: arcLaserWeapon, NeonStasisWeapon: stasisWeapon, NeonEclipseWeapon: eclipseWeapon, NeonRecruitWeapon: recruitWeapon,
     NeonCollision: collision,
     NeonEnemyBehaviors: enemyBehaviors,
     NeonWorlds: worlds,
@@ -154,7 +156,9 @@ test("static HTML loads platform before game and doesn't embed legacy code", () 
   assert.ok(html.indexOf('src="./src/rainbow-weapon.js?') < html.indexOf('src="./src/magnet-weapon.js?'));
   assert.ok(html.indexOf('src="./src/magnet-weapon.js?') < html.indexOf('src="./src/arc-laser-weapon.js?'));
   assert.ok(html.indexOf('src="./src/arc-laser-weapon.js?') < html.indexOf('src="./src/stasis-weapon.js?'));
-  assert.ok(html.indexOf('src="./src/stasis-weapon.js?') < html.indexOf('src="./src/collision.js"'));
+  assert.ok(html.indexOf('src="./src/stasis-weapon.js?') < html.indexOf('src="./src/eclipse-weapon.js?'));
+  assert.ok(html.indexOf('src="./src/eclipse-weapon.js?') < html.indexOf('src="./src/recruit-weapon.js?'));
+  assert.ok(html.indexOf('src="./src/recruit-weapon.js?') < html.indexOf('src="./src/collision.js"'));
   assert.ok(html.indexOf('src="./src/collision.js"') < html.indexOf('src="./src/enemy-behaviors.js"'));
   assert.ok(html.indexOf('src="./src/enemy-behaviors.js"') < html.indexOf('src="./src/worlds.js"'));
   assert.ok(html.indexOf('src="./src/worlds.js"') < html.indexOf('src="./src/boss-parts.js"'));
@@ -244,4 +248,24 @@ test("ARC LASER and STASIS versioned standalone runtimes ship to Pages before en
     html.indexOf('src="./src/game.js?'));
   assert.equal(arcLaserWeapon.canEquip("brown"),true);
   assert.equal(stasisWeapon.RULES.freezeSeconds,3);
+});
+
+test("ECLIPSE and RECRUIT modules load in order and deploy with v26.15.0 static build",()=>{
+  const html=fs.readFileSync(path.join(__dirname,"../index.html"),"utf8");
+  const build=fs.readFileSync(path.join(__dirname,"../scripts/build.mjs"),"utf8");
+  const pkg=require("../package.json");
+  assert.equal(pkg.version,"26.15.0");
+  for(const name of ["eclipse","recruit"]){
+    assert.ok(html.includes('src="./src/'+name+'-weapon.js?v='+pkg.version+'"'));
+    assert.ok(build.includes('"src/'+name+'-weapon.js"'));
+    assert.ok(pkg.scripts.check.includes("node --check src/"+name+"-weapon.js"));
+  }
+  assert.ok(html.indexOf('src="./src/stasis-weapon.js?') <
+    html.indexOf('src="./src/eclipse-weapon.js?'));
+  assert.ok(html.indexOf('src="./src/eclipse-weapon.js?') <
+    html.indexOf('src="./src/recruit-weapon.js?'));
+  assert.ok(html.indexOf('src="./src/recruit-weapon.js?') <
+    html.indexOf('src="./src/game.js?'));
+  assert.equal(eclipseWeapon.canEquip("darkred"),true);
+  assert.equal(recruitWeapon.RULES.maxAllies,24);
 });

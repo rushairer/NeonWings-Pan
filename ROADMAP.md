@@ -7,6 +7,16 @@ Independently maintained from NeonWings commit `5ebcb1de1adb288b41a3c5e387f747bc
 - [x] Configure standalone Pages workflow
 - [ ] Verify site deployment and controller tests on hardware
 
+## v26.15.0 — ECLIPSE shockwave / RECRUIT allied conversion
+
+- [x] Add 19th BLACK→RED gradient ECLIPSE P, obtainable only while DARK RED or ECLIPSE is currently equipped; gated pickup remains in the field and has no side effects otherwise
+- [x] Replace DARK RED bullets/missiles with 360° expanding piercing shockwave. Each ring uses exact full-circle swept collision (no directional gaps) at 1600 units/s up to 1500 radius, firing every 0.55s at 1.15 original scaled shot power
+- [x] Multiple living enemies, frontal shields and a live Boss can be struck once each per wave, with normal score/kill/weakpoint mechanics, frozen in pause/transition and phase-safe
+- [x] Add 20th PINK→BLUE gradient RECRUIT P with two starter bullets, converting defeated ordinary enemies into friendly units after normal kill/score/drop accounting
+- [x] Friendly units fly toward screen RIGHT, attack to the RIGHT with their own target-safe projectiles, preserve recognizable enemy shapes and cannot harm the player
+- [x] Bound allies, ally bullets, TTL and shockwave instances, update every pause/scene lifecycle, maintain P-swap behavior, 20-way drop equality, Pages version and automated tests
+- [ ] Physical controller/browser playtest: full wave legibility and 24-ally late-wave FPS
+
 ## v26.14.0 — ARC LASER / STASIS P weapons
 
 - [x] Add light-cyan-to-white piercing conductive laser P, equipped ONLY after collecting its pickup while BROWN is active (or replenishing while ARC LASER active)

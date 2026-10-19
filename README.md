@@ -29,6 +29,16 @@ A controller-first, five-stage, side-scrolling neon arcade shooter built with br
 - **v26.2.0 NeonWings-Pan exclusive:** red P twin-line fire, a 250-projectile ±10° special fan triggered on 10% of eligible volleys, and an independent 0–5 star progression.
 - **v26.3.0 NeonWings-Pan exclusive:** green P retains starter-grade dual shots and adds a passive neon halo dealing area damage to nearby enemies once per second.
 
+## v26.15.0 — ECLIPSE / RECRUIT 双渐变 P 武器
+
+**第 19 种：ECLIPSE（黑→红）360°穿透震荡波。** 必须先使用深红色 DARK RED P，再拾取黑红渐变的 ECLIPSE P 才能装备。其他武器（包括普通 RED）即使撞到也无法领取，不会消耗拾取物或升级等级；装备 ECLIPSE 后可再次拾取同类 P。手动发射时不再生成深红色子弹或导弹，改为以飞机所在位置为圆心扩散一枚完整的 360 度震荡波，前后上下无射击盲区，**穿透所有普通敌人，每个目标每波最多受击一次**。以每秒 1600 游戏坐标向外扩散，覆盖半径最大 1500，按住开火每隔 0.55 秒生成新波。单波击中每个敌人造成一枚标准 P 子弹 1.15 倍基础伤害（继承战机与 Overdrive 原有倍率），沿用盾牌、击杀、Boss 炮台/机体结算；旧波切武器后仍继续，暂停时不前进。最多同时 12 波保护 FPS。
+
+**第 20 种：RECRUIT（粉→蓝）转化友军。** 装备后普通攻击发射两枚粉蓝渐变子弹；被这些子弹击败的普通敌人会变成与原敌机外形相同、但颜色是粉蓝、标有 ALLY 的友军。装备此武器期间通过其他攻击或 BOMB 击杀普通敌人同样转换。已发射的粉蓝子弹切武器后依然可转化目标。友军以 **245 游戏坐标/秒向右移动**，每 0.65 秒向右发射友军子弹，能够伤害其它敌人及 Boss（炮台优先），击杀普通敌人也可触发继续转化。友军与其子弹属于独立阵营，**不会伤害玩家，也不会触发玩家碰撞**。最多同时 24 名友军，每名存活 10 游戏秒，友军子弹最多 120 枚、存活 2.1 秒，防止弹幕/内存失控。友军不随武器更换消失，会在完整 Boss 战结束与换关时清理；暂停冻结它们的移动与射击。
+
+两种新增武器纳入 **20 种 P 平均概率掉落池**，遵守拾取门槛；新增渐变 P 图标、红黑波纹、粉蓝友军外观/炮火与 HUD 提示。此改动不修改其他十八种武器已有能力。
+
+**Play:** https://rushairer.github.io/NeonWings-Pan/?v=26.15.0
+
 ## v26.14.0 — ARC LASER + STASIS 双渐变 P 武器
 
 **第 17 种：ARC LASER（浅蓝→白）穿透导电激光。** 必须先装备棕色 BROWN P，然后拾取 ARC LASER 的浅蓝白 P 才能升级；使用其他武器碰到该 P 时不会消耗拾取物，仅提示 `REQUIRES BROWN P`。已装备 ARC LASER 时再拾取可正常升级武器等级。继承棕色激光的自动锁定方向、1300 游戏坐标射程和每 0.101 秒一次的伤害判定，但发射可穿透多个敌人的激光，射线上所有目标分别受 1.15 基础伤害。另继承白色 P 导电机制：周围未被同一光束击中的其他目标可受到 60% 二次电弧伤害；独立随机最多 3 跳。直击和连锁共享受击记录，不会重复击中同一目标；Boss 炮台优先于机体。棕色原激光仍不穿透。
