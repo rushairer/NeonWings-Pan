@@ -29,6 +29,13 @@ A controller-first, five-stage, side-scrolling neon arcade shooter built with br
 - **v26.2.0 NeonWings-Pan exclusive:** red P twin-line fire, a 250-projectile ±10° special fan triggered on 10% of eligible volleys, and an independent 0–5 star progression.
 - **v26.3.0 NeonWings-Pan exclusive:** green P retains starter-grade dual shots and adds a passive neon halo dealing area damage to nearby enemies once per second.
 
+## v26.24.0 — 武器数值调整
+
+- 黑红震荡波：每 **0.1 秒**发射一波，原为 0.55 秒，保留最大 12 波限制。
+- 彩色随机武器：每 **0.15 秒**随机发射一发（或被 9% 导弹替代），原为 0.4 秒，抽取概率不变。
+- 橙色来源的爆炸倍率统一从 3× 调整为 **1.6×**：橙色、红橙渐变的普通子弹和 250 发大招、深红金色、彩色随机橙色弹。基础普通弹每目标 1.84；红橙大招每目标 0.608，半径依然为 100。粉色／深红导弹倍率不变。
+- 当前平衡规则以本节为准，下文保留历史版本参数记录。
+
 ## v26.23.0 — DARK RED-GOLD 深红金色击退爆炸武器
 
 新增第 **28 种 P 武器：DARK RED-GOLD（深红→金色渐变）**。只有**当前正在使用普通深红色 DARK RED P** 时才能拾取升级；已经装备 DARK RED-GOLD 可以重复拾取恢复等级。普通红、橙色、深红黑 ECLIPSE 等均不能直接领取；不能领取时掉落物不会消失，也不改变当前武器、得分与武器等级。

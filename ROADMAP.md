@@ -7,6 +7,14 @@ Independently maintained from NeonWings commit `5ebcb1de1adb288b41a3c5e387f747bc
 - [x] Configure standalone Pages workflow
 - [ ] Verify site deployment and controller tests on hardware
 
+## v26.24.0 — 武器平衡
+
+- [x] ECLIPSE 发射间隔 0.1 秒；保持 12 波上限
+- [x] RAINBOW 发射间隔 0.15 秒；抽取概率及单发机制不变
+- [x] ORANGE 共同倍率 1.6× 覆盖普通橙、红橙普通与大招、深红金、彩色橙色弹
+- [x] 更新 HUD、测试和 Pages 缓存脚本版本
+- [ ] 真实浏览器/掌机验证高频震荡波帧率
+
 ## v26.23.0 — DARK RED-GOLD 40-unit knockback plus ORANGE blasts
 
 - [x] Add 28th uniform P drop: deep-red→gold gradient, collectible ONLY from currently equipped DARK RED or the same fusion, with nonconsuming ineligible pickup
