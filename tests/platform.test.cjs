@@ -16,6 +16,7 @@ const grayWeapon = require("../src/gray-weapon.js");
 const grayFlameWeapon = require("../src/gray-flame-weapon.js");
 const pinkWeapon = require("../src/pink-weapon.js");
 const orangeWeapon = require("../src/orange-weapon.js");
+const redOrangeWeapon = require("../src/red-orange-weapon.js");
 const brownWeapon = require("../src/brown-weapon.js");
 const limeWeapon = require("../src/lime-weapon.js");
 const skyWeapon = require("../src/sky-weapon.js");
@@ -57,7 +58,7 @@ function boot(options = {}) {
     NeonCombat: combat,
     NeonRedWeapon: redWeapon,
     NeonGreenWeapon: greenWeapon, NeonSolarAuraWeapon: solarAuraWeapon,
-    NeonBlackWeapon: blackWeapon, NeonWhiteWeapon: whiteWeapon, NeonRedWhiteWeapon: redWhiteWeapon, NeonGrayWeapon: grayWeapon, NeonGrayFlameWeapon: grayFlameWeapon, NeonPinkWeapon: pinkWeapon, NeonOrangeWeapon: orangeWeapon, NeonBrownWeapon: brownWeapon, NeonLimeWeapon: limeWeapon, NeonSkyWeapon: skyWeapon, NeonDarkRedWeapon: darkRedWeapon, NeonRainbowWeapon: rainbowWeapon, NeonMagnetWeapon: magnetWeapon, NeonArcLaserWeapon: arcLaserWeapon, NeonStasisWeapon: stasisWeapon, NeonEclipseWeapon: eclipseWeapon, NeonRecruitWeapon: recruitWeapon,
+    NeonBlackWeapon: blackWeapon, NeonWhiteWeapon: whiteWeapon, NeonRedWhiteWeapon: redWhiteWeapon, NeonGrayWeapon: grayWeapon, NeonGrayFlameWeapon: grayFlameWeapon, NeonPinkWeapon: pinkWeapon, NeonOrangeWeapon: orangeWeapon, NeonRedOrangeWeapon: redOrangeWeapon, NeonBrownWeapon: brownWeapon, NeonLimeWeapon: limeWeapon, NeonSkyWeapon: skyWeapon, NeonDarkRedWeapon: darkRedWeapon, NeonRainbowWeapon: rainbowWeapon, NeonMagnetWeapon: magnetWeapon, NeonArcLaserWeapon: arcLaserWeapon, NeonStasisWeapon: stasisWeapon, NeonEclipseWeapon: eclipseWeapon, NeonRecruitWeapon: recruitWeapon,
     NeonCollision: collision,
     NeonEnemyBehaviors: enemyBehaviors,
     NeonWorlds: worlds,
@@ -154,7 +155,8 @@ test("static HTML loads platform before game and doesn't embed legacy code", () 
   assert.ok(html.indexOf('src="./src/gray-weapon.js"') < html.indexOf('src="./src/gray-flame-weapon.js?'));
   assert.ok(html.indexOf('src="./src/gray-flame-weapon.js?') < html.indexOf('src="./src/pink-weapon.js"'));
   assert.ok(html.indexOf('src="./src/pink-weapon.js"') < html.indexOf('src="./src/orange-weapon.js"'));
-  assert.ok(html.indexOf('src="./src/orange-weapon.js"') < html.indexOf('src="./src/brown-weapon.js"'));
+  assert.ok(html.indexOf('src="./src/orange-weapon.js"') < html.indexOf('src="./src/red-orange-weapon.js?'));
+  assert.ok(html.indexOf('src="./src/red-orange-weapon.js?') < html.indexOf('src="./src/brown-weapon.js"'));
   assert.ok(html.indexOf('src="./src/brown-weapon.js"') < html.indexOf('src="./src/lime-weapon.js?'));
   assert.ok(html.indexOf('src="./src/lime-weapon.js?') < html.indexOf('src="./src/sky-weapon.js?'));
   assert.ok(html.indexOf('src="./src/sky-weapon.js?') < html.indexOf('src="./src/dark-red-weapon.js?'));
@@ -317,7 +319,7 @@ test("GRAY FLAME P loads after GRAY and is bundled/versioned for Pages",()=>{
   const html=fs.readFileSync(path.join(__dirname,"../index.html"),"utf8");
   const build=fs.readFileSync(path.join(__dirname,"../scripts/build.mjs"),"utf8");
   const pkg=require("../package.json");
-  assert.equal(pkg.version,"26.18.0");
+  assert.match(pkg.version,/^\d+\.\d+\.\d+$/);
   assert.ok(html.includes('src="./src/gray-flame-weapon.js?v='+pkg.version+'"'));
   assert.ok(html.includes('src="./src/game.js?v='+pkg.version+'"'));
   assert.ok(html.indexOf('src="./src/gray-weapon.js"') <
@@ -329,4 +331,23 @@ test("GRAY FLAME P loads after GRAY and is bundled/versioned for Pages",()=>{
   assert.equal(grayFlameWeapon.canEquip("gray"),true);
   assert.equal(grayFlameWeapon.RULES.volleysBeforeRest,
     grayWeapon.RULES.volleysBeforeRest);
+});
+
+test("RED-ORANGE runtime loads after both RED/ORANGE before game and deploys with 26.19.0",()=>{
+  const html=fs.readFileSync(path.join(__dirname,"../index.html"),"utf8");
+  const build=fs.readFileSync(path.join(__dirname,"../scripts/build.mjs"),"utf8");
+  const pkg=require("../package.json");
+  assert.equal(pkg.version,"26.19.0");
+  assert.ok(html.includes('src="./src/red-orange-weapon.js?v='+pkg.version+'"'));
+  assert.ok(html.includes('src="./src/game.js?v='+pkg.version+'"'));
+  assert.ok(html.indexOf('src="./src/red-weapon.js"') <
+    html.indexOf('src="./src/red-orange-weapon.js?'));
+  assert.ok(html.indexOf('src="./src/orange-weapon.js"') <
+    html.indexOf('src="./src/red-orange-weapon.js?'));
+  assert.ok(html.indexOf('src="./src/red-orange-weapon.js?') <
+    html.indexOf('src="./src/game.js?'));
+  assert.ok(build.includes('"src/red-orange-weapon.js"'));
+  assert.ok(pkg.scripts.check.includes('node --check src/red-orange-weapon.js'));
+  assert.equal(redOrangeWeapon.RULES.specialShots,redWeapon.RULES.specialShots);
+  assert.equal(redOrangeWeapon.RULES.blastMultiplier,orangeWeapon.RULES.damageMultiplier);
 });

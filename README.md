@@ -29,6 +29,20 @@ A controller-first, five-stage, side-scrolling neon arcade shooter built with br
 - **v26.2.0 NeonWings-Pan exclusive:** red P twin-line fire, a 250-projectile ±10° special fan triggered on 10% of eligible volleys, and an independent 0–5 star progression.
 - **v26.3.0 NeonWings-Pan exclusive:** green P retains starter-grade dual shots and adds a passive neon halo dealing area damage to nearby enemies once per second.
 
+## v26.19.0 — RED-ORANGE 红橙渐变爆炸散射武器
+
+新增第 **24 种 P 武器：RED-ORANGE BLAST SCATTER（红色→橙色渐变）**。只有当前正在使用普通红色 RED P 或普通橙色 ORANGE P 时才能拾取；已装备 RED-ORANGE 时重新拾取可以升级/恢复。其他武器（包括 RED-WHITE 红白渐变）不能直接领取红橙 P，物品保持在场上，并提示需要普通红色或橙色 P。
+
+**红色、红白渐变、红橙渐变三种武器共用同一套五星进度**，而不是三套独立星级。红橙沿用 RED 的双发平行弹道，每 0.1 秒一次，连续 `5＋星级` 次双发后休息 0.4 秒，每次双发有独立 10% 概率触发散射大招。大招在 **3 秒内射出 250 枚弹**（±10° 扇角），完整结束后升一颗共享星，最多五星。切换武器后当前大招保持开始时的弹种和剩余进度，完成后正常升星；普通 BOMB 不会直接升星。
+
+**每颗红橙普通子弹和散射大招子弹都变成真正的橙色爆炸弹**：命中首个敌人、Boss 机体或炮台后产生半径 **100 游戏坐标**的爆炸，直接命中者及范围内每个其他目标各造成**该子弹普通直击攻击力的 3 倍**（不是 1＋3 倍）。普通双发子弹基准伤害 1.15，所以爆炸为 **3.45 点/目标**；大招遵循 RED 特殊弹原基础攻击力 0.38，所以爆炸为 **1.14 点/目标**。战机和 Overdrive 加成仍按原攻击力管线计算。护盾、Boss 弱点优先级、分裂敌人子代保护以及爆炸不连锁等全部复用原 ORANGE 机制。
+
+三种红系大招的弹药在触发瞬间锁定：RED 仍发原红弹，RED-WHITE 发白色穿透导电弹，RED-ORANGE 发橙色爆炸弹；切换后不会中途变色。RED / RED-WHITE / RED-ORANGE 都显示同一排共享星级，普通 WHITE/ORANGE/其他武器隐藏星级但保持状态。原始红、橙、红白子弹及击中效果不变。
+
+红橙渐变 P 与子弹有独立外观，并加入 **24 种 P 等概率掉落池**；爆炸特效仍限制为 48 个在场实例，普通子弹沿用 360 枚上限，避免高密度大招效果无限堆积。
+
+**在线体验：** https://rushairer.github.io/NeonWings-Pan/?v=26.19.0
+
 ## v26.18.0 — 红灰渐变 GRAY FLAME 灼烧 P 武器
 
 新增第 **23 种 P 武器：GRAY FLAME（红色→灰色渐变）**。**必须当前装备灰色 GRAY P** 才能拾取变成 GRAY FLAME；已装备 GRAY FLAME 时可以再次拾取。其他武器无法领取，掉落物保持在原地，不改变分数、等级或灰色武器攻击节奏。
