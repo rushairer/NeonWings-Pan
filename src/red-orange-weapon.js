@@ -35,7 +35,7 @@
   }
 
   // The original ORANGE collision resolver handles the first swept contact,
-  // shield and Boss mount priorities, 3x direct+area damage (not 1x+3x),
+  // shield and Boss mount priorities, 1.6x direct+area damage (not 1x+1.6x),
   // radius-100 splash and snapshot-before-splitter safeguards.
   function createShot(isFan = false) {
     return {

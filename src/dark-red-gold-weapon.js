@@ -1,5 +1,5 @@
 /* DARK RED-GOLD P: DARK RED-gated fixed 40-unit on-contact knockback
- * with real ORANGE radius-100, 3x damage first-impact explosions.
+ * with real ORANGE radius-100, 1.6x damage first-impact explosions.
  * Does NOT inherit DARK RED's recursive 30-hit chain / bonus guided rocket:
  * this upgrade is a separate impact+explosion P, as specified by its effect.
  */

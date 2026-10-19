@@ -2951,7 +2951,7 @@ const W = 1280;
         addPlayerShot(muzzleX, baseY + 12, 1100, 0, 9,
           orangeRules.RULES.normalDamage, "#ff932e", { orangeBlast: true });
       } else if (type === "rainbow") {
-        // One centered projectile per action, then 0.4s of active-combat rest.
+        // One centered projectile per action, then 0.15s of active-combat rest.
         // A 9% PINK missile REPLACES the bullet; never fire a bonus missile.
         // Each action makes exactly one of the original eight effect rolls.
         const lane = 0;
@@ -3839,7 +3839,7 @@ const W = 1280;
       candidates.sort((a, c) => a.impact.t - c.impact.t);
       const { target, part, impact } = candidates[0];
 
-      // Capture the entire target population before the direct 3x damage,
+      // Capture the entire target population before the direct 1.6x damage,
       // so a splitter dying or a new Boss appearing cannot receive the same
       // blast again. The directly struck enemy/Boss is never double-hit.
       const enemiesAtImpact = game.enemies.slice();
@@ -5700,7 +5700,7 @@ const W = 1280;
         : game.weaponType === "redwhite"
         ? "RED-WHITE ARC 60% HOPS"
         : game.weaponType === "redorange"
-        ? "RED-ORANGE BLAST  R100 X3"
+        ? "RED-ORANGE BLAST  R100 X1.6"
         : game.weaponType === "gray"
         ? "GRAY 20/5/75  1.5X"
         : game.weaponType === "grayflame"
@@ -5708,7 +5708,7 @@ const W = 1280;
         : game.weaponType === "pink"
         ? "PINK SEEK  2/.4S  15%x25"
         : game.weaponType === "orange"
-        ? "ORANGE BLAST  R100  X3"
+        ? "ORANGE BLAST  R100  X1.6"
         : game.weaponType === "brown"
         ? "BROWN LOCK LASER"
         : game.weaponType === "purplewhite"
@@ -5722,7 +5722,7 @@ const W = 1280;
         : game.weaponType === "darkred"
         ? "DARK RED  50%x30  M5%x10"
         : game.weaponType === "darkredgold"
-        ? "DARK RED-GOLD  PUSH40 X3"
+        ? "DARK RED-GOLD  PUSH40 X1.6"
         : game.weaponType === "rainbow"
         ? "RAINBOW  7x13%  M9%"
         : game.weaponType === "magnet"
@@ -5904,7 +5904,7 @@ const W = 1280;
       ctx.fillRect(0, 0, W, H);
 
       drawText("NEON WINGS", W / 2, 195, 86, "center", "#e7fbff");
-      drawText("NEONWINGS PAN  /  v26.23.0", W / 2, 270, 28, "center", "#98f5ff");
+      drawText("NEONWINGS PAN  /  v26.24.0", W / 2, 270, 28, "center", "#98f5ff");
       drawText(`HIGH SCORE ${String(highScore()).padStart(6, "0")}`, W / 2, 318, 24, "center", "#fff4b7");
 
       drawPlayerShip(W / 2 - 170, 492, -0.20, false, ships[0]);

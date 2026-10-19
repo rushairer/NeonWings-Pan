@@ -6,7 +6,7 @@
 
   const RULES = Object.freeze({
     radius: 100,
-    damageMultiplier: 3,
+    damageMultiplier: 1.6,
     normalDamage: 1.15,
     explosionLifetimeSeconds: 0.35,
     maxExplosionEffects: 48
@@ -77,7 +77,7 @@
     return { x: x0 + t * vx, y: y0 + t * vy, t };
   }
 
-  // Direct target has ALREADY been dealt exactly 3x normal-shot damage.
+  // Direct target has ALREADY been dealt exactly 1.6x normal-shot damage.
   // These callbacks process only OTHER targets. Snapshot the list to prevent
   // newly spawned splitter children from being hit by the same explosion.
   // Damage is strictly one event per target and never triggers another blast.
