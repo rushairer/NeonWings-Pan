@@ -2399,7 +2399,7 @@ test("LIME P fires two ordinary twin-lane bullets from the muzzle, not prepositi
   app.eval("game.powerups=[];dropPlayerPowerOnHit()");
   assert.equal(app.eval("game.powerups.at(-1).type"),"P_LIME");
   const labels=app.eval('(() => {const values=[];ctx.fillText=t=>values.push(String(t));drawHud();drawPowerups();return values;})()');
-  assert.ok(labels.includes("LIME ORBIT  R360"));
+  assert.ok(labels.includes("LIME ORBIT → SEEK"));
 });
 
 test("LIME is rendered as the SAME normal rectangular projectile as BLUE, not a diamond orb", () => {
@@ -2445,7 +2445,7 @@ test("LIME first frame does not damage an enemy by spawning directly on the dist
   assert.equal(app.eval("game.bullets.every(b=>b.x<300)"),true);
 });
 
-test("LIME offscreen orbiters stay alive on their flight path and expire by active time only", () => {
+test("LIME offscreen orbits finish into bounded homing shots instead of despawning", () => {
   const app=boot();
   app.eval([
     'game.state="PLAYING";game.weaponType="lime";game.player.x=175;',
@@ -2454,7 +2454,119 @@ test("LIME offscreen orbiters stay alive on their flight path and expire by acti
   assert.equal(app.eval("game.bullets.length"),2);
   assert.equal(app.eval("game.bullets.every(b=>b.x<0&&b.life>0)"),true);
   app.eval("updatePlayerBullets(3.3)");
+  assert.equal(app.eval("game.bullets.length"),2);
+  assert.equal(app.eval("game.bullets.every(b=>b.limeHoming&&!b.orbiting)"),true);
+  assert.ok(Math.abs(app.eval("game.bullets[0].life")-2.5)<1e-8);
+  app.eval("updatePlayerBullets(2.6)");
+  assert.equal(app.eval("game.bullets.length"),0,"extra 3.6s TTL must reclaim bullets without targets");
+});
+
+test("LIME final orbit tick launches a same-damage homing bolt at the nearest target",()=>{
+  const app=boot();
+  app.eval([
+    'game.state="PLAYING";game.stageMode="WAVE";game.weaponType="lime";',
+    'game.player.x=175;game.player.y=480;game.enemies=[',
+    ' {kind:"scout",x:900,y:480,r:30,hp:50,maxHp:50,score:20,color:"#fff",core:"#fff"}',
+    '];firePlayerWeapons();game.bullets=game.bullets.slice(0,1);',
+    'game.savedShot=game.bullets[0];updatePlayerBullets(3.2);'
+  ].join("\n"));
+  assert.equal(app.eval("game.bullets.length"),1);
+  assert.equal(app.eval("game.bullets[0]===game.savedShot"),true,"do not spawn a replacement projectile");
+  assert.equal(app.eval("game.bullets[0].limeHoming"),true);
+  assert.equal(app.eval("game.bullets[0].orbiting"),false);
+  assert.equal(app.eval("game.bullets[0].life"),limeWeapon.RULES.homingLifetimeSeconds);
+  assert.equal(app.eval("game.bullets[0].power"),1.15);
+  assert.ok(app.eval("game.bullets[0].vx")>0);
+  app.eval("updatePlayerBullets(1.4)");
   assert.equal(app.eval("game.bullets.length"),0);
+  assert.ok(Math.abs(app.eval("game.enemies[0].hp")-48.85)<1e-8);
+});
+
+test("LIME orbital last swept hit is resolved before homing, with no second damage",()=>{
+  const app=boot();
+  app.eval([
+    'game.state="PLAYING";game.stageMode="WAVE";game.weaponType="lime";',
+    'firePlayerWeapons();game.bullets=game.bullets.slice(0,1);',
+    'const path=limeRules.step({...game.bullets[0]},game.player,3.2);',
+    'const end=path.at(-1);game.enemies=[{kind:"scout",',
+    'x:end.toX,y:end.toY,r:15,hp:50,maxHp:50,score:20,color:"#fff",core:"#fff"}];',
+    'updatePlayerBullets(3.2);'
+  ].join("\n"));
+  assert.equal(app.eval("game.bullets.length"),0);
+  assert.ok(Math.abs(app.eval("game.enemies[0].hp")-48.85)<1e-8);
+});
+
+test("LIME expired orbiter retargets when enemies appear after an empty field",()=>{
+  const app=boot();
+  app.eval([
+    'game.state="PLAYING";game.weaponType="lime";',
+    'firePlayerWeapons();game.bullets=game.bullets.slice(0,1);',
+    'updatePlayerBullets(3.2);game.savedShot=game.bullets[0];',
+    'game.enemies=[{kind:"scout",x:850,y:450,r:35,hp:50,maxHp:50,',
+    'score:20,color:"#fff",core:"#fff"}];'
+  ].join("\n"));
+  assert.equal(app.eval("game.savedShot.limeHoming"),true);
+  assert.equal(app.eval("game.savedShot.life"),limeWeapon.RULES.homingLifetimeSeconds);
+  app.eval("updatePlayerBullets(2)");
+  assert.equal(app.eval("game.bullets.length"),0);
+  assert.ok(Math.abs(app.eval("game.enemies[0].hp")-48.85)<1e-8);
+});
+
+test("LIME homing applies weakpoint damage to Boss turrets before hull",()=>{
+  const app=boot();
+  app.eval([
+    'game.state="PLAYING";game.stageMode="BOSS";game.weaponType="lime";',
+    'const b=limeRules.createShot(game.player,-10);b.life=0;',
+    'limeRules.launchHoming(b);b.x=200;b.y=480;b.vx=limeRules.RULES.homingSpeed;b.vy=0;',
+    'game.bullets=[{...b,power:1.15,c:"#d1f74c"}];',
+    'game.boss={active:true,x:550,y:480,rx:80,ry:70,hp:100,maxHp:100,',
+    'parts:[{id:"TEST",x:-150,y:0,r:23,hp:50,maxHp:50}],color:"#fff"};',
+    'updatePlayerBullets(.27);'
+  ].join("\n"));
+  assert.equal(app.eval("game.bullets.length"),0);
+  assert.ok(Math.abs(app.eval("game.boss.parts[0].hp")-
+    (50-1.15*bossParts.BALANCE.weakPointDamageScale))<1e-8);
+  assert.equal(app.eval("game.boss.hp"),100);
+});
+
+test("RAINBOW LIME outcome also transitions to seeking after orbit expiry and weapon swap",()=>{
+  const app=boot();
+  app.eval([
+    'game.state="PLAYING";game.weaponType="rainbow";Math.random=()=>.8;',
+    'firePlayerWeapons();game.bullets=game.bullets.slice(0,1);',
+    'const orb=game.bullets[0];game.savedOrb=orb;',
+    'collectPowerup({type:"P_BLUE",x:300,y:480,life:1});',
+    'updatePlayerBullets(3.2);'
+  ].join("\n"));
+  assert.equal(app.eval("game.bullets.length"),1);
+  assert.equal(app.eval("game.bullets[0]===game.savedOrb"),true);
+  assert.equal(app.eval("game.bullets[0].rainbowKind"),"orbit");
+  assert.equal(app.eval("game.bullets[0].limeHoming"),true);
+  assert.equal(app.eval("game.bullets[0].orbiting"),false);
+  const life=app.eval("game.bullets[0].life");
+  app.eval("game.state='PAUSED';updatePlaying(2)");
+  assert.equal(app.eval("game.bullets[0].life"),life);
+  app.eval("game.state='PLAYING';updatePlayerBullets(3.7)");
+  assert.equal(app.eval("game.bullets.length"),0);
+});
+
+test("LIME homing keeps ordinary bullet quota free, and rendering never deals damage",()=>{
+  const app=boot();
+  const scene=app.eval([
+    '(()=>{game.state="PLAYING";game.stageMode="WAVE";game.weaponType="lime";',
+    'game.enemies=[{kind:"scout",x:900,y:400,r:12,hp:99,maxHp:99}];',
+    'firePlayerWeapons();game.bullets=game.bullets.slice(0,1);',
+    'updatePlayerBullets(3.2);const homing=game.bullets[0];',
+    'game.bullets.push(...Array.from({length:360},()=>({x:200,y:400,vx:1,vy:0})));',
+    'const count=game.bullets.length;const originalHp=game.enemies[0].hp;',
+    'const colors=[];ctx.fillRect=(x,y,w,h)=>colors.push(ctx.fillStyle);',
+    'drawPlayerBullets();return {count,hp:originalHp,after:game.enemies[0].hp,',
+    'limeHoming:homing.limeHoming,looksLime:colors.includes("#b6e035")};})()'
+  ].join("\n"));
+  assert.equal(scene.count,361);
+  assert.equal(scene.limeHoming,true);
+  assert.equal(scene.looksLime,true);
+  assert.equal(scene.hp,scene.after);
 });
 
 test("LIME curving normal bullet hits first swept enemy before reaching orbit, never piercing another", () => {
