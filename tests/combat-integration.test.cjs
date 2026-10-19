@@ -16,6 +16,7 @@ const grayWeapon = require("../src/gray-weapon.js");
 const grayFlameWeapon = require("../src/gray-flame-weapon.js");
 const pinkWeapon = require("../src/pink-weapon.js");
 const orangeWeapon = require("../src/orange-weapon.js");
+const redOrangeWeapon = require("../src/red-orange-weapon.js");
 const brownWeapon = require("../src/brown-weapon.js");
 const limeWeapon = require("../src/lime-weapon.js");
 const skyWeapon = require("../src/sky-weapon.js");
@@ -52,7 +53,7 @@ function boot() {
   const canvas = { style: {}, getContext: () => ctx };
   const storage = new Map();
   const window = {
-    NeonPlatform: platform, NeonController: controller, NeonCombat: combat, NeonRedWeapon: redWeapon, NeonGreenWeapon: greenWeapon, NeonSolarAuraWeapon: solarAuraWeapon, NeonBlackWeapon: blackWeapon, NeonWhiteWeapon: whiteWeapon, NeonRedWhiteWeapon: redWhiteWeapon, NeonGrayWeapon: grayWeapon, NeonGrayFlameWeapon: grayFlameWeapon, NeonPinkWeapon: pinkWeapon, NeonOrangeWeapon: orangeWeapon, NeonBrownWeapon: brownWeapon, NeonLimeWeapon: limeWeapon, NeonSkyWeapon: skyWeapon, NeonDarkRedWeapon: darkRedWeapon, NeonRainbowWeapon: rainbowWeapon, NeonMagnetWeapon: magnetWeapon, NeonArcLaserWeapon: arcLaserWeapon, NeonStasisWeapon: stasisWeapon, NeonEclipseWeapon: eclipseWeapon, NeonRecruitWeapon: recruitWeapon, NeonCollision: collision, NeonEnemyBehaviors: enemyBehaviors, NeonWorlds: worlds, NeonBossParts: bossParts, NeonModes: modes, NeonRecords: records, NeonSelectLayout: selectLayout,
+    NeonPlatform: platform, NeonController: controller, NeonCombat: combat, NeonRedWeapon: redWeapon, NeonGreenWeapon: greenWeapon, NeonSolarAuraWeapon: solarAuraWeapon, NeonBlackWeapon: blackWeapon, NeonWhiteWeapon: whiteWeapon, NeonRedWhiteWeapon: redWhiteWeapon, NeonGrayWeapon: grayWeapon, NeonGrayFlameWeapon: grayFlameWeapon, NeonPinkWeapon: pinkWeapon, NeonOrangeWeapon: orangeWeapon, NeonRedOrangeWeapon: redOrangeWeapon, NeonBrownWeapon: brownWeapon, NeonLimeWeapon: limeWeapon, NeonSkyWeapon: skyWeapon, NeonDarkRedWeapon: darkRedWeapon, NeonRainbowWeapon: rainbowWeapon, NeonMagnetWeapon: magnetWeapon, NeonArcLaserWeapon: arcLaserWeapon, NeonStasisWeapon: stasisWeapon, NeonEclipseWeapon: eclipseWeapon, NeonRecruitWeapon: recruitWeapon, NeonCollision: collision, NeonEnemyBehaviors: enemyBehaviors, NeonWorlds: worlds, NeonBossParts: bossParts, NeonModes: modes, NeonRecords: records, NeonSelectLayout: selectLayout,
     innerWidth: 1280, innerHeight: 960,
     addEventListener: (name, fn) => events.set(name, fn)
   };
@@ -698,7 +699,7 @@ test("red P is a collectible fourth weapon and fires exactly two parallel red li
   assert.equal(app.eval("game.bullets.every(b => b.vx===1120 && b.vy===0 && b.redNormal)"), true);
   app.eval('game.weaponType="blue";game.bullets.length=0;firePlayerWeapons()');
   assert.equal(app.eval("game.bullets.some(b=>b.redNormal)"), false);
-  app.eval('Math.random=()=>.152174');
+  app.eval('Math.random=()=>.145833');
   assert.equal(app.eval("randomPowerType()"), "P_RED");
 });
 
@@ -821,7 +822,7 @@ test("green P pickup fires precisely the unupgraded starter bullets at every wea
   app.eval('game.combat.energy=100;activateOverdrive();game.bullets=[];firePlayerWeapons()');
   assert.equal(app.eval('game.bullets.length'), 2);
   assert.equal(app.eval('game.bullets.some(b=>b.lance)'), false);
-  app.eval('Math.random=()=>.195652');
+  app.eval('Math.random=()=>.1875');
   assert.equal(app.eval('randomPowerType()'), "P_GREEN");
 });
 
@@ -999,7 +1000,7 @@ test("BLACK P drop is discoverable and its twin dark shots never inherit blue up
   assert.equal(app.eval("game.bullets.some(b=>b.lance)"), false);
   assert.equal(app.eval("game.missiles.length"), 0);
   assert.ok(Math.abs(app.eval("getFireCooldown()") - 0.101) < 1e-10);
-  app.eval("Math.random=()=>.239130");
+  app.eval("Math.random=()=>.229167");
   assert.equal(app.eval("randomPowerType()"), "P_BLACK");
   app.eval("game.weaponLevel=3;game.powerups=[];dropPlayerPowerOnHit()");
   assert.equal(app.eval('game.powerups.at(-1).type'), "P_BLACK");
@@ -1173,7 +1174,7 @@ test("WHITE P is the seventh drop, fires paired unlimited-penetration bolts and 
   assert.equal(app.eval("game.bullets.every(b=>!b.dead && !b.whiteBossHit)"), true);
   assert.equal(app.eval("game.missiles.length"), 0);
   assert.ok(Math.abs(app.eval("getFireCooldown()") - 0.101) < 1e-10);
-  app.eval("Math.random=()=>.282609");
+  app.eval("Math.random=()=>.270833");
   assert.equal(app.eval("randomPowerType()"), "P_WHITE");
   app.eval('game.weaponLevel=3;game.powerups=[];dropPlayerPowerOnHit()');
   assert.equal(app.eval("game.powerups.at(-1).type"), "P_WHITE");
@@ -1336,7 +1337,7 @@ test("GRAY P joins eighth-color drops and fires only baseline paired bullets", (
   assert.equal(app.eval('JSON.stringify(game.bullets.map(b=>({vx:b.vx,vy:b.vy,r:b.r,power:b.power})))'),baseline);
   assert.equal(app.eval("game.missiles.length"),0);
   assert.ok(Math.abs(app.eval("getFireCooldown()")-.101)<1e-10);
-  app.eval("Math.random=()=>.326087");
+  app.eval("Math.random=()=>.3125");
   assert.equal(app.eval("randomPowerType()"),"P_GRAY");
   app.eval("game.powerups=[];dropPlayerPowerOnHit()");
   assert.equal(app.eval("game.powerups.at(-1).type"),"P_GRAY");
@@ -1658,7 +1659,7 @@ test("PINK P is the ninth pickup: one guided bolt at every level, with distinct 
   assert.equal(app.eval("game.bullets[0].life"), pinkWeapon.RULES.bulletLifetimeSeconds);
   assert.equal(app.eval("game.missiles.length"), 0);
   assert.ok(Math.abs(app.eval("getFireCooldown()") - 0.101) < 1e-10);
-  app.eval("Math.random=()=>.369565");
+  app.eval("Math.random=()=>.354167");
   assert.equal(app.eval("randomPowerType()"), "P_PINK");
   app.eval("game.powerups=[];dropPlayerPowerOnHit()");
   assert.equal(app.eval("game.powerups.at(-1).type"), "P_PINK");
@@ -2036,7 +2037,7 @@ test("ORANGE P is the tenth pickup; two starter-grade shots and its HUD survive 
   assert.equal(app.eval('JSON.stringify(game.bullets.map(b=>({vx:b.vx,vy:b.vy,r:b.r,power:b.power})))'),blue);
   assert.ok(Math.abs(app.eval("getFireCooldown()")-.101)<1e-10);
   assert.equal(app.eval("game.missiles.length"),0);
-  app.eval("Math.random=()=>.413043");
+  app.eval("Math.random=()=>.395833");
   assert.equal(app.eval("randomPowerType()"),"P_ORANGE");
   app.eval('game.powerups=[];dropPlayerPowerOnHit()');
   assert.equal(app.eval('game.powerups.at(-1).type'),"P_ORANGE");
@@ -2252,7 +2253,7 @@ test("BROWN P is a recoverable eleventh pickup and never spawns ordinary bullets
   app.eval('game.weaponLevel=3;firePlayerWeapons()');
   assert.equal(app.eval("game.bullets.length"),0);
   assert.ok(Math.abs(app.eval("getFireCooldown()")-0.101)<1e-10);
-  app.eval('Math.random=()=>.456522');
+  app.eval('Math.random=()=>.4375');
   assert.equal(app.eval("randomPowerType()"),"P_BROWN");
   app.eval('game.powerups=[];dropPlayerPowerOnHit()');
   assert.equal(app.eval("game.powerups.at(-1).type"),"P_BROWN");
@@ -2389,7 +2390,7 @@ test("LIME P fires two ordinary twin-lane bullets from the muzzle, not prepositi
   assert.equal(app.eval("game.bullets[0].vx"),1100);
   assert.equal(app.eval("game.bullets[1].vx"),1100);
   assert.equal(app.eval("game.bullets.every(b=>b.r===9 && b.power===1.15 && b.orbitRadius<360)"),true);
-  app.eval("Math.random=()=>.5");
+  app.eval("Math.random=()=>.479167");
   assert.equal(app.eval("randomPowerType()"),"P_LIME");
   app.eval("game.powerups=[];dropPlayerPowerOnHit()");
   assert.equal(app.eval("game.powerups.at(-1).type"),"P_LIME");
@@ -2652,7 +2653,7 @@ test("SKY P is the 13th collectible and switches damage/homing/slow at actual ga
   assert.ok(low.includes("SKY SEEK  BLACK SLOW"));
   app.eval('game.hp=2;game.bullets=[];firePlayerWeapons()');
   assert.equal(app.eval("game.bullets.every(b=>b.skyHoming&&b.blackSlow)"),true);
-  app.eval('Math.random=()=>.543478');
+  app.eval('Math.random=()=>.520833');
   assert.equal(app.eval("randomPowerType()"),"P_SKY");
   app.eval('game.weaponLevel=3;game.powerups=[];dropPlayerPowerOnHit()');
   assert.equal(app.eval("game.powerups.at(-1).type"),"P_SKY");
@@ -2806,7 +2807,7 @@ test("DARK RED is the fourteenth pickup with distinct twin 1x bullets and no RED
   assert.equal(app.eval("game.redWeapon.stars"),3);
   assert.equal(app.eval("game.redWeapon.volleys"),0);
   assert.ok(Math.abs(app.eval("getFireCooldown()")-.101)<1e-10);
-  app.eval("Math.random=()=>.586957");
+  app.eval("Math.random=()=>.5625");
   assert.equal(app.eval("randomPowerType()"),"P_DARK_RED");
   app.eval("game.powerups=[];dropPlayerPowerOnHit()");
   assert.equal(app.eval("game.powerups.at(-1).type"),"P_DARK_RED");
@@ -2819,11 +2820,11 @@ test("DARK RED is the fourteenth pickup with distinct twin 1x bullets and no RED
     "DARK RED must never expose ordinary RED star HUD");
 });
 
-test("GRAY FLAME extends uniform P drop pool to 23 types",()=>{
+test("RED-ORANGE extends uniform P drop pool to all 24 types",()=>{
   const app=boot();
   const expected=[
     "P_BLUE","P_PURPLE","P_YELLOW","P_RED","P_GREEN","P_BLACK","P_WHITE",
-    "P_GRAY","P_PINK","P_ORANGE","P_BROWN","P_LIME","P_SKY","P_DARK_RED","P_RAINBOW","P_MAGNET","P_ARC_LASER","P_STASIS","P_ECLIPSE","P_RECRUIT","P_SOLAR","P_RED_WHITE","P_GRAY_FLAME"
+    "P_GRAY","P_PINK","P_ORANGE","P_BROWN","P_LIME","P_SKY","P_DARK_RED","P_RAINBOW","P_MAGNET","P_ARC_LASER","P_STASIS","P_ECLIPSE","P_RECRUIT","P_SOLAR","P_RED_WHITE","P_GRAY_FLAME","P_RED_ORANGE"
   ];
   for(let i=0;i<expected.length;i++){
     const roll=(i+.5)/expected.length;
@@ -3198,7 +3199,7 @@ test("RAINBOW P is the 15th collectible, recoverable, with a distinct 8-color ic
   assert.equal(app.eval("game.bullets.every(b=>b.grayImpact)"),true);
   assert.equal(app.eval("game.redWeapon.stars"),3);
   assert.equal(app.eval("getFireCooldown()"),.4);
-  app.eval('Math.random=()=>.630435');
+  app.eval('Math.random=()=>.604167');
   assert.equal(app.eval("randomPowerType()"),"P_RAINBOW");
   app.eval('game.powerups=[];dropPlayerPowerOnHit()');
   assert.equal(app.eval("game.powerups.at(-1).type"),"P_RAINBOW");
@@ -5089,4 +5090,388 @@ test("GRAY FLAME unchanged base GRAY never ignites, burns only tagged surviving 
   assert.equal(app.eval("game.weaponType"),"blue");
   assert.equal(app.eval("game.enemies[0].grayFlame.remaining"),5);
   assert.ok(Math.abs(app.eval("game.enemies[0].grayFlame.power")-.69)<1e-9);
+});
+
+
+test("RED-ORANGE P only unlocks from current RED/ORANGE, rejecting WHITE and RED-WHITE without consuming",()=>{
+  const app=boot();
+  app.eval([
+    'game.state="PLAYING";game.weaponType="redwhite";game.weaponLevel=1;',
+    'game.redWeapon.stars=3;game.redWeapon.volleys=2;game.score=0;',
+    'game.powerups=[{type:"P_RED_ORANGE",x:175,y:480,r:24,life:20,',
+    'vx:0,vy:0,t:0,safeTimer:0}];updatePowerups(.01);'
+  ].join("\n"));
+  assert.equal(app.eval("game.weaponType"),"redwhite");
+  assert.equal(app.eval("game.weaponLevel"),1);
+  assert.equal(app.eval("game.score"),0);
+  assert.equal(app.eval("game.redWeapon.stars"),3);
+  assert.equal(app.eval("game.redWeapon.volleys"),2);
+  assert.equal(app.eval("game.powerups.length"),1);
+  assert.ok(app.eval('game.message.includes("REQUIRES RED OR ORANGE P")'));
+  const hint=app.eval("game.messageTimer");
+  app.eval("updatePowerups(.01)");
+  assert.ok(app.eval("game.messageTimer")<=hint);
+  app.eval('collectPowerup({type:"P_RED",x:240,y:480,life:1});');
+  assert.equal(app.eval("game.weaponType"),"red");
+  app.eval("updatePowerups(.01)");
+  assert.equal(app.eval("game.weaponType"),"redorange");
+  assert.equal(app.eval("weaponMeta().name"),"BLAST SCATTER");
+  assert.equal(app.eval("game.weaponLevel"),3);
+  assert.equal(app.eval("game.redWeapon.stars"),3);
+  assert.equal(app.eval("game.powerups.length"),0);
+  app.eval('game.powerups=[];dropPlayerPowerOnHit()');
+  assert.equal(app.eval("game.powerups.at(-1).type"),"P_RED_ORANGE");
+  app.eval('collectPowerup({type:"P_RED_ORANGE",x:240,y:480,life:1})');
+  assert.equal(app.eval("game.weaponType"),"redorange");
+  assert.equal(app.eval("game.redWeapon.stars"),3);
+  app.eval('collectPowerup({type:"P_WHITE",x:240,y:480,life:1});');
+  const score=app.eval("game.score");
+  app.eval('const lockedRO={type:"P_RED_ORANGE",x:240,y:480,life:8};collectPowerup(lockedRO);game.lockedROLife=lockedRO.life');
+  assert.equal(app.eval("game.weaponType"),"white");
+  assert.equal(app.eval("game.score"),score);
+  assert.equal(app.eval("game.lockedROLife"),8);
+});
+
+test("RED-ORANGE P evolves directly from ORANGE and preserves the one shared RED stars",()=>{
+  const app=boot();
+  app.eval([
+    'game.state="PLAYING";game.weaponType="orange";game.redWeapon.stars=4;',
+    'game.weaponLevel=2;collectPowerup({type:"P_RED_ORANGE",x:250,y:480,life:1});'
+  ].join("\n"));
+  assert.equal(app.eval("game.weaponType"),"redorange");
+  assert.equal(app.eval("game.weaponLevel"),3);
+  assert.equal(app.eval("game.redWeapon.stars"),4);
+  assert.equal(app.eval("game.redWeapon.volleys"),0);
+  assert.equal(app.eval("redRules.RULES.baseVolleys+game.redWeapon.stars"),9);
+  assert.equal(app.eval("getFireCooldown()"),.1);
+  app.eval('collectPowerup({type:"P_ORANGE",x:250,y:480,life:1});');
+  assert.equal(app.eval("game.weaponType"),"orange");
+  assert.equal(app.eval("game.redWeapon.stars"),4);
+});
+
+test("RED-ORANGE fires exact RED twin lanes and starter damage but real ORANGE exploding bullets",()=>{
+  const app=boot();
+  app.eval([
+    'game.state="PLAYING";game.weaponType="redorange";',
+    'game.player.x=175;game.player.y=480;game.weaponLevel=3;',
+    'firePlayerWeapons();'
+  ].join("\n"));
+  assert.equal(app.eval("game.bullets.length"),2);
+  assert.equal(app.eval("game.bullets[0].y"),467);
+  assert.equal(app.eval("game.bullets[1].y"),493);
+  assert.equal(app.eval("game.bullets.every(b=>b.vx===1120&&b.vy===0&&b.r===8&&b.power===1.15)"),true);
+  assert.equal(app.eval("game.bullets.every(b=>b.orangeBlast&&b.redOrangeShot&&!b.redOrangeFan&&!b.whiteConductive&&!b.redNormal)"),true);
+  assert.equal(app.eval("game.missiles.length"),0);
+  assert.equal(app.eval("getFireCooldown()"),.1);
+  app.eval('game.combat.energy=100;activateOverdrive();game.bullets=[];firePlayerWeapons()');
+  assert.equal(app.eval("game.bullets.length"),2);
+  assert.equal(app.eval("game.bullets.every(b=>b.power>1.15&&b.orangeBlast)"),true);
+  assert.equal(app.eval("game.bullets.some(b=>b.lance)"),false);
+});
+
+test("RED-ORANGE maintains RED five-plus-stars volley streak, .4s rest and 10% special boundary",()=>{
+  const app=boot();
+  app.eval([
+    'game.state="PLAYING";game.stageMode="WAVE";game.weaponType="redorange";',
+    'game.spawnTimer=999;game.formationTimer=999;game.invuln=999;',
+    'keys.Space=true;Math.random=()=>.99;'
+  ].join("\n"));
+  for(let i=0;i<4;i++)app.eval("game.fireCooldown=0;updatePlaying(.001)");
+  assert.equal(app.eval("game.redWeapon.volleys"),4);
+  assert.equal(app.eval("game.fireCooldown"),.1);
+  app.eval("game.fireCooldown=0;updatePlaying(.001)");
+  assert.equal(app.eval("game.redWeapon.volleys"),0);
+  assert.equal(app.eval("game.fireCooldown"),.4);
+  app.eval("game.redWeapon.stars=2");
+  for(let i=0;i<7;i++)app.eval("game.fireCooldown=0;updatePlaying(.001)");
+  assert.equal(app.eval("game.redWeapon.volleys"),0);
+  assert.equal(app.eval("game.fireCooldown"),.4);
+  assert.equal(app.eval("game.redWeapon.special"),null);
+  app.eval('game.fireCooldown=0;Math.random=()=>.1;updatePlaying(.001)');
+  assert.equal(app.eval("game.redWeapon.special"),null);
+  app.eval('game.fireCooldown=0;Math.random=()=>.0999999;updatePlaying(.001);keys.Space=false');
+  assert.equal(app.eval("game.redWeapon.special.redOrange"),true);
+  assert.equal(app.eval("game.redWeapon.special.redWhite"),undefined);
+  assert.equal(app.eval("game.redWeapon.stars"),2);
+  app.eval("redRules.switchWeapon(game.redWeapon)");
+  assert.equal(app.eval("game.redWeapon.stars"),2);
+  assert.equal(app.eval("game.redWeapon.volleys"),0);
+});
+
+test("RED-ORANGE direct explosion deals exactly 3x once to every radius-100 victim",()=>{
+  const app=boot();
+  app.eval([
+    'game.state="PLAYING";game.stageMode="WAVE";game.player.x=175;',
+    'game.weaponType="redorange";game.enemies=[',
+    '{kind:"scout",x:430,y:467,r:20,hp:50,maxHp:50,score:20,color:"#fff",core:"#eee"},',
+    '{kind:"scout",x:500,y:500,r:20,hp:50,maxHp:50,score:20,color:"#fff",core:"#eee"},',
+    '{kind:"scout",x:650,y:467,r:20,hp:50,maxHp:50,score:20,color:"#fff",core:"#eee"}',
+    '];firePlayerWeapons();game.bullets=game.bullets.slice(0,1);',
+    'updatePlayerBullets(.2);'
+  ].join("\n"));
+  assert.ok(Math.abs(app.eval("game.enemies[0].hp")-46.55)<1e-8);
+  assert.ok(Math.abs(app.eval("game.enemies[1].hp")-46.55)<1e-8);
+  assert.equal(app.eval("game.enemies[2].hp"),50);
+  assert.equal(app.eval("game.bullets.length"),0);
+  assert.equal(app.eval("game.orangeExplosions.length"),1);
+  assert.ok(Math.abs(app.eval("game.orangeExplosions[0].x")-402)<1e-8);
+  assert.equal(app.eval("game.orangeExplosions[0].life"),orangeWeapon.RULES.explosionLifetimeSeconds);
+});
+
+test("RED-ORANGE inherits ORANGE frontal shield handling, never 1x+3x and never piercing",()=>{
+  const app=boot();
+  app.eval([
+    'game.state="PLAYING";game.stageMode="WAVE";game.player.x=175;',
+    'game.weaponType="redorange";game.enemies=[',
+    'enemyBehaviors.initializeEnemy({kind:"shield",x:430,y:467,r:36,',
+    'hp:50,maxHp:50,score:20,color:"#fff",core:"#eee"}),',
+    '{kind:"scout",x:475,y:510,r:20,hp:50,maxHp:50,score:20,color:"#fff",core:"#eee"}',
+    '];game.enemies[0].shieldHp=20;game.enemies[0].shieldMax=20;',
+    'firePlayerWeapons();game.bullets=game.bullets.slice(0,1);',
+    'updatePlayerBullets(.2);'
+  ].join("\n"));
+  assert.equal(app.eval("game.enemies[0].hp"),50);
+  assert.ok(Math.abs(app.eval("game.enemies[0].shieldHp")-(20-3.45))<1e-9);
+  assert.ok(Math.abs(app.eval("game.enemies[1].hp")-46.55)<1e-9);
+  assert.equal(app.eval("game.orangeExplosions.length"),1);
+});
+
+test("RED-ORANGE inherits ORANGE Boss turret weak-point priority and radius-100 splash",()=>{
+  const app=boot();
+  app.eval([
+    'game.state="PLAYING";game.stageMode="BOSS";game.player.x=175;',
+    'game.weaponType="redorange";',
+    'game.boss={active:true,x:760,y:467,rx:100,ry:80,hp:200,maxHp:200,',
+    'parts:[{id:"GUN",x:-155,y:0,r:28,hp:80,maxHp:80}],color:"#fff",core:"#fff"};',
+    'game.enemies=[{kind:"scout",x:620,y:540,r:20,hp:50,maxHp:50,',
+    'score:25,color:"#fff",core:"#fff"}];',
+    'firePlayerWeapons();game.bullets=game.bullets.slice(0,1);',
+    'updatePlayerBullets(.35);'
+  ].join("\n"));
+  assert.ok(Math.abs(app.eval("game.boss.parts[0].hp")-
+    (80-3.45*bossParts.BALANCE.weakPointDamageScale))<1e-9);
+  assert.equal(app.eval("game.boss.hp"),200);
+  assert.ok(Math.abs(app.eval("game.enemies[0].hp")-46.55)<1e-9);
+  assert.equal(app.eval("game.orangeExplosions.length"),1);
+});
+
+test("RED-ORANGE Boss hull receives one 3x explosion, even when splash reaches nearby enemy",()=>{
+  const app=boot();
+  app.eval([
+    'game.state="PLAYING";game.stageMode="BOSS";game.player.x=175;',
+    'game.weaponType="redorange";',
+    'game.boss={active:true,x:650,y:467,rx:100,ry:80,hp:200,maxHp:200,parts:[],',
+    'color:"#fff",core:"#fff"};',
+    'game.enemies=[{kind:"scout",x:580,y:550,r:20,hp:50,maxHp:50,',
+    'score:25,color:"#fff",core:"#fff"}];',
+    'firePlayerWeapons();game.bullets=game.bullets.slice(0,1);',
+    'updatePlayerBullets(.35);'
+  ].join("\n"));
+  assert.ok(Math.abs(app.eval("game.boss.hp")-196.55)<1e-9);
+  assert.ok(Math.abs(app.eval("game.enemies[0].hp")-46.55)<1e-9);
+  assert.equal(app.eval("game.orangeExplosions.length"),1);
+});
+
+test("RED-ORANGE exploding a splitter never damages its freshly spawned children",()=>{
+  const app=boot();
+  app.eval([
+    'game.state="PLAYING";game.stageMode="WAVE";game.player.x=175;',
+    'game.weaponType="redorange";game.enemies=[{kind:"splitter",',
+    'x:430,y:467,r:35,hp:1,maxHp:1,score:60,color:"#fff",core:"#eee"}];',
+    'firePlayerWeapons();game.bullets=game.bullets.slice(0,1);',
+    'updatePlayerBullets(.2);'
+  ].join("\n"));
+  assert.equal(app.eval("game.stats.kills"),1);
+  assert.equal(app.eval("game.enemies.filter(e=>e.minion).length"),2);
+  assert.equal(app.eval("game.enemies.filter(e=>e.minion).every(e=>e.hp===e.maxHp)"),true);
+  assert.equal(app.eval("game.orangeExplosions.length"),1);
+});
+
+test("RED-ORANGE fan uses 250 real 3x orange-explosion bullets at RED's .38 fan power",()=>{
+  const app=boot();
+  app.eval([
+    'game.state="PLAYING";game.stageMode="WAVE";game.weaponType="redorange";',
+    'game.spawnTimer=999;game.formationTimer=999;game.invuln=999;',
+    'game.fanLog=[];const originalEmit=addPlayerShot;',
+    'addPlayerShot=(...args)=>{if(args[7]?.redOrangeFan)',
+    'game.fanLog.push({vx:args[2],vy:args[3],power:args[5],',
+    'explosive:args[7].orangeBlast});originalEmit(...args)};',
+    'game.fireCooldown=0;keys.Space=true;Math.random=()=>0;',
+    'updatePlaying(.01);keys.Space=false;'
+  ].join("\n"));
+  assert.equal(app.eval("game.redWeapon.special.redOrange"),true);
+  assert.equal(app.eval("game.redWeapon.stars"),0);
+  app.eval('game.state="PAUSED";updatePlaying(6)');
+  assert.equal(app.eval("game.fanLog.length"),0);
+  assert.equal(app.eval("game.redWeapon.stars"),0);
+  app.eval('game.state="PLAYING";game.stageMode="TRANSITION";game.transition=10;updatePlaying(5)');
+  assert.equal(app.eval("game.fanLog.length"),0);
+  app.eval('game.stageMode="WAVE";updatePlaying(1)');
+  assert.equal(app.eval("game.redWeapon.stars"),0);
+  assert.ok(app.eval("game.fanLog.length")>0);
+  app.eval('updatePlaying(2)');
+  assert.equal(app.eval("game.fanLog.length"),250);
+  assert.equal(app.eval("game.redWeapon.stars"),1);
+  assert.equal(app.eval("game.redWeapon.special"),null);
+  assert.equal(app.eval("game.fanLog.every(b=>b.power===.38&&b.explosive)"),true);
+  assert.equal(app.eval("game.fanLog.every(b=>Math.abs(Math.atan2(b.vy,b.vx))<=Math.PI/18+1e-10)"),true);
+  assert.equal(app.eval("game.bullets.every(b=>b.redOrangeShot&&b.orangeBlast)"),true);
+});
+
+test("RED-ORANGE individual special fan shot explodes at 3x its RED fan base, radius 100",()=>{
+  const app=boot();
+  app.eval([
+    'game.state="PLAYING";game.stageMode="WAVE";game.player.x=175;',
+    'game.enemies=[',
+    '{kind:"scout",x:400,y:480,r:20,hp:50,maxHp:50,score:20,color:"#fff",core:"#eee"},',
+    '{kind:"scout",x:480,y:480,r:20,hp:50,maxHp:50,score:20,color:"#fff",core:"#eee"}',
+    '];addPlayerShot(300,480,1100,0,5,.38,"#ff9040",redOrangeRules.createShot(true));',
+    'updatePlayerBullets(.15);'
+  ].join("\n"));
+  for(let i=0;i<2;i++)
+    assert.ok(Math.abs(app.eval("game.enemies["+i+"].hp")-(50-.38*3))<1e-9);
+  assert.equal(app.eval("game.orangeExplosions.length"),1);
+  assert.equal(app.eval("game.bullets.length"),0);
+});
+
+test("RED, RED-WHITE, RED-ORANGE started fan keeps its original bullet type after switching P",()=>{
+  const transitions=[
+    {start:"red",next:"redorange",pickup:"P_RED_ORANGE",tag:"redSpecial"},
+    {start:"redorange",next:"red",pickup:"P_RED",tag:"redOrangeFan"},
+    {start:"redwhite",next:"red",pickup:"P_RED",tag:"redWhiteFan"},
+    {start:"redorange",next:"redwhite",pickup:"P_RED_WHITE",tag:"redOrangeFan"}
+  ];
+  for(const t of transitions){
+    const app=boot();
+    app.eval([
+      'game.state="PLAYING";game.stageMode="WAVE";',
+      'game.weaponType="'+t.start+'";',
+      'game.spawnTimer=999;game.formationTimer=999;game.invuln=999;',
+      'game.fireCooldown=0;keys.Space=true;Math.random=()=>0;',
+      'updatePlaying(.01);keys.Space=false;'
+    ].join("\n"));
+    const startTag=app.eval('Boolean(game.redWeapon.special.redWhite)');
+    const fireTag=app.eval('Boolean(game.redWeapon.special.redOrange)');
+    assert.equal(startTag,t.start==="redwhite");
+    assert.equal(fireTag,t.start==="redorange");
+    if(t.start==="redorange"&&t.next==="redwhite")
+      app.eval('collectPowerup({type:"P_RED",x:230,y:480,life:1})');
+    app.eval('collectPowerup({type:"'+t.pickup+'",x:230,y:480,life:1})');
+    assert.equal(app.eval("game.weaponType"),t.next);
+    app.eval("updatePlaying(.15)");
+    const counts=app.eval([
+      '(()=>{const fans=game.bullets.filter(b=>b.redSpecial||b.redWhiteFan||b.redOrangeFan);',
+      'return {count:fans.length,matching:fans.filter(b=>b.'+t.tag+').length,',
+      'explosive:fans.filter(b=>b.orangeBlast).length,',
+      'electric:fans.filter(b=>b.whiteConductive).length};})()'
+    ].join("\n"));
+    assert.ok(counts.count>0,t.start+" to "+t.next);
+    assert.equal(counts.matching,counts.count);
+    assert.equal(counts.explosive,t.start==="redorange"?counts.count:0);
+    assert.equal(counts.electric,t.start==="redwhite"?counts.count:0);
+    app.eval("updatePlaying(2.85)");
+    assert.equal(app.eval("game.redWeapon.stars"),1);
+    assert.equal(app.eval("game.redWeapon.special"),null);
+  }
+});
+
+test("RED, RED-WHITE and RED-ORANGE display ONE shared five-star HUD, normal ORANGE hides stars",()=>{
+  const app=boot();
+  app.eval('game.state="PLAYING";game.weaponType="red";game.redWeapon.stars=4;');
+  const hud=()=>app.eval([
+    '(()=>{const labels=[];ctx.fillText=t=>labels.push(String(t));',
+    'drawHud();return labels;})()'
+  ].join("\n"));
+  assert.ok(hud().some(x=>x.includes("RED P")&&x.includes("★★★★☆")));
+  app.eval('collectPowerup({type:"P_RED_ORANGE",x:240,y:480,life:1})');
+  assert.equal(app.eval("game.redWeapon.stars"),4);
+  assert.ok(hud().some(x=>x.includes("RED-ORANGE P")&&x.includes("★★★★☆")));
+  assert.ok(hud().includes("RED-ORANGE BLAST  R100 X3"));
+  app.eval('game.invuln=0;damagePlayer()');
+  assert.equal(app.eval("game.redWeapon.stars"),3);
+  assert.ok(hud().some(x=>x.includes("RED-ORANGE P")&&x.includes("★★★☆☆")));
+  app.eval('collectPowerup({type:"P_RED",x:240,y:480,life:1})');
+  app.eval('collectPowerup({type:"P_RED_WHITE",x:240,y:480,life:1})');
+  assert.equal(app.eval("game.redWeapon.stars"),3);
+  assert.ok(hud().some(x=>x.includes("RED-WHITE P")&&x.includes("★★★☆☆")));
+  app.eval('collectPowerup({type:"P_ORANGE",x:240,y:480,life:1})');
+  assert.equal(hud().some(x=>x.includes("RED-ORANGE P")||x.includes("RED-WHITE P")||x.includes("RED P")),false);
+  assert.equal(app.eval("game.redWeapon.stars"),3);
+  app.eval('collectPowerup({type:"P_RED_ORANGE",x:240,y:480,life:1})');
+  assert.ok(hud().some(x=>x.includes("RED-ORANGE P")&&x.includes("★★★☆☆")));
+});
+
+test("RED-ORANGE shared special caps at five stars and BOMB alone never awards a star",()=>{
+  const app=boot();
+  app.eval([
+    'game.state="PLAYING";game.stageMode="WAVE";game.weaponType="redorange";',
+    'game.invuln=999;game.spawnTimer=999;game.formationTimer=999;',
+    'game.redWeapon.stars=5;useBomb();'
+  ].join("\n"));
+  assert.equal(app.eval("game.redWeapon.stars"),5);
+  app.eval('redRules.fire(game.redWeapon,0);redOrangeRules.markTriggeredFan(game.redWeapon);updatePlaying(3)');
+  assert.equal(app.eval("game.redWeapon.stars"),5);
+  assert.equal(app.eval("game.redWeapon.special"),null);
+  assert.ok(app.eval('game.message.includes("MAX 5 STARS")'));
+});
+
+test("RED-ORANGE gradient pickup, projectiles and HUD only draw, without causing damage",()=>{
+  const app=boot();
+  const v=app.eval([
+    '(()=>{game.state="PLAYING";game.stageMode="WAVE";',
+    'game.weaponType="redorange";',
+    'game.enemies=[{kind:"scout",x:580,y:467,r:25,hp:100,maxHp:100,',
+    'score:30,color:"#fff",core:"#fff"}];',
+    'game.powerups=[{type:"P_RED_ORANGE",x:400,y:640,t:0,life:10}];',
+    'firePlayerWeapons();const colors=[],labels=[];',
+    'ctx.createLinearGradient=()=>({addColorStop:(p,c)=>colors.push(c)});',
+    'ctx.fillText=t=>labels.push(String(t));',
+    'const hp=game.enemies[0].hp;',
+    'drawPowerups();drawPlayerBullets();drawHud();drawFrame(.016);',
+    'return {hp,after:game.enemies[0].hp,colors,labels};})()'
+  ].join("\n"));
+  assert.equal(v.hp,v.after);
+  for(const c of ["#f72f50","#ffaf36","#fa344f","#ffad37"])
+    assert.ok(v.colors.includes(c),c);
+  assert.ok(v.labels.includes("RED-ORANGE BLAST  R100 X3"));
+  assert.ok(v.labels.some(x=>x.includes("RED-ORANGE P")));
+});
+
+test("RED-ORANGE fan respects existing 360 projectile and 48 orange explosion FX budgets",()=>{
+  const app=boot();
+  app.eval([
+    'game.state="PLAYING";game.stageMode="WAVE";game.weaponType="redorange";',
+    'game.spawnTimer=999;game.formationTimer=999;game.invuln=999;',
+    'redRules.fire(game.redWeapon,0);redOrangeRules.markTriggeredFan(game.redWeapon);',
+    'redRules.tick(game.redWeapon,3,(a)=>addPlayerShot(game.player.x+60,game.player.y,',
+    'Math.cos(a)*1060,Math.sin(a)*1060,5,.38,"#ff9040",redOrangeRules.createShot(true)));'
+  ].join("\n"));
+  assert.equal(app.eval("game.bullets.length"),250);
+  assert.equal(app.eval("game.bullets.every(b=>b.redOrangeFan&&b.orangeBlast)"),true);
+  app.eval('game.bullets=Array.from({length:360},(_,i)=>({x:300,y:100+i*.6,vx:1,vy:0,power:1.15}));firePlayerWeapons()');
+  assert.equal(app.eval("game.bullets.length"),360);
+  app.eval('for(let i=0;i<140;i++)addOrangeExplosion(100+i,480)');
+  assert.equal(app.eval("game.orangeExplosions.length"),48);
+  assert.equal(app.eval("game.orangeExplosions[0].x"),192);
+  app.eval('game.state="PAUSED";updatePlaying(1)');
+  assert.equal(app.eval("game.orangeExplosions.length"),48);
+});
+
+test("original RED, RED-WHITE and ORANGE projectile effects remain isolated after RED-ORANGE swaps",()=>{
+  const app=boot();
+  app.eval('game.state="PLAYING";game.weaponType="red";firePlayerWeapons()');
+  assert.equal(app.eval("game.bullets.length"),2);
+  assert.equal(app.eval("game.bullets.every(b=>b.redNormal&&!b.orangeBlast)"),true);
+  app.eval([
+    'game.bullets=[];collectPowerup({type:"P_RED_ORANGE",x:240,y:480,life:1});',
+    'firePlayerWeapons();'
+  ].join("\n"));
+  assert.equal(app.eval("game.bullets.every(b=>b.redOrangeShot&&b.orangeBlast&&!b.whiteConductive)"),true);
+  app.eval('game.bullets=[];collectPowerup({type:"P_ORANGE",x:240,y:480,life:1});firePlayerWeapons()');
+  assert.equal(app.eval("game.bullets.every(b=>b.orangeBlast&&!b.redOrangeShot)"),true);
+  app.eval('game.bullets=[];collectPowerup({type:"P_RED",x:240,y:480,life:1});');
+  app.eval('collectPowerup({type:"P_RED_WHITE",x:240,y:480,life:1});firePlayerWeapons()');
+  assert.equal(app.eval("game.bullets.every(b=>b.whiteConductive&&b.redWhiteShot&&!b.orangeBlast)"),true);
+  app.eval('game.bullets=[];collectPowerup({type:"P_RED",x:240,y:480,life:1});firePlayerWeapons()');
+  assert.equal(app.eval("game.bullets.every(b=>b.redNormal&&!b.orangeBlast)"),true);
 });

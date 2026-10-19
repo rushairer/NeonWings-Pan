@@ -7,6 +7,16 @@ Independently maintained from NeonWings commit `5ebcb1de1adb288b41a3c5e387f747bc
 - [x] Configure standalone Pages workflow
 - [ ] Verify site deployment and controller tests on hardware
 
+## v26.19.0 — RED-ORANGE shared-star exploding scatter
+
+- [x] Add 24th P with red/orange gradient, exclusive RED or ORANGE predecessor (or same-P recollection), nonconsuming invalid pickups
+- [x] Share exactly one RED star/volley/special state across RED, RED-WHITE and RED-ORANGE, including 5+stars double volleys then 0.4s rest and 10% special proc
+- [x] Make each normal twin bullet and all 250 fan shots a genuine ORANGE 100-radius 3x first-contact explosive bullet, keeping RED 1.15 normal and 0.38 special base power
+- [x] Preserve initial fan projectile type on weapon swaps, pause and transitions; only a completed three-second fan earns one shared star (max 5)
+- [x] Reuse original ORANGE Boss/shield/turret handling, splitter snapshots, 48 visual effects and 360 normal-bullet cap without changing standalone RED/RED-WHITE/ORANGE
+- [x] Implement new P/recovery/drop mapping, gradients, shared HUD, 24 equal P drops, versioned Pages and full Node/unit/combat/controller/build regressions
+- [ ] Validate fan readability and late-wave FPS with real browser/handheld playtests
+
 ## v26.18.0 — GRAY FLAME P / red-gray burn
 
 - [x] Add twenty-third P color with red-gray gradient, exclusive GRAY prerequisite and persistent rejected pickups
