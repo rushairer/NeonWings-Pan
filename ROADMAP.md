@@ -7,6 +7,23 @@ Independently maintained from NeonWings commit `5ebcb1de1adb288b41a3c5e387f747bc
 - [x] Configure standalone Pages workflow
 - [ ] Verify site deployment and controller tests on hardware
 
+## v26.25.0 — LIME 环绕→追踪弹
+
+- [x] 先按原有 3.2s 在玩家 360 半径内螺旋环绕，最后扫掠命中优先处理
+- [x] 未命中则将原子弹转换为自动追踪目标的黄绿色弹丸，速度 940，追踪寿命 3.6s，保持 1.15 基础伤害
+- [x] 目标消失/没有敌人时安全转向或继续惯性飞行，支持 Boss 炮台、护盾、已射弹武器切换及 RAINBOW 随机环绕弹
+- [x] 追踪阶段保持原先 P 弹上限豁免，但用 3.6 秒 TTL 回收；最后环绕扫掠判定/大帧剩余时间/暂停时间均有回归测试
+- [x] 更新 HUD、子弹可视化、README/AGENTS、静态构建版本 26.25.0
+- [ ] 真机检验满屏追踪弹的 FPS 和目标识别度
+
+## v26.24.0 — 武器平衡
+
+- [x] ECLIPSE 发射间隔 0.1 秒；保持 12 波上限
+- [x] RAINBOW 发射间隔 0.15 秒；抽取概率及单发机制不变
+- [x] ORANGE 共同倍率 1.6× 覆盖普通橙、红橙普通与大招、深红金、彩色橙色弹
+- [x] 更新 HUD、测试和 Pages 缓存脚本版本
+- [ ] 真实浏览器/掌机验证高频震荡波帧率
+
 ## v26.23.0 — DARK RED-GOLD 40-unit knockback plus ORANGE blasts
 
 - [x] Add 28th uniform P drop: deep-red→gold gradient, collectible ONLY from currently equipped DARK RED or the same fusion, with nonconsuming ineligible pickup

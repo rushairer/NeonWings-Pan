@@ -2,11 +2,11 @@ const test = require("node:test");
 const assert = require("node:assert/strict");
 const orange = require("../src/orange-weapon.js");
 
-test("orange P explosion radius is exactly 100 units and damage multiplier is 3", () => {
+test("orange P explosion radius is exactly 100 units and damage multiplier is 1.6", () => {
   assert.equal(orange.RULES.radius, 100);
-  assert.equal(orange.RULES.damageMultiplier, 3);
+  assert.equal(orange.RULES.damageMultiplier, 1.6);
   assert.equal(orange.RULES.normalDamage, 1.15);
-  assert.ok(Math.abs(orange.RULES.normalDamage * orange.RULES.damageMultiplier - 3.45) < 1e-10);
+  assert.ok(Math.abs(orange.RULES.normalDamage * orange.RULES.damageMultiplier - 1.84) < 1e-10);
   assert.equal(orange.RULES.maxExplosionEffects, 48);
   assert.equal(orange.RULES.explosionLifetimeSeconds, 0.35);
 });
@@ -56,10 +56,10 @@ test("blast excludes the direct target, hits each other target once and never ch
   const hit = [];
   const result = orange.splash({ x: 390, y: 480 },
     [direct, neighbor, secondHop], null, direct,
-    e => { hit.push(e); e.hp -= 3.45; }, () => {});
+    e => { hit.push(e); e.hp -= 1.84; }, () => {});
   assert.deepEqual(result, { enemies: 1, boss: false });
   assert.deepEqual(hit, [neighbor]);
-  assert.ok(Math.abs(neighbor.hp - 46.55) < 1e-10);
+  assert.ok(Math.abs(neighbor.hp - 48.16) < 1e-10);
   assert.equal(direct.hp, 50);
   assert.equal(secondHop.hp, 50);
 });

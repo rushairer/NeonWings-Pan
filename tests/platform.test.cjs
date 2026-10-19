@@ -159,8 +159,8 @@ test("static HTML loads platform before game and doesn't embed legacy code", () 
   assert.ok(html.indexOf('src="./src/red-white-weapon.js?') < html.indexOf('src="./src/gray-weapon.js"'));
   assert.ok(html.indexOf('src="./src/gray-weapon.js"') < html.indexOf('src="./src/gray-flame-weapon.js?'));
   assert.ok(html.indexOf('src="./src/gray-flame-weapon.js?') < html.indexOf('src="./src/pink-weapon.js"'));
-  assert.ok(html.indexOf('src="./src/pink-weapon.js"') < html.indexOf('src="./src/orange-weapon.js"'));
-  assert.ok(html.indexOf('src="./src/orange-weapon.js"') < html.indexOf('src="./src/red-orange-weapon.js?'));
+  assert.ok(html.indexOf('src="./src/pink-weapon.js"') < html.indexOf('src="./src/orange-weapon.js?'));
+  assert.ok(html.indexOf('src="./src/orange-weapon.js?') < html.indexOf('src="./src/red-orange-weapon.js?'));
   assert.ok(html.indexOf('src="./src/red-orange-weapon.js?') < html.indexOf('src="./src/brown-weapon.js"'));
   assert.ok(html.indexOf('src="./src/brown-weapon.js"') < html.indexOf('src="./src/purple-white-weapon.js?'));
   assert.ok(html.indexOf('src="./src/purple-white-weapon.js?') < html.indexOf('src="./src/brown-yellow-weapon.js?'));
@@ -350,7 +350,7 @@ test("RED-ORANGE runtime loads after both RED/ORANGE before game and deploys wit
   assert.ok(html.includes('src="./src/game.js?v='+pkg.version+'"'));
   assert.ok(html.indexOf('src="./src/red-weapon.js"') <
     html.indexOf('src="./src/red-orange-weapon.js?'));
-  assert.ok(html.indexOf('src="./src/orange-weapon.js"') <
+  assert.ok(html.indexOf('src="./src/orange-weapon.js?') <
     html.indexOf('src="./src/red-orange-weapon.js?'));
   assert.ok(html.indexOf('src="./src/red-orange-weapon.js?') <
     html.indexOf('src="./src/game.js?'));
@@ -417,11 +417,11 @@ test("DARK RED-GOLD runtime is cache-versioned and built after DARK RED and ORAN
   const html=fs.readFileSync(path.join(__dirname,"../index.html"),"utf8");
   const build=fs.readFileSync(path.join(__dirname,"../scripts/build.mjs"),"utf8");
   const pkg=require("../package.json");
-  assert.equal(pkg.version,"26.23.0");
+  assert.equal(pkg.version,"26.25.0");
   assert.ok(html.includes('src="./src/dark-red-weapon.js?v='+pkg.version+'"'));
   assert.ok(html.includes('src="./src/dark-red-gold-weapon.js?v='+pkg.version+'"'));
   assert.ok(html.includes('src="./src/game.js?v='+pkg.version+'"'));
-  assert.ok(html.indexOf('src="./src/orange-weapon.js"') <
+  assert.ok(html.indexOf('src="./src/orange-weapon.js?') <
     html.indexOf('src="./src/dark-red-gold-weapon.js?'));
   assert.ok(html.indexOf('src="./src/dark-red-weapon.js?') <
     html.indexOf('src="./src/dark-red-gold-weapon.js?'));
@@ -433,4 +433,14 @@ test("DARK RED-GOLD runtime is cache-versioned and built after DARK RED and ORAN
     orangeWeapon.RULES.damageMultiplier);
   assert.equal(darkRedGoldWeapon.RULES.normalDamage,
     darkRedWeapon.RULES.normalDamage);
+});
+
+test("v26.25 LIME homing successor is cache-fresh and bounded",()=>{
+  const html=fs.readFileSync(path.join(__dirname,"../index.html"),"utf8");
+  const pkg=require("../package.json");
+  assert.ok(html.includes('src="./src/lime-weapon.js?v='+pkg.version+'"'));
+  assert.ok(html.includes('src="./src/game.js?v='+pkg.version+'"'));
+  assert.equal(limeWeapon.RULES.bulletLifetimeSeconds,3.2);
+  assert.equal(limeWeapon.RULES.homingLifetimeSeconds,3.6);
+  assert.equal(limeWeapon.RULES.homingSpeed,940);
 });

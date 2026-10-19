@@ -108,9 +108,46 @@ test("bullets expire after active time, preserving the last live swept segment",
   assert.equal(bullet.dead,undefined);
   const end=lime.step(bullet,player,1.61);
   assert.ok(end.length>0);
-  assert.equal(bullet.dead,true);
+  assert.equal(bullet.dead,undefined);
   assert.equal(bullet.life,0);
+  assert.equal(bullet.orbiting,true);
+  const x=bullet.x,y=bullet.y;
+  assert.equal(lime.launchHoming(bullet,{x:x+500,y:y-200,hp:100}),true);
+  assert.equal(bullet.orbiting,false);
+  assert.equal(bullet.limeHoming,true);
+  assert.equal(bullet.life,R.homingLifetimeSeconds);
+  assert.equal(R.homingLifetimeSeconds,3.6);
+  assert.ok(Math.abs(Math.hypot(bullet.vx,bullet.vy)-R.homingSpeed)<1e-9);
+  assert.ok(bullet.vx>0 && bullet.vy<0);
+  assert.equal(lime.launchHoming(bullet),false,"conversion is one-time only");
   assert.deepEqual(lime.step(bullet,player,0.1),[]);
+});
+
+test("LIME expired orbit launches tangentially with no target, without cloning or adding damage",()=>{
+  const p={x:175,y:480},shot=lime.createShot(p,-10);
+  const originalRadius=shot.r;
+  const expectedDamage=R.normalDamage;
+  lime.step(shot,p,R.bulletLifetimeSeconds);
+  const angle=Math.atan2(shot.vy,shot.vx);
+  assert.equal(lime.launchHoming(shot),true);
+  assert.equal(shot.r,originalRadius);
+  assert.equal(expectedDamage,1.15);
+  assert.ok(Math.abs(Math.atan2(shot.vy,shot.vx)-angle)<1e-9);
+  assert.equal(shot.life,R.homingLifetimeSeconds);
+  assert.ok(Math.abs(Math.hypot(shot.vx,shot.vy)-R.homingSpeed)<1e-9);
+});
+
+test("LIME homing conversion refuses live orbit, killed bullets, invalid targets and repeat conversions",()=>{
+  const p={x:175,y:480},bullet=lime.createShot(p,12);
+  assert.equal(lime.launchHoming(bullet,{x:600,y:480,hp:10}),false);
+  assert.equal(bullet.orbiting,true);
+  lime.step(bullet,p,3.2);
+  bullet.dead=true;
+  assert.equal(lime.launchHoming(bullet,{x:600,y:480,hp:10}),false);
+  bullet.dead=false;
+  assert.equal(lime.launchHoming(bullet,{x:NaN,y:480,hp:10}),true);
+  assert.ok(Number.isFinite(bullet.vx)&&Number.isFinite(bullet.vy));
+  assert.equal(lime.launchHoming(bullet,{x:600,y:480,hp:10}),false);
 });
 
 test("invalid delta times and absent bullets cannot corrupt firing state", () => {

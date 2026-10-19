@@ -5,7 +5,7 @@
   "use strict";
   const RULES = Object.freeze({
     normalDamage: 1.15,
-    cooldownSeconds: 0.55,
+    cooldownSeconds: 0.1,
     expandSpeed: 1600,
     maxRadius: 1500,
     maxWaves: 12
