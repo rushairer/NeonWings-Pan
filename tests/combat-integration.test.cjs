@@ -4150,6 +4150,9 @@ test("RECRUIT BOMB kills convert normal enemies, but never Bosses or player",()=
   assert.equal(app.eval("game.enemies.length"),0);
   const h=app.eval("game.hp");
   app.eval([
+    // This checks FRIENDLY collision only. A random HP pickup spawned by the
+    // defeated enemy could otherwise heal the player and masquerade as a hit.
+    'game.powerups=[];',
     'game.spawnTimer=999;game.formationTimer=999;',
     'game.player.x=game.allies[0].x;game.player.y=game.allies[0].y;',
     'updatePlaying(.1);'
