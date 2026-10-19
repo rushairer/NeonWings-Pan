@@ -7,6 +7,15 @@ Independently maintained from NeonWings commit `5ebcb1de1adb288b41a3c5e387f747bc
 - [x] Configure standalone Pages workflow
 - [ ] Verify site deployment and controller tests on hardware
 
+## v26.20.0 — BROWN-YELLOW one-hop refracted lock laser
+
+- [x] Add 25th brown→yellow gradient P, collectible only while BROWN or the same fusion is currently equipped; rejected drops remain with no score/level/state side effects
+- [x] Retain Brown hold-to-fire first-obstruction acquisition, zero bullet objects, original 0.101s/1.15 scaled hit and 1300-unit range per segment
+- [x] On real first target contact, refract exactly once to nearest other live target (enemy or Boss), up to 1300 units from first contact; second segment also stops at its first obstruction with no piercing or recursive hits
+- [x] Enforce original-target exclusion, Boss identity, shields, turret priority, kill/score and splitter liveness; reset on release/weapon swap, pause and transitions freeze the shared brown clock
+- [x] Add brown/yellow P gradient, dual laser line visuals and compact HUD; update 25-way uniform drops, power-loss recovery, Pages version/cache/build and dedicated unit/integration regression tests
+- [ ] Visually validate bent beams, Boss targeting and frame timing on physical handheld/browser
+
 ## v26.19.0 — RED-ORANGE shared-star exploding scatter
 
 - [x] Add 24th P with red/orange gradient, exclusive RED or ORANGE predecessor (or same-P recollection), nonconsuming invalid pickups

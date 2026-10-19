@@ -29,6 +29,18 @@ A controller-first, five-stage, side-scrolling neon arcade shooter built with br
 - **v26.2.0 NeonWings-Pan exclusive:** red P twin-line fire, a 250-projectile ±10° special fan triggered on 10% of eligible volleys, and an independent 0–5 star progression.
 - **v26.3.0 NeonWings-Pan exclusive:** green P retains starter-grade dual shots and adds a passive neon halo dealing area damage to nearby enemies once per second.
 
+## v26.20.0 — BROWN-YELLOW 棕黄渐变折射锁定激光
+
+新增第 **25 种 P 武器：BROWN-YELLOW REFRACT LASER（棕色→黄色渐变）**。**只能在当前装备棕色 BROWN P 时获得**（已装备 BROWN-YELLOW 可重复拾取恢复/升级）；普通黄色、浅蓝白 ARC LASER 等其他武器都不允许直接拾取。无资格拾取时 P 不消失、不加分、不换武器，并显示提示「REQUIRES BROWN P」。
+
+**完全继承原棕色激光：**持续按住开火、自动锁定前方最近有效敌人（包含 Boss 炮台或机体）、原始射线只击中第一个阻挡物而不穿透、每 **0.101 秒**结算一次伤害，单次 **1.15 基础伤害**，单段最大射程 **1300 游戏坐标**。武器不发射任何普通子弹；战机及 Overdrive 伤害系数、护盾、击杀积分和 Boss 弱点判定保持原样。
+
+**新增一次折射：**激光首次命中敌人或 Boss 后，会从其**实际命中点**折向范围内**最近的另一个有效目标**（普通敌人或 Boss，包含未被破坏的炮台）。折射线段可以转向屏幕上下左右；最大长度也是 1300，并保留棕色激光的首个遮挡物判定。**折射段仅命中一个不同目标一次**，造成与第一段相同的 1.15 基础伤害（不衰减）；不会继续第三段，也不会对同一敌人或同一个 Boss 的机体/炮台重复伤害。只有一个敌人时只显示第一段激光。原棕色武器仍完全不折射；浅蓝白 ARC LASER 原有的穿透、导电效果也不改变。
+
+释放开火、切换 P、没有有效目标时立即关闭折射激光；暂停、过场、奖励等非正常战斗状态不推进激光伤害计时。新增棕黄渐变拾取物、两段棕黄到金黄色的折线光束和专属 HUD 提示 `REFRACT LASER  1 HOP`；绘制时绝不进行伤害结算。**25 种 P 继续等概率掉落**，包括掉血降级后的本武器 P 恢复。
+
+**在线体验：** https://rushairer.github.io/NeonWings-Pan/?v=26.20.0
+
 ## v26.19.0 — RED-ORANGE 红橙渐变爆炸散射武器
 
 新增第 **24 种 P 武器：RED-ORANGE BLAST SCATTER（红色→橙色渐变）**。只有当前正在使用普通红色 RED P 或普通橙色 ORANGE P 时才能拾取；已装备 RED-ORANGE 时重新拾取可以升级/恢复。其他武器（包括 RED-WHITE 红白渐变）不能直接领取红橙 P，物品保持在场上，并提示需要普通红色或橙色 P。
