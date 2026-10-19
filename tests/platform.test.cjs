@@ -8,6 +8,7 @@ const controller = require("../src/controller.js");
 const combat = require("../src/combat.js");
 const redWeapon = require("../src/red-weapon.js");
 const greenWeapon = require("../src/green-weapon.js");
+const solarAuraWeapon = require("../src/solar-aura-weapon.js");
 const blackWeapon = require("../src/black-weapon.js");
 const whiteWeapon = require("../src/white-weapon.js");
 const grayWeapon = require("../src/gray-weapon.js");
@@ -53,7 +54,7 @@ function boot(options = {}) {
     NeonController: controller,
     NeonCombat: combat,
     NeonRedWeapon: redWeapon,
-    NeonGreenWeapon: greenWeapon,
+    NeonGreenWeapon: greenWeapon, NeonSolarAuraWeapon: solarAuraWeapon,
     NeonBlackWeapon: blackWeapon, NeonWhiteWeapon: whiteWeapon, NeonGrayWeapon: grayWeapon, NeonPinkWeapon: pinkWeapon, NeonOrangeWeapon: orangeWeapon, NeonBrownWeapon: brownWeapon, NeonLimeWeapon: limeWeapon, NeonSkyWeapon: skyWeapon, NeonDarkRedWeapon: darkRedWeapon, NeonRainbowWeapon: rainbowWeapon, NeonMagnetWeapon: magnetWeapon, NeonArcLaserWeapon: arcLaserWeapon, NeonStasisWeapon: stasisWeapon, NeonEclipseWeapon: eclipseWeapon, NeonRecruitWeapon: recruitWeapon,
     NeonCollision: collision,
     NeonEnemyBehaviors: enemyBehaviors,
@@ -143,7 +144,8 @@ test("static HTML loads platform before game and doesn't embed legacy code", () 
   assert.ok(html.indexOf('src="./src/controller.js"') < html.indexOf('src="./src/combat.js"'));
   assert.ok(html.indexOf('src="./src/combat.js"') < html.indexOf('src="./src/red-weapon.js"'));
   assert.ok(html.indexOf('src="./src/red-weapon.js"') < html.indexOf('src="./src/green-weapon.js"'));
-  assert.ok(html.indexOf('src="./src/green-weapon.js"') < html.indexOf('src="./src/black-weapon.js"'));
+  assert.ok(html.indexOf('src="./src/green-weapon.js"') < html.indexOf('src="./src/solar-aura-weapon.js?'));
+  assert.ok(html.indexOf('src="./src/solar-aura-weapon.js?') < html.indexOf('src="./src/black-weapon.js"'));
   assert.ok(html.indexOf('src="./src/black-weapon.js"') < html.indexOf('src="./src/white-weapon.js"'));
   assert.ok(html.indexOf('src="./src/white-weapon.js"') < html.indexOf('src="./src/gray-weapon.js"'));
   assert.ok(html.indexOf('src="./src/gray-weapon.js"') < html.indexOf('src="./src/pink-weapon.js"'));
@@ -250,11 +252,11 @@ test("ARC LASER and STASIS versioned standalone runtimes ship to Pages before en
   assert.equal(stasisWeapon.RULES.freezeSeconds,3);
 });
 
-test("ECLIPSE and RECRUIT modules load in order and deploy with v26.15.0 static build",()=>{
+test("ECLIPSE and RECRUIT modules remain present in the static build",()=>{
   const html=fs.readFileSync(path.join(__dirname,"../index.html"),"utf8");
   const build=fs.readFileSync(path.join(__dirname,"../scripts/build.mjs"),"utf8");
   const pkg=require("../package.json");
-  assert.equal(pkg.version,"26.15.0");
+  assert.match(pkg.version,/^\d+\.\d+\.\d+$/);
   for(const name of ["eclipse","recruit"]){
     assert.ok(html.includes('src="./src/'+name+'-weapon.js?v='+pkg.version+'"'));
     assert.ok(build.includes('"src/'+name+'-weapon.js"'));
@@ -268,4 +270,21 @@ test("ECLIPSE and RECRUIT modules load in order and deploy with v26.15.0 static 
     html.indexOf('src="./src/game.js?'));
   assert.equal(eclipseWeapon.canEquip("darkred"),true);
   assert.equal(recruitWeapon.RULES.maxAllies,24);
+});
+
+test("SOLAR AURA is versioned, checked and built after GREEN before game", () => {
+  const html=fs.readFileSync(path.join(__dirname,"../index.html"),"utf8");
+  const build=fs.readFileSync(path.join(__dirname,"../scripts/build.mjs"),"utf8");
+  const pkg=require("../package.json");
+  assert.equal(pkg.version,"26.16.0");
+  assert.ok(html.includes('src="./src/solar-aura-weapon.js?v='+pkg.version+'"'));
+  assert.ok(html.includes('src="./src/game.js?v='+pkg.version+'"'));
+  assert.ok(html.indexOf('src="./src/green-weapon.js"') <
+    html.indexOf('src="./src/solar-aura-weapon.js?'));
+  assert.ok(html.indexOf('src="./src/solar-aura-weapon.js?') <
+    html.indexOf('src="./src/game.js?'));
+  assert.ok(build.includes('"src/solar-aura-weapon.js"'));
+  assert.ok(pkg.scripts.check.includes('node --check src/solar-aura-weapon.js'));
+  assert.equal(solarAuraWeapon.RULES.radius,greenWeapon.RULES.radius);
+  assert.equal(solarAuraWeapon.RULES.damagePerPulse,greenWeapon.RULES.damagePerPulse);
 });

@@ -29,6 +29,16 @@ A controller-first, five-stage, side-scrolling neon arcade shooter built with br
 - **v26.2.0 NeonWings-Pan exclusive:** red P twin-line fire, a 250-projectile ±10° special fan triggered on 10% of eligible volleys, and an independent 0–5 star progression.
 - **v26.3.0 NeonWings-Pan exclusive:** green P retains starter-grade dual shots and adds a passive neon halo dealing area damage to nearby enemies once per second.
 
+## v26.16.0 — SOLAR AURA 红→黄渐变光环
+
+新增第 **21** 种 P 武器：**SOLAR AURA（红色→黄色渐变）**。这是绿色武器 GREEN P 的专属进化。必须**当前装备 GREEN P**，才能拾取地图上的 `P_SOLAR`，并变成红黄光环；已装备 SOLAR 时重新拾取同款可继续升级等级或恢复。其他武器（包含 RED/YELLOW）无法直接领取，P 掉落物不会消失，也不会改变得分或等级，只提示「REQUIRES GREEN P」。
+
+光环持续环绕战机、无需按住开火，**攻击半径 360 游戏坐标**（包括碰到圈缘的敌人）；每次脉冲**对圈内每个敌人/Boss 造成 2 点基础伤害**，严格**每 0.1 秒一次**：连续站在范围内，伤害为 **20 HP/秒/目标**，原 GREEN 仍为每 0.4 秒 2 点（5 HP/秒）。两种光环共用绿色的圆形敌人／Boss 矩形机体边缘检测、护盾及击杀结算，不会因为敌人进入范围才开始计时；换武器重置计时，暂停/过场暂停计时，重复拾取同种 SOLAR 不会重置计时。
+
+SOLAR 的普通射击与 GREEN 保持一致：固定双发蓝色 1.15 基础伤害，每约 0.101 秒一次，不受 P 等级影响，也不会获得蓝色特殊穿透枪。红黄渐变光环只影响视觉效果，不会额外造成一笔绘制帧伤害。**21 种 P 均匀掉落**，并提供专属 HUD「SOLAR AURA 2 DMG/0.1S」。
+
+**在线体验：** https://rushairer.github.io/NeonWings-Pan/?v=26.16.0
+
 ## v26.15.0 — ECLIPSE / RECRUIT 双渐变 P 武器
 
 **第 19 种：ECLIPSE（黑→红）360°穿透震荡波。** 必须先使用深红色 DARK RED P，再拾取黑红渐变的 ECLIPSE P 才能装备。其他武器（包括普通 RED）即使撞到也无法领取，不会消耗拾取物或升级等级；装备 ECLIPSE 后可再次拾取同类 P。手动发射时不再生成深红色子弹或导弹，改为以飞机所在位置为圆心扩散一枚完整的 360 度震荡波，前后上下无射击盲区，**穿透所有普通敌人，每个目标每波最多受击一次**。以每秒 1600 游戏坐标向外扩散，覆盖半径最大 1500，按住开火每隔 0.55 秒生成新波。单波击中每个敌人造成一枚标准 P 子弹 1.15 倍基础伤害（继承战机与 Overdrive 原有倍率），沿用盾牌、击杀、Boss 炮台/机体结算；旧波切武器后仍继续，暂停时不前进。最多同时 12 波保护 FPS。
