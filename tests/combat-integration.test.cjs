@@ -4701,7 +4701,7 @@ test("RED and RED-WHITE display SAME star count; WHITE alone hides it, HP hit re
     'drawHud();return labels;})()'
   ].join("\n"));
   assert.ok(labels.some(x=>x.includes("RED-WHITE P")&&x.includes("★★★★☆")));
-  assert.ok(labels.includes("RED-WHITE ARC + SHARED STARS"));
+  assert.ok(labels.includes("RED-WHITE ARC 60% HOPS"));
   app.eval('game.invuln=0;damagePlayer()');
   assert.equal(app.eval("game.redWeapon.stars"),3);
   const damaged=app.eval([

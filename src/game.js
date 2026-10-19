@@ -5092,7 +5092,7 @@ const W = 1280;
         : game.weaponType === "white"
         ? "WHITE ARC 60% 1-3 HOPS"
         : game.weaponType === "redwhite"
-        ? "RED-WHITE ARC + SHARED STARS"
+        ? "RED-WHITE ARC 60% HOPS"
         : game.weaponType === "gray"
         ? "GRAY 20/5/75  1.5X"
         : game.weaponType === "pink"
