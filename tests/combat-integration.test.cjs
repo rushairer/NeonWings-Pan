@@ -4349,6 +4349,7 @@ test("SOLAR keeps GREEN shielding and Boss hull edge behavior at 0.1-second puls
     'game.player.x=500;game.player.y=480;',
     'game.enemies=[enemyBehaviors.initializeEnemy({kind:"shield",',
     'x:630,y:480,r:35,hp:20,maxHp:20,score:80,color:"#f88",core:"#fff"})];',
+    'game.enemies[0].shieldHp=8;game.enemies[0].shieldMax=8;',
     'game.boss={x:850,y:480,rx:100,ry:80,hp:80,maxHp:80,',
     'active:true,color:"#f66",core:"#fff",parts:[]};',
     'updateGreenAura(.10);'
@@ -4374,7 +4375,7 @@ test("SOLAR clock starts on equip without targets, pauses, resets only on P swit
     'game.enemies=[];updatePlaying(.06);'
   ].join("\n"));
   assert.ok(Math.abs(app.eval("game.greenAura.elapsed")-.06)<1e-9);
-  app.eval('game.enemies=[{kind:"scout",x:700,y:480,r:25,hp:12,maxHp:12,',
+  app.eval('game.enemies=[{kind:"scout",x:700,y:480,r:25,hp:12,maxHp:12,'+
     'score:10,color:"#fff",core:"#fff",vx:0,vy:0,t:0,wave:0,shootCd:999,shootBase:999}];');
   app.eval("updatePlaying(.03)");
   assert.equal(app.eval("game.enemies[0].hp"),12);
