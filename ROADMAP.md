@@ -7,6 +7,15 @@ Independently maintained from NeonWings commit `5ebcb1de1adb288b41a3c5e387f747bc
 - [x] Configure standalone Pages workflow
 - [ ] Verify site deployment and controller tests on hardware
 
+## v26.16.0 — SOLAR AURA red→yellow GREEN upgrade
+
+- [x] Add the twenty-first P color with an accurate red-to-yellow gradient pickup and glowing radius-360 halo; GREEN P is the only unlock path (current GREEN or same SOLAR), with nonconsuming rejected pickups
+- [x] Reuse GREEN's enemy circle and Boss hull geometry, 2 HP/pulse, shields, kills, and boss transitions; improve SOLAR pulse frequency to 0.1s (20 HP/s per in-range target), without modifying GREEN's 0.4s (5 HP/s)
+- [x] Use the same two unupgraded ordinary bullets as GREEN at the same 0.101s cadence, independent of P level and BLUE Overdrive lance
+- [x] Make global pulse time start at equip (even if halo is empty), pause/freeze across non-combat screens, reset on switching P, and preserve phase on same-SOLAR pickup
+- [x] Include SOLAR in all 21 equal P drops, loss/recovery, HUD, asset cache version, build, AGENTS.md, release notes and comprehensive tests
+- [ ] Confirm red-yellow ring readability and performance on the actual handheld/browser
+
 ## v26.15.0 — ECLIPSE shockwave / RECRUIT allied conversion
 
 - [x] Add 19th BLACK→RED gradient ECLIPSE P, obtainable only while DARK RED or ECLIPSE is currently equipped; gated pickup remains in the field and has no side effects otherwise

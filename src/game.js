@@ -10,6 +10,8 @@ const W = 1280;
     if (!redRules) throw new Error("NeonWings-Pan red P runtime missing");
     const greenRules = window.NeonGreenWeapon;
     if (!greenRules) throw new Error("NeonWings-Pan green P runtime missing");
+    const solarRules = window.NeonSolarAuraWeapon;
+    if (!solarRules) throw new Error("NeonWings-Pan solar aura P runtime missing");
     const blackRules = window.NeonBlackWeapon;
     if (!blackRules) throw new Error("NeonWings-Pan black P runtime missing");
     const whiteRules = window.NeonWhiteWeapon;
@@ -1856,7 +1858,8 @@ const W = 1280;
       "P_BLUE", "P_PURPLE", "P_YELLOW", "P_RED", "P_GREEN",
       "P_BLACK", "P_WHITE", "P_GRAY", "P_PINK", "P_ORANGE",
       "P_BROWN", "P_LIME", "P_SKY", "P_DARK_RED", "P_RAINBOW",
-      "P_MAGNET", "P_ARC_LASER", "P_STASIS", "P_ECLIPSE", "P_RECRUIT"
+      "P_MAGNET", "P_ARC_LASER", "P_STASIS", "P_ECLIPSE", "P_RECRUIT",
+      "P_SOLAR"
     ]);
     function randomPowerType() {
       return POWER_TYPES[Math.min(POWER_TYPES.length - 1,
@@ -1868,6 +1871,7 @@ const W = 1280;
       if (type === "yellow") return { name: "MISSILE", short: "YELLOW", color: "#ffd76b", core: "#fff4b7" };
       if (type === "red") return { name: "SCATTER", short: "RED", color: "#ff3d5f", core: "#ffe3e8" };
       if (type === "green") return { name: "AURA", short: "GREEN", color: "#43ff87", core: "#e0ffed" };
+      if (type === "solar") return { name: "SOLAR AURA", short: "SOLAR", color: "#ff544e", core: "#ffe779" };
       if (type === "black") return { name: "SLOW", short: "BLACK", color: "#191e2a", core: "#dce9ff" };
       if (type === "white") return { name: "CONDUCT", short: "WHITE", color: "#f1faff", core: "#bde9ff" };
       if (type === "gray") return { name: "IMPACT", short: "GRAY", color: "#929ba9", core: "#f0f3ff" };
@@ -1891,6 +1895,7 @@ const W = 1280;
       if (powerupType === "P_YELLOW") return "yellow";
       if (powerupType === "P_RED") return "red";
       if (powerupType === "P_GREEN") return "green";
+      if (powerupType === "P_SOLAR") return "solar";
       if (powerupType === "P_BLACK") return "black";
       if (powerupType === "P_WHITE") return "white";
       if (powerupType === "P_GRAY") return "gray";
@@ -1914,6 +1919,7 @@ const W = 1280;
       if (game.weaponType === "yellow") return "P_YELLOW";
       if (game.weaponType === "red") return "P_RED";
       if (game.weaponType === "green") return "P_GREEN";
+      if (game.weaponType === "solar") return "P_SOLAR";
       if (game.weaponType === "black") return "P_BLACK";
       if (game.weaponType === "white") return "P_WHITE";
       if (game.weaponType === "gray") return "P_GRAY";
@@ -2021,6 +2027,15 @@ const W = 1280;
         }
         return false;
       }
+      // SOLAR is a GREEN-only evolution. Non-green users cannot consume
+      // its pickup, gain a level, or reset their current weapon/clock.
+      if (p.type === "P_SOLAR" && !solarRules.canEquip(game.weaponType)) {
+        if (!(p.lockHintCooldown > 0)) {
+          showMessage("SOLAR AURA  REQUIRES GREEN P", 1.1);
+          p.lockHintCooldown = 1.2;
+        }
+        return false;
+      }
       p.life = 0;
 
       if (p.type.startsWith("P_")) {
@@ -2123,15 +2138,17 @@ const W = 1280;
           const meta = weaponMeta(wt);
           rect(-23, -23, 46, 46, "#07111f");
           if (wt === "magnet" || wt === "arcLaser" || wt === "stasis" ||
-              wt === "eclipse" || wt === "recruit") {
+              wt === "eclipse" || wt === "recruit" || wt === "solar") {
             const gradient = ctx.createLinearGradient(-19, -19, 19, 19);
             gradient.addColorStop(0, wt === "magnet" ? "#ff4568"
               : wt === "arcLaser" ? "#8bdfff"
               : wt === "eclipse" ? "#07080f"
-              : wt === "recruit" ? "#ff85d9" : "#020408");
+              : wt === "recruit" ? "#ff85d9"
+              : wt === "solar" ? "#ff3d4f" : "#020408");
             gradient.addColorStop(1, wt === "magnet" ? "#a9e8ff"
               : wt === "eclipse" ? "#fb385c"
-              : wt === "recruit" ? "#80bfff" : "#ffffff");
+              : wt === "recruit" ? "#80bfff"
+              : wt === "solar" ? "#ffe04c" : "#ffffff");
             rect(-19, -19, 38, 38, gradient);
           } else rect(-19, -19, 38, 38, meta.color);
           rect(-13, -13, 26, 26, "#081020");
@@ -2186,6 +2203,25 @@ const W = 1280;
               ctx.stroke();
             }
             rect(-5, 23, 10, 7, "#fff0f3");
+          } else if (wt === "solar") {
+            // Bright miniature solar corona announces a faster GREEN halo.
+            const corona = ctx.createLinearGradient(-30, -30, 30, 30);
+            corona.addColorStop(0, "#ff4350");
+            corona.addColorStop(1, "#ffdc42");
+            ctx.strokeStyle = corona;
+            ctx.lineWidth = 3;
+            ctx.shadowColor = "#ffae3c";
+            ctx.shadowBlur = 12;
+            ctx.beginPath();
+            ctx.arc(0, 0, 29, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.shadowBlur = 0;
+            for (const angle of [0, Math.PI / 2, Math.PI, 3 * Math.PI / 2]) {
+              rect(Math.cos(angle) * 30 - 4, Math.sin(angle) * 30 - 4,
+                8, 8, angle % Math.PI ? "#ffdc42" : "#ff4350");
+            }
+            if (!solarRules.canEquip(game.weaponType))
+              drawText("GREEN", 0, 43, 12, "center", "#ffe78c");
           } else if (wt === "green") {
             // Four light points and a tiny circular halo identify the aura pickup.
             rect(-4, -30, 8, 6, meta.core);
@@ -2540,8 +2576,8 @@ const W = 1280;
       const muzzleX = game.player.x + 62;
       const baseY = game.player.y;
 
-      if (type === "blue" || type === "green") {
-        // GREEN uses exactly the unupgraded starting loadout (blue Lv.1)
+      if (type === "blue" || type === "green" || type === "solar") {
+        // GREEN and SOLAR use exactly the unupgraded starting loadout (blue Lv.1)
         // regardless of its pickup level, without inheriting the blue lance.
         addPlayerShot(muzzleX, baseY - 10, 1100, 0, 9, 1.15, "#38e8ff");
         addPlayerShot(muzzleX, baseY + 12, 1100, 0, 9, 1.15, "#38e8ff");
@@ -2765,7 +2801,7 @@ const W = 1280;
       if (game.weaponType === "eclipse") return eclipseRules.RULES.cooldownSeconds;
       if (game.weaponType === "yellow") return Math.max(0.17, 0.25 - game.weaponLevel * 0.025);
       if (game.weaponType === "purple") return Math.max(0.10, 0.145 - game.weaponLevel * 0.012);
-      return Math.max(0.07, 0.115 - (game.weaponType === "green" || game.weaponType === "black" || game.weaponType === "white" || game.weaponType === "gray" || game.weaponType === "pink" || game.weaponType === "orange" || game.weaponType === "lime" || game.weaponType === "brown" || game.weaponType === "sky" || game.weaponType === "darkred" || game.weaponType === "magnet" || game.weaponType === "stasis" || game.weaponType === "arcLaser" || game.weaponType === "recruit" ? 1 : game.weaponLevel) * 0.014);
+      return Math.max(0.07, 0.115 - (game.weaponType === "green" || game.weaponType === "black" || game.weaponType === "white" || game.weaponType === "gray" || game.weaponType === "pink" || game.weaponType === "orange" || game.weaponType === "lime" || game.weaponType === "brown" || game.weaponType === "sky" || game.weaponType === "darkred" || game.weaponType === "magnet" || game.weaponType === "stasis" || game.weaponType === "arcLaser" || game.weaponType === "recruit" || game.weaponType === "solar" ? 1 : game.weaponLevel) * 0.014);
     }
 
     function findMissileTarget(m) {
@@ -4198,31 +4234,38 @@ const W = 1280;
     }
 
     function updateGreenAura(dt) {
-      // One shared 0.4-second pulse clock runs from equip, independently of
-      // enemy contact. Each pulse damages the targets currently within range.
-      const enabled = game.state === "PLAYING" && game.weaponType === "green" &&
+      // GREEN keeps its original 0.4s global clock; SOLAR inherits its exact
+      // circle/Boss geometry and damage, but pulses once every 0.1s.
+      // Neither aura needs FIRE, and both share a single reset-on-switch clock.
+      const solar = game.weaponType === "solar";
+      const rules = solar ? solarRules : greenRules;
+      const enabled = game.state === "PLAYING" &&
+        (game.weaponType === "green" || solar) &&
         (game.stageMode === "WAVE" || game.stageMode === "BOSS");
-      const pulses = greenRules.tick(game.greenAura, dt, enabled, () => {
-        // Any splitter children generated by a kill join the next pulse, not
-        // the same mutation-sensitive iteration that spawned them.
-        const initialCount = game.enemies.length;
-        for (let index = 0; index < initialCount; index++) {
-          const enemy = game.enemies[index];
-          if (enemy && enemy.hp > 0 && greenRules.enemyInRange(game.player, enemy)) {
-            // Preserve shielding, kill rewards, child-spawn caps and score economy.
-            damageEnemy(enemy, greenRules.RULES.damagePerPulse, enemy.x, enemy.y, "#43ff87");
+      const pulseColor = solar ? "#ff9942" : "#43ff87";
+      const pulses = rules.tick(game.greenAura, dt, enabled, () => {
+        // Snapshot only the enemies present when each pulse begins: newly
+        // split children cannot take damage in the same pulse.
+        const targets = game.enemies.slice();
+        const boss = game.boss?.active ? game.boss : null;
+        for (const enemy of targets) {
+          if (game.stageMode !== "WAVE" && game.stageMode !== "BOSS") break;
+          if (enemy.hp > 0 && greenRules.enemyInRange(game.player, enemy)) {
+            // GREEN and SOLAR both preserve frontal shields and kill credit.
+            damageEnemy(enemy, rules.RULES.damagePerPulse,
+              enemy.x, enemy.y, pulseColor);
           }
         }
-        const boss = game.boss;
-        if (boss && boss.active && greenRules.bossInRange(game.player, boss)) {
-          // The ring damages the nearby Boss hull, not distant turret weak points.
+        if (boss && game.boss === boss && boss.active && boss.hp > 0 &&
+            greenRules.bossInRange(game.player, boss)) {
+          // The shared ring hits the Boss hull once, not each turret.
           const x = clamp(game.player.x, boss.x - boss.rx, boss.x + boss.rx);
           const y = clamp(game.player.y, boss.y - boss.ry, boss.y + boss.ry);
-          damageBoss(greenRules.RULES.damagePerPulse, x, y, "#43ff87");
+          damageBoss(rules.RULES.damagePerPulse, x, y, pulseColor);
         }
       });
       if (pulses > 0) {
-        // Never leave a dead aura target to collide with the player this frame.
+        // Prevent destroyed enemies touching the fighter later in this frame.
         game.enemies = game.enemies.filter(e => e.hp > 0 && e.x > -120);
       }
     }
@@ -4836,18 +4879,27 @@ const W = 1280;
     }
 
     function drawGreenAura() {
-      if (game.weaponType !== "green" ||
-          (game.stageMode !== "WAVE" && game.stageMode !== "BOSS")) return;
+      const solar = game.weaponType === "solar";
+      if (game.weaponType !== "green" && !solar) return;
+      if (game.stageMode !== "WAVE" && game.stageMode !== "BOSS") return;
       const radius = greenRules.RULES.radius;
-      const shimmer = 0.60 + Math.sin(game.t * 5.2) * 0.16;
+      const shimmer = 0.60 + Math.sin(game.t * (solar ? 10.4 : 5.2)) * 0.16;
       ctx.save();
       ctx.translate(game.player.x, game.player.y);
-      ctx.fillStyle = "rgba(40,255,135,.075)";
+      let stroke = "#43ff87";
+      if (solar) {
+        const gradient = ctx.createLinearGradient(-radius, -radius, radius, radius);
+        gradient.addColorStop(0, "#ff3d4f");
+        gradient.addColorStop(.55, "#ff9d3d");
+        gradient.addColorStop(1, "#ffe04c");
+        stroke = gradient;
+      }
+      ctx.fillStyle = solar ? "rgba(255,125,48,.075)" : "rgba(40,255,135,.075)";
       ctx.beginPath();
       ctx.arc(0, 0, radius, 0, Math.PI * 2);
       ctx.fill();
-      ctx.strokeStyle = "#43ff87";
-      ctx.shadowColor = "#43ff87";
+      ctx.strokeStyle = stroke;
+      ctx.shadowColor = solar ? "#ffac40" : "#43ff87";
       ctx.shadowBlur = 19;
       ctx.lineWidth = 5;
       ctx.globalAlpha = shimmer;
@@ -4977,6 +5029,8 @@ const W = 1280;
       drawText(`BOMB ${"●".repeat(Math.max(0, game.bomb))}${"○".repeat(Math.max(0, game.bombMax - game.bomb))}`, 656, 50, 23, "left", "#8ef7ff");
       drawText(game.weaponType === "green"
         ? `GREEN AURA  ${greenRules.RULES.damagePerPulse} DMG/0.4S`
+        : game.weaponType === "solar"
+        ? `SOLAR AURA  ${solarRules.RULES.damagePerPulse} DMG/0.1S`
         : game.weaponType === "black"
         ? "BLACK SLOW  50% / 5.0S"
         : game.weaponType === "white"

@@ -8,6 +8,7 @@ const controller = require("../src/controller.js");
 const combat = require("../src/combat.js");
 const redWeapon = require("../src/red-weapon.js");
 const greenWeapon = require("../src/green-weapon.js");
+const solarAuraWeapon = require("../src/solar-aura-weapon.js");
 const blackWeapon = require("../src/black-weapon.js");
 const whiteWeapon = require("../src/white-weapon.js");
 const grayWeapon = require("../src/gray-weapon.js");
@@ -49,7 +50,7 @@ function boot() {
   const canvas = { style: {}, getContext: () => ctx };
   const storage = new Map();
   const window = {
-    NeonPlatform: platform, NeonController: controller, NeonCombat: combat, NeonRedWeapon: redWeapon, NeonGreenWeapon: greenWeapon, NeonBlackWeapon: blackWeapon, NeonWhiteWeapon: whiteWeapon, NeonGrayWeapon: grayWeapon, NeonPinkWeapon: pinkWeapon, NeonOrangeWeapon: orangeWeapon, NeonBrownWeapon: brownWeapon, NeonLimeWeapon: limeWeapon, NeonSkyWeapon: skyWeapon, NeonDarkRedWeapon: darkRedWeapon, NeonRainbowWeapon: rainbowWeapon, NeonMagnetWeapon: magnetWeapon, NeonArcLaserWeapon: arcLaserWeapon, NeonStasisWeapon: stasisWeapon, NeonEclipseWeapon: eclipseWeapon, NeonRecruitWeapon: recruitWeapon, NeonCollision: collision, NeonEnemyBehaviors: enemyBehaviors, NeonWorlds: worlds, NeonBossParts: bossParts, NeonModes: modes, NeonRecords: records, NeonSelectLayout: selectLayout,
+    NeonPlatform: platform, NeonController: controller, NeonCombat: combat, NeonRedWeapon: redWeapon, NeonGreenWeapon: greenWeapon, NeonSolarAuraWeapon: solarAuraWeapon, NeonBlackWeapon: blackWeapon, NeonWhiteWeapon: whiteWeapon, NeonGrayWeapon: grayWeapon, NeonPinkWeapon: pinkWeapon, NeonOrangeWeapon: orangeWeapon, NeonBrownWeapon: brownWeapon, NeonLimeWeapon: limeWeapon, NeonSkyWeapon: skyWeapon, NeonDarkRedWeapon: darkRedWeapon, NeonRainbowWeapon: rainbowWeapon, NeonMagnetWeapon: magnetWeapon, NeonArcLaserWeapon: arcLaserWeapon, NeonStasisWeapon: stasisWeapon, NeonEclipseWeapon: eclipseWeapon, NeonRecruitWeapon: recruitWeapon, NeonCollision: collision, NeonEnemyBehaviors: enemyBehaviors, NeonWorlds: worlds, NeonBossParts: bossParts, NeonModes: modes, NeonRecords: records, NeonSelectLayout: selectLayout,
     innerWidth: 1280, innerHeight: 960,
     addEventListener: (name, fn) => events.set(name, fn)
   };
@@ -695,7 +696,7 @@ test("red P is a collectible fourth weapon and fires exactly two parallel red li
   assert.equal(app.eval("game.bullets.every(b => b.vx===1120 && b.vy===0 && b.redNormal)"), true);
   app.eval('game.weaponType="blue";game.bullets.length=0;firePlayerWeapons()');
   assert.equal(app.eval("game.bullets.some(b=>b.redNormal)"), false);
-  app.eval('Math.random=()=>.175');
+  app.eval('Math.random=()=>.1666667');
   assert.equal(app.eval("randomPowerType()"), "P_RED");
 });
 
@@ -818,7 +819,7 @@ test("green P pickup fires precisely the unupgraded starter bullets at every wea
   app.eval('game.combat.energy=100;activateOverdrive();game.bullets=[];firePlayerWeapons()');
   assert.equal(app.eval('game.bullets.length'), 2);
   assert.equal(app.eval('game.bullets.some(b=>b.lance)'), false);
-  app.eval('Math.random=()=>.225');
+  app.eval('Math.random=()=>.2142857');
   assert.equal(app.eval('randomPowerType()'), "P_GREEN");
 });
 
@@ -996,7 +997,7 @@ test("BLACK P drop is discoverable and its twin dark shots never inherit blue up
   assert.equal(app.eval("game.bullets.some(b=>b.lance)"), false);
   assert.equal(app.eval("game.missiles.length"), 0);
   assert.ok(Math.abs(app.eval("getFireCooldown()") - 0.101) < 1e-10);
-  app.eval("Math.random=()=>.275");
+  app.eval("Math.random=()=>.2619048");
   assert.equal(app.eval("randomPowerType()"), "P_BLACK");
   app.eval("game.weaponLevel=3;game.powerups=[];dropPlayerPowerOnHit()");
   assert.equal(app.eval('game.powerups.at(-1).type'), "P_BLACK");
@@ -1170,7 +1171,7 @@ test("WHITE P is the seventh drop, fires paired unlimited-penetration bolts and 
   assert.equal(app.eval("game.bullets.every(b=>!b.dead && !b.whiteBossHit)"), true);
   assert.equal(app.eval("game.missiles.length"), 0);
   assert.ok(Math.abs(app.eval("getFireCooldown()") - 0.101) < 1e-10);
-  app.eval("Math.random=()=>.325");
+  app.eval("Math.random=()=>.3095238");
   assert.equal(app.eval("randomPowerType()"), "P_WHITE");
   app.eval('game.weaponLevel=3;game.powerups=[];dropPlayerPowerOnHit()');
   assert.equal(app.eval("game.powerups.at(-1).type"), "P_WHITE");
@@ -1333,7 +1334,7 @@ test("GRAY P joins eighth-color drops and fires only baseline paired bullets", (
   assert.equal(app.eval('JSON.stringify(game.bullets.map(b=>({vx:b.vx,vy:b.vy,r:b.r,power:b.power})))'),baseline);
   assert.equal(app.eval("game.missiles.length"),0);
   assert.ok(Math.abs(app.eval("getFireCooldown()")-.101)<1e-10);
-  app.eval("Math.random=()=>.375");
+  app.eval("Math.random=()=>.3571429");
   assert.equal(app.eval("randomPowerType()"),"P_GRAY");
   app.eval("game.powerups=[];dropPlayerPowerOnHit()");
   assert.equal(app.eval("game.powerups.at(-1).type"),"P_GRAY");
@@ -1655,7 +1656,7 @@ test("PINK P is the ninth pickup: one guided bolt at every level, with distinct 
   assert.equal(app.eval("game.bullets[0].life"), pinkWeapon.RULES.bulletLifetimeSeconds);
   assert.equal(app.eval("game.missiles.length"), 0);
   assert.ok(Math.abs(app.eval("getFireCooldown()") - 0.101) < 1e-10);
-  app.eval("Math.random=()=>.425");
+  app.eval("Math.random=()=>.4047619");
   assert.equal(app.eval("randomPowerType()"), "P_PINK");
   app.eval("game.powerups=[];dropPlayerPowerOnHit()");
   assert.equal(app.eval("game.powerups.at(-1).type"), "P_PINK");
@@ -2033,7 +2034,7 @@ test("ORANGE P is the tenth pickup; two starter-grade shots and its HUD survive 
   assert.equal(app.eval('JSON.stringify(game.bullets.map(b=>({vx:b.vx,vy:b.vy,r:b.r,power:b.power})))'),blue);
   assert.ok(Math.abs(app.eval("getFireCooldown()")-.101)<1e-10);
   assert.equal(app.eval("game.missiles.length"),0);
-  app.eval("Math.random=()=>.475");
+  app.eval("Math.random=()=>.452381");
   assert.equal(app.eval("randomPowerType()"),"P_ORANGE");
   app.eval('game.powerups=[];dropPlayerPowerOnHit()');
   assert.equal(app.eval('game.powerups.at(-1).type'),"P_ORANGE");
@@ -2249,7 +2250,7 @@ test("BROWN P is a recoverable eleventh pickup and never spawns ordinary bullets
   app.eval('game.weaponLevel=3;firePlayerWeapons()');
   assert.equal(app.eval("game.bullets.length"),0);
   assert.ok(Math.abs(app.eval("getFireCooldown()")-0.101)<1e-10);
-  app.eval('Math.random=()=>.525');
+  app.eval('Math.random=()=>.5');
   assert.equal(app.eval("randomPowerType()"),"P_BROWN");
   app.eval('game.powerups=[];dropPlayerPowerOnHit()');
   assert.equal(app.eval("game.powerups.at(-1).type"),"P_BROWN");
@@ -2386,7 +2387,7 @@ test("LIME P fires two ordinary twin-lane bullets from the muzzle, not prepositi
   assert.equal(app.eval("game.bullets[0].vx"),1100);
   assert.equal(app.eval("game.bullets[1].vx"),1100);
   assert.equal(app.eval("game.bullets.every(b=>b.r===9 && b.power===1.15 && b.orbitRadius<360)"),true);
-  app.eval("Math.random=()=>.575");
+  app.eval("Math.random=()=>.547619");
   assert.equal(app.eval("randomPowerType()"),"P_LIME");
   app.eval("game.powerups=[];dropPlayerPowerOnHit()");
   assert.equal(app.eval("game.powerups.at(-1).type"),"P_LIME");
@@ -2649,7 +2650,7 @@ test("SKY P is the 13th collectible and switches damage/homing/slow at actual ga
   assert.ok(low.includes("SKY SEEK  BLACK SLOW"));
   app.eval('game.hp=2;game.bullets=[];firePlayerWeapons()');
   assert.equal(app.eval("game.bullets.every(b=>b.skyHoming&&b.blackSlow)"),true);
-  app.eval('Math.random=()=>.625');
+  app.eval('Math.random=()=>.5952381');
   assert.equal(app.eval("randomPowerType()"),"P_SKY");
   app.eval('game.weaponLevel=3;game.powerups=[];dropPlayerPowerOnHit()');
   assert.equal(app.eval("game.powerups.at(-1).type"),"P_SKY");
@@ -2803,7 +2804,7 @@ test("DARK RED is the fourteenth pickup with distinct twin 1x bullets and no RED
   assert.equal(app.eval("game.redWeapon.stars"),3);
   assert.equal(app.eval("game.redWeapon.volleys"),0);
   assert.ok(Math.abs(app.eval("getFireCooldown()")-.101)<1e-10);
-  app.eval("Math.random=()=>.675");
+  app.eval("Math.random=()=>.6428571");
   assert.equal(app.eval("randomPowerType()"),"P_DARK_RED");
   app.eval("game.powerups=[];dropPlayerPowerOnHit()");
   assert.equal(app.eval("game.powerups.at(-1).type"),"P_DARK_RED");
@@ -2816,11 +2817,11 @@ test("DARK RED is the fourteenth pickup with distinct twin 1x bullets and no RED
     "DARK RED must never expose ordinary RED star HUD");
 });
 
-test("ECLIPSE and RECRUIT extend the uniform P pool to all 20 types",()=>{
+test("SOLAR extends the uniform P pool to all 21 types",()=>{
   const app=boot();
   const expected=[
     "P_BLUE","P_PURPLE","P_YELLOW","P_RED","P_GREEN","P_BLACK","P_WHITE",
-    "P_GRAY","P_PINK","P_ORANGE","P_BROWN","P_LIME","P_SKY","P_DARK_RED","P_RAINBOW","P_MAGNET","P_ARC_LASER","P_STASIS","P_ECLIPSE","P_RECRUIT"
+    "P_GRAY","P_PINK","P_ORANGE","P_BROWN","P_LIME","P_SKY","P_DARK_RED","P_RAINBOW","P_MAGNET","P_ARC_LASER","P_STASIS","P_ECLIPSE","P_RECRUIT","P_SOLAR"
   ];
   for(let i=0;i<expected.length;i++){
     const roll=(i+.5)/expected.length;
@@ -3195,7 +3196,7 @@ test("RAINBOW P is the 15th collectible, recoverable, with a distinct 8-color ic
   assert.equal(app.eval("game.bullets.every(b=>b.grayImpact)"),true);
   assert.equal(app.eval("game.redWeapon.stars"),3);
   assert.equal(app.eval("getFireCooldown()"),.4);
-  app.eval('Math.random=()=>.725');
+  app.eval('Math.random=()=>.6904762');
   assert.equal(app.eval("randomPowerType()"),"P_RAINBOW");
   app.eval('game.powerups=[];dropPlayerPowerOnHit()');
   assert.equal(app.eval("game.powerups.at(-1).type"),"P_RAINBOW");
@@ -4243,4 +4244,208 @@ test("new gradient pickups, 360 shockwave and allies draw without changing HP",(
     assert.ok(result.stops.includes(c),c);
   assert.ok(result.texts.includes("ALLY"));
   assert.ok(result.texts.some(x=>x.includes("RECRUIT  ALLIES")));
+});
+
+
+test("SOLAR P is locked to currently equipped GREEN, rejected pickup does not disappear",()=>{
+  const app=boot();
+  app.eval([
+    'game.state="PLAYING";game.stageMode="WAVE";game.weaponType="red";',
+    'game.weaponLevel=1;game.score=0;game.greenAura.elapsed=.08;',
+    'game.powerups=[{type:"P_SOLAR",x:175,y:480,r:24,life:20,',
+    'vx:0,vy:0,t:0,safeTimer:0}];updatePowerups(.01);'
+  ].join("\n"));
+  assert.equal(app.eval("game.weaponType"),"red");
+  assert.equal(app.eval("game.weaponLevel"),1);
+  assert.equal(app.eval("game.score"),0);
+  assert.equal(app.eval("game.powerups.length"),1);
+  assert.ok(app.eval("game.powerups[0].life")>0);
+  assert.equal(app.eval("game.greenAura.elapsed"),.08);
+  assert.ok(app.eval('game.message.includes("REQUIRES GREEN P")'));
+  const hint=app.eval("game.messageTimer");
+  app.eval("updatePowerups(.01)");
+  assert.ok(app.eval("game.messageTimer")<=hint);
+  app.eval('collectPowerup({type:"P_GREEN",x:200,y:480,life:1});');
+  assert.equal(app.eval("game.weaponType"),"green");
+  app.eval('game.greenAura.elapsed=.35;updatePowerups(.01)');
+  assert.equal(app.eval("game.weaponType"),"solar");
+  assert.equal(app.eval("game.powerups.length"),0);
+  assert.equal(app.eval("game.greenAura.elapsed"),0,
+    "green -> solar must reset the shared global pulse clock");
+  assert.equal(app.eval("weaponMeta().name"),"SOLAR AURA");
+  assert.equal(app.eval("game.weaponLevel"),3);
+  assert.equal(app.eval("game.score"),200);
+});
+
+test("SOLAR same-P recollect preserves pulse phase, other weapon cannot re-equip it",()=>{
+  const app=boot();
+  app.eval([
+    'game.state="PLAYING";game.weaponType="green";game.weaponLevel=1;',
+    'collectPowerup({type:"P_SOLAR",x:200,y:480,life:1});',
+    'game.greenAura.elapsed=.065;',
+    'collectPowerup({type:"P_SOLAR",x:200,y:480,life:1});'
+  ].join("\n"));
+  assert.equal(app.eval("game.weaponType"),"solar");
+  assert.equal(app.eval("game.greenAura.elapsed"),.065);
+  app.eval('game.powerups=[];dropPlayerPowerOnHit()');
+  assert.equal(app.eval("game.powerups.at(-1).type"),"P_SOLAR");
+  app.eval('collectPowerup({type:"P_BLUE",x:200,y:480,life:1});');
+  assert.equal(app.eval("game.greenAura.elapsed"),0);
+  const score=app.eval("game.score");
+  app.eval([
+    'const locked={type:"P_SOLAR",x:200,y:480,life:10};',
+    'collectPowerup(locked);game.solarLockedLife=locked.life;'
+  ].join("\n"));
+  assert.equal(app.eval("game.weaponType"),"blue");
+  assert.equal(app.eval("game.score"),score);
+  assert.equal(app.eval("game.solarLockedLife"),10);
+});
+
+test("SOLAR fires precisely the same two starter BLUE/GREEN bullets at Lv.3 and Overdrive",()=>{
+  const app=boot();
+  const shape='JSON.stringify(game.bullets.map(b=>({x:b.x,y:b.y,vx:b.vx,vy:b.vy,r:b.r,power:b.power,c:b.c})))';
+  app.eval('game.state="PLAYING";game.weaponType="green";game.weaponLevel=3;firePlayerWeapons()');
+  const greenBullets=app.eval(shape);
+  app.eval([
+    'game.bullets=[];collectPowerup({type:"P_SOLAR",x:200,y:480,life:1});',
+    'game.weaponLevel=3;firePlayerWeapons();'
+  ].join("\n"));
+  assert.equal(app.eval(shape),greenBullets);
+  assert.equal(app.eval("game.missiles.length"),0);
+  assert.ok(Math.abs(app.eval("getFireCooldown()")-.101)<1e-10);
+  app.eval('game.combat.energy=100;activateOverdrive();game.bullets=[];firePlayerWeapons()');
+  assert.equal(app.eval("game.bullets.length"),2);
+  assert.equal(app.eval("game.bullets.some(b=>b.lance)"),false);
+  assert.equal(app.eval("game.weaponType"),"solar");
+});
+
+test("SOLAR pulses 2 HP every 0.1s for ALL inside the identical GREEN radius",()=>{
+  const app=boot();
+  app.eval([
+    'game.state="PLAYING";game.stageMode="WAVE";game.weaponType="solar";',
+    'game.player.x=500;game.player.y=480;',
+    'game.enemies=[',
+    ' {kind:"scout",x:570,y:480,r:25,hp:16,maxHp:16,score:10,color:"#fff",core:"#fff"},',
+    ' {kind:"gunner",x:880,y:480,r:20,hp:16,maxHp:16,score:10,color:"#fff",core:"#fff"},',
+    ' {kind:"scout",x:881,y:480,r:20,hp:16,maxHp:16,score:10,color:"#fff",core:"#fff"}',
+    '];updateGreenAura(.099);'
+  ].join("\n"));
+  assert.equal(app.eval("game.enemies[0].hp"),16);
+  app.eval('updateGreenAura(.001)');
+  assert.equal(app.eval("game.enemies[0].hp"),14);
+  assert.equal(app.eval("game.enemies[1].hp"),14);
+  assert.equal(app.eval("game.enemies[2].hp"),16);
+  app.eval('updateGreenAura(.30)');
+  assert.equal(app.eval("game.enemies[0].hp"),8);
+  assert.equal(app.eval("game.enemies[1].hp"),8);
+  assert.equal(app.eval("game.enemies[2].hp"),16);
+  assert.ok(Math.abs(app.eval("game.greenAura.elapsed"))<1e-9);
+});
+
+test("SOLAR keeps GREEN shielding and Boss hull edge behavior at 0.1-second pulses",()=>{
+  const app=boot();
+  app.eval([
+    'game.state="PLAYING";game.stageMode="BOSS";game.weaponType="solar";',
+    'game.player.x=500;game.player.y=480;',
+    'game.enemies=[enemyBehaviors.initializeEnemy({kind:"shield",',
+    'x:630,y:480,r:35,hp:20,maxHp:20,score:80,color:"#f88",core:"#fff"})];',
+    'game.enemies[0].shieldHp=8;game.enemies[0].shieldMax=8;',
+    'game.boss={x:850,y:480,rx:100,ry:80,hp:80,maxHp:80,',
+    'active:true,color:"#f66",core:"#fff",parts:[]};',
+    'updateGreenAura(.10);'
+  ].join("\n"));
+  assert.equal(app.eval("game.enemies[0].hp"),20);
+  assert.equal(app.eval("game.enemies[0].shieldHp"),6);
+  assert.equal(app.eval("game.boss.hp"),78);
+  app.eval('game.player.x=220;updateGreenAura(.20)');
+  assert.equal(app.eval("game.enemies[0].shieldHp"),6);
+  assert.equal(app.eval("game.boss.hp"),78);
+  // Boss outside x distance but centered within 360+rx is the key edge case.
+  app.eval('game.player.x=500;updateGreenAura(.2)');
+  assert.equal(app.eval("game.boss.hp"),74);
+});
+
+test("SOLAR clock starts on equip without targets, pauses, resets only on P switch",()=>{
+  const app=boot();
+  app.eval([
+    'game.state="PLAYING";game.stageMode="WAVE";game.weaponType="green";',
+    'game.invuln=999;game.spawnTimer=999;game.formationTimer=999;',
+    'game.player.x=500;game.player.y=480;',
+    'collectPowerup({type:"P_SOLAR",x:200,y:480,life:1});',
+    'game.enemies=[];updatePlaying(.06);'
+  ].join("\n"));
+  assert.ok(Math.abs(app.eval("game.greenAura.elapsed")-.06)<1e-9);
+  app.eval('game.enemies=[{kind:"scout",x:700,y:480,r:25,hp:12,maxHp:12,'+
+    'score:10,color:"#fff",core:"#fff",vx:0,vy:0,t:0,wave:0,shootCd:999,shootBase:999}];');
+  app.eval("updatePlaying(.03)");
+  assert.equal(app.eval("game.enemies[0].hp"),12);
+  app.eval('game.state="PAUSED";updatePlaying(2)');
+  assert.equal(app.eval("game.enemies[0].hp"),12);
+  assert.ok(Math.abs(app.eval("game.greenAura.elapsed")-.09)<1e-9);
+  app.eval('game.state="PLAYING";game.stageMode="TRANSITION";game.transition=10;updatePlaying(3)');
+  assert.equal(app.eval("game.enemies[0].hp"),12);
+  assert.ok(Math.abs(app.eval("game.greenAura.elapsed")-.09)<1e-9);
+  app.eval('game.stageMode="WAVE";updatePlaying(.01)');
+  assert.equal(app.eval("game.enemies[0].hp"),10);
+  app.eval('updatePlaying(.06)');
+  assert.ok(Math.abs(app.eval("game.greenAura.elapsed")-.06)<1e-9);
+  app.eval('collectPowerup({type:"P_SOLAR",x:200,y:480,life:1})');
+  assert.ok(Math.abs(app.eval("game.greenAura.elapsed")-.06)<1e-9);
+  app.eval('updatePlaying(.04)');
+  assert.equal(app.eval("game.enemies[0].hp"),8);
+  app.eval('collectPowerup({type:"P_BLUE",x:200,y:480,life:1});updatePlaying(.3)');
+  assert.equal(app.eval("game.greenAura.elapsed"),0);
+  assert.equal(app.eval("game.enemies[0].hp"),8);
+  app.eval('collectPowerup({type:"P_GREEN",x:200,y:480,life:1})');
+  app.eval('updatePlaying(.10)');
+  assert.equal(app.eval("game.enemies[0].hp"),8);
+  app.eval('updatePlaying(.30)');
+  assert.equal(app.eval("game.enemies[0].hp"),6);
+});
+
+test("SOLAR direct passive kills score exactly once and do not damage splitter children on that pulse",()=>{
+  const app=boot();
+  app.eval([
+    'game.state="PLAYING";game.stageMode="WAVE";game.weaponType="solar";',
+    'game.player.x=500;game.player.y=480;',
+    'game.enemies=[{kind:"splitter",x:610,y:480,r:36,hp:2,maxHp:2,',
+    'score:40,color:"#3fa",core:"#fff"}];',
+    'updateGreenAura(.1);'
+  ].join("\n"));
+  assert.equal(app.eval("game.stats.kills"),1);
+  assert.equal(app.eval("game.enemies.length"),2);
+  assert.equal(app.eval("game.enemies.every(e=>e.minion&&e.hp>0)"),true);
+  app.eval('updateGreenAura(.1)');
+  assert.equal(app.eval("game.stats.kills"),3);
+  assert.equal(app.eval("game.enemies.length"),0);
+});
+
+test("SOLAR pickup/ring are truly red-yellow gradients, visually radius 360, draw does no damage",()=>{
+  const app=boot();
+  const result=app.eval([
+    '(()=>{game.state="PLAYING";game.stageMode="WAVE";',
+    'game.weaponType="solar";game.player.x=500;game.player.y=480;',
+    'game.enemies=[{kind:"scout",x:610,y:480,r:25,hp:10,maxHp:10,',
+    'score:40,color:"#fff",core:"#eee"}];',
+    'game.powerups=[{type:"P_SOLAR",x:500,y:640,t:0,life:10}];',
+    'const colors=[],radii=[],labels=[];',
+    'ctx.createLinearGradient=()=>({addColorStop:(p,c)=>colors.push(c)});',
+    'ctx.arc=(x,y,r)=>radii.push(r);',
+    'ctx.fillText=t=>labels.push(String(t));',
+    'const hp=game.enemies[0].hp;',
+    'drawPowerups();drawGreenAura();drawFrame(.016);',
+    'return {hp,after:game.enemies[0].hp,colors,radii,labels};})()'
+  ].join("\n"));
+  assert.equal(result.hp,result.after);
+  assert.ok(result.radii.includes(360));
+  assert.ok(result.radii.includes(270));
+  for(const color of ["#ff3d4f","#ff9d3d","#ffe04c"])
+    assert.ok(result.colors.includes(color),color);
+  assert.ok(result.labels.includes("SOLAR AURA  2 DMG/0.1S"));
+  app.eval('game.weaponType="blue"');
+  const hidden=app.eval([
+    '(()=>{const radii=[];ctx.arc=(x,y,r)=>radii.push(r);',
+    'drawGreenAura();return radii;})()'
+  ].join("\n"));
+  assert.equal(hidden.length,0);
 });
