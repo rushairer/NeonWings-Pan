@@ -28,7 +28,7 @@ test("RED-ORANGE inherits exact RED two normal lanes, 5-star shared volley timin
   assert.equal(combo.RULES.blastRadius,orange.RULES.radius);
   assert.equal(combo.RULES.blastRadius,100);
   assert.equal(combo.RULES.blastMultiplier,orange.RULES.damageMultiplier);
-  assert.equal(combo.RULES.blastMultiplier,3);
+  assert.equal(combo.RULES.blastMultiplier,1.6);
 });
 
 test("RED-ORANGE ordinary and 250-fan projectiles use true ORANGE first-impact blasts",()=>{

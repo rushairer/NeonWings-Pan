@@ -1,6 +1,7 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
 const w = require("../src/eclipse-weapon.js");
+test("0.1 second cooldown",()=>assert.equal(w.RULES.cooldownSeconds,.1));
 
 test("ECLIPSE only equips from DARK RED or itself",()=>{
   for(const type of ["blue","red","magnet","arcLaser","recruit",null])

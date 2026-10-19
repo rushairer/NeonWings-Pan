@@ -2049,10 +2049,10 @@ test("ORANGE P is the tenth pickup; two starter-grade shots and its HUD survive 
     '(() => {const values=[];ctx.fillText=(label)=>values.push(String(label));',
     'drawHud();drawPowerups();drawPlayerBullets();return values})()'
   ].join("\n"));
-  assert.ok(labels.includes("ORANGE BLAST  R100  X3"));
+  assert.ok(labels.includes("ORANGE BLAST  R100  X1.6"));
 });
 
-test("ORANGE shot detonates at first swept contact, 3x damage to direct and nearby, no 1x extra", () => {
+test("ORANGE shot detonates at first swept contact, 1.6x damage to direct and nearby, no 1x extra", () => {
   const app=boot();
   app.eval([
     'game.state="PLAYING";game.stageMode="WAVE";game.player.x=180;',
@@ -2064,8 +2064,8 @@ test("ORANGE shot detonates at first swept contact, 3x damage to direct and near
     'updatePlayerBullets(.32);'
   ].join("\n"));
   assert.equal(app.eval("game.bullets.length"),0);
-  assert.ok(Math.abs(app.eval("game.enemies[0].hp")-46.55)<1e-8);
-  assert.ok(Math.abs(app.eval("game.enemies[1].hp")-46.55)<1e-8);
+  assert.ok(Math.abs(app.eval("game.enemies[0].hp")-48.16)<1e-8);
+  assert.ok(Math.abs(app.eval("game.enemies[1].hp")-48.16)<1e-8);
   assert.equal(app.eval("game.enemies[2].hp"),50);
   assert.equal(app.eval("game.orangeExplosions.length"),1);
   assert.ok(Math.abs(app.eval("game.orangeExplosions[0].x")-371)<1e-8);
@@ -2084,7 +2084,7 @@ test("ORANGE explosion affects an exact-radius edge target but not a target 1 un
     '];addPlayerShot(300,480,1100,0,9,1.15,"#ff932e",{orangeBlast:true});',
     'updatePlayerBullets(.25);'
   ].join("\n"));
-  assert.ok(Math.abs(app.eval("game.enemies[1].hp")-46.55)<1e-8);
+  assert.ok(Math.abs(app.eval("game.enemies[1].hp")-48.16)<1e-8);
   assert.equal(app.eval("game.enemies[2].hp"),50);
 });
 
@@ -2097,12 +2097,12 @@ test("ORANGE splash damages a nearby Boss hull once when the direct target is an
     'addPlayerShot(300,480,1100,0,9,1.15,"#ff932e",{orangeBlast:true});',
     'updatePlayerBullets(.32);'
   ].join("\n"));
-  assert.ok(Math.abs(app.eval("game.enemies[0].hp")-46.55)<1e-8);
-  assert.ok(Math.abs(app.eval("game.boss.hp")-96.55)<1e-8);
+  assert.ok(Math.abs(app.eval("game.enemies[0].hp")-48.16)<1e-8);
+  assert.ok(Math.abs(app.eval("game.boss.hp")-98.16)<1e-8);
   assert.equal(app.eval("game.orangeExplosions.length"),1);
 });
 
-test("ORANGE directly hitting Boss hull does 3x once and hits nearby off-lane enemies", () => {
+test("ORANGE directly hitting Boss hull does 1.6x once and hits nearby off-lane enemies", () => {
   const app=boot();
   app.eval([
     'game.state="PLAYING";game.player.x=180;',
@@ -2111,13 +2111,13 @@ test("ORANGE directly hitting Boss hull does 3x once and hits nearby off-lane en
     'addPlayerShot(300,480,1100,0,9,1.15,"#ff932e",{orangeBlast:true});',
     'updatePlayerBullets(.32);'
   ].join("\n"));
-  assert.ok(Math.abs(app.eval("game.boss.hp")-96.55)<1e-8);
-  assert.ok(Math.abs(app.eval("game.enemies[0].hp")-46.55)<1e-8);
+  assert.ok(Math.abs(app.eval("game.boss.hp")-98.16)<1e-8);
+  assert.ok(Math.abs(app.eval("game.enemies[0].hp")-48.16)<1e-8);
   assert.equal(app.eval("game.orangeExplosions.length"),1);
   assert.ok(Math.abs(app.eval("game.orangeExplosions[0].x")-491)<1e-8);
 });
 
-test("ORANGE Boss turret hit uses 3x base shot damage through weak point, not Boss hull", () => {
+test("ORANGE Boss turret hit uses 1.6x base shot damage through weak point, not Boss hull", () => {
   const app=boot();
   app.eval([
     'game.state="PLAYING";game.stageMode="WAVE";game.player.x=180;',
@@ -2129,12 +2129,12 @@ test("ORANGE Boss turret hit uses 3x base shot damage through weak point, not Bo
     'updatePlayerBullets(.15);'
   ].join("\n"));
   const turretLoss=app.eval("game.boss.parts[0].maxHp-game.boss.parts[0].hp");
-  assert.ok(Math.abs(turretLoss-1.15*3*bossParts.BALANCE.weakPointDamageScale)<1e-8);
+  assert.ok(Math.abs(turretLoss-1.15*1.6*bossParts.BALANCE.weakPointDamageScale)<1e-8);
   assert.equal(app.eval("game.boss.hp"),app.eval("game.boss.maxHp"));
-  assert.ok(Math.abs(app.eval("game.enemies[0].hp")-46.55)<1e-8);
+  assert.ok(Math.abs(app.eval("game.enemies[0].hp")-48.16)<1e-8);
 });
 
-test("ORANGE shield absorbs 3x explosion damage with no extra direct hit", () => {
+test("ORANGE shield absorbs 1.6x explosion damage with no extra direct hit", () => {
   const app=boot();
   app.eval([
     'game.state="PLAYING";game.player.x=180;',
@@ -2144,9 +2144,9 @@ test("ORANGE shield absorbs 3x explosion damage with no extra direct hit", () =>
     'addPlayerShot(280,480,1100,0,9,1.15,"#ff932e",{orangeBlast:true});',
     'updatePlayerBullets(.22);'
   ].join("\n"));
-  assert.ok(Math.abs(app.eval("game.enemies[0].shieldMax-game.enemies[0].shieldHp")-3.45)<1e-8);
+  assert.ok(Math.abs(app.eval("game.enemies[0].shieldMax-game.enemies[0].shieldHp")-1.84)<1e-8);
   assert.equal(app.eval("game.enemies[0].hp"),20);
-  assert.ok(Math.abs(app.eval("game.enemies[1].hp")-46.55)<1e-8);
+  assert.ok(Math.abs(app.eval("game.enemies[1].hp")-48.16)<1e-8);
 });
 
 test("ORANGE killing a splitter does not hit its newly spawned children in the same blast", () => {
@@ -2174,7 +2174,7 @@ test("ORANGE projectile already in flight still detonates after switching weapon
     'updatePlayerBullets(.3);'
   ].join("\n"));
   assert.equal(app.eval("game.weaponType"),"blue");
-  assert.ok(Math.abs(app.eval("game.enemies[0].hp")-46.55)<1e-8);
+  assert.ok(Math.abs(app.eval("game.enemies[0].hp")-48.16)<1e-8);
   assert.equal(app.eval("game.orangeExplosions.length"),1);
 });
 
@@ -3202,7 +3202,7 @@ test("RAINBOW P is the 15th collectible, recoverable, with a distinct 8-color ic
   assert.equal(app.eval("game.bullets.length"),1);
   assert.equal(app.eval("game.bullets.every(b=>b.grayImpact)"),true);
   assert.equal(app.eval("game.redWeapon.stars"),3);
-  assert.equal(app.eval("getFireCooldown()"),.4);
+  assert.equal(app.eval("getFireCooldown()"),.15);
   app.eval('Math.random=()=>0.517857142857');
   assert.equal(app.eval("randomPowerType()"),"P_RAINBOW");
   app.eval('game.powerups=[];dropPlayerPowerOnHit()');
@@ -3237,7 +3237,7 @@ test("RAINBOW draws one independent effect per single-bullet firing action",()=>
   assert.equal(app.eval("game.missiles.length"),0);
 });
 
-test("RAINBOW held fire emits exactly one bullet every 0.4 active seconds, freezing while paused",()=>{
+test("RAINBOW held fire emits exactly one bullet every 0.15 active seconds, freezing while paused",()=>{
   const app=boot();
   app.eval([
     'game.state="PLAYING";game.stageMode="WAVE";game.weaponType="rainbow";',
@@ -3245,23 +3245,23 @@ test("RAINBOW held fire emits exactly one bullet every 0.4 active seconds, freez
     'game.invuln=999;keys.Space=true;Math.random=()=>.20;updatePlaying(.001);'
   ].join("\n"));
   assert.equal(app.eval("game.bullets.length"),1);
-  assert.equal(app.eval("game.fireCooldown"),.4);
-  app.eval("updatePlaying(.2);updatePlaying(.199)");
+  assert.equal(app.eval("game.fireCooldown"),.15);
+  app.eval("updatePlaying(.07);updatePlaying(.079)");
   assert.equal(app.eval("game.bullets.length"),1);
   app.eval("updatePlaying(.002)");
   assert.equal(app.eval("game.bullets.length"),2);
-  assert.equal(app.eval("game.fireCooldown"),.4);
+  assert.equal(app.eval("game.fireCooldown"),.15);
   app.eval('game.state="PAUSED";updatePlaying(5)');
-  assert.equal(app.eval("game.fireCooldown"),.4);
+  assert.equal(app.eval("game.fireCooldown"),.15);
   assert.equal(app.eval("game.bullets.length"),2);
-  app.eval('game.state="PLAYING";updatePlaying(.2);updatePlaying(.199)');
+  app.eval('game.state="PLAYING";updatePlaying(.07);updatePlaying(.079)');
   assert.equal(app.eval("game.bullets.length"),2);
   app.eval("updatePlaying(.002)");
   assert.equal(app.eval("game.bullets.length"),3);
-  assert.equal(app.eval("game.fireCooldown"),.4);
+  assert.equal(app.eval("game.fireCooldown"),.15);
 });
 
-test("RAINBOW guided missile replaces its only shot and observes the same 0.4s interval",()=>{
+test("RAINBOW guided missile replaces its only shot and observes the same 0.15s interval",()=>{
   const app=boot();
   app.eval([
     'game.state="PLAYING";game.stageMode="WAVE";game.weaponType="rainbow";',
@@ -3270,8 +3270,8 @@ test("RAINBOW guided missile replaces its only shot and observes the same 0.4s i
   ].join("\n"));
   assert.equal(app.eval("game.bullets.length"),0);
   assert.equal(app.eval("game.missiles.length"),1);
-  assert.equal(app.eval("game.fireCooldown"),.4);
-  app.eval("updatePlaying(.399)");
+  assert.equal(app.eval("game.fireCooldown"),.15);
+  app.eval("updatePlaying(.149)");
   assert.equal(app.eval("game.missiles.length"),1);
   app.eval("updatePlaying(.002)");
   assert.equal(app.eval("game.missiles.length"),2);
@@ -3407,7 +3407,7 @@ test("RAINBOW LIME-type projectile flies from muzzle into 360 orbit and persists
   assert.equal(app.eval("game.bullets[0].rainbowKind"),"orbit");
 });
 
-test("RAINBOW ORANGE-type projectile explodes 3x once at radius 100",()=>{
+test("RAINBOW ORANGE-type projectile explodes 1.6x once at radius 100",()=>{
   const app=boot();
   app.eval([
     'game.state="PLAYING";game.weaponType="rainbow";Math.random=()=>.95;',
@@ -3419,8 +3419,8 @@ test("RAINBOW ORANGE-type projectile explodes 3x once at radius 100",()=>{
     'updatePlayerBullets(.2);'
   ].join("\n"));
   assert.equal(app.eval("game.bullets.length"),0);
-  assert.ok(Math.abs(app.eval("game.enemies[0].hp")-46.55)<1e-8);
-  assert.ok(Math.abs(app.eval("game.enemies[1].hp")-46.55)<1e-8);
+  assert.ok(Math.abs(app.eval("game.enemies[0].hp")-48.16)<1e-8);
+  assert.ok(Math.abs(app.eval("game.enemies[1].hp")-48.16)<1e-8);
   assert.equal(app.eval("game.enemies[2].hp"),50);
   assert.equal(app.eval("game.orangeExplosions.length"),1);
 });
@@ -3998,7 +3998,7 @@ test("ECLIPSE pickup requires DARK RED, is not consumed on RED, and upgrades aft
   assert.equal(app.eval("game.weaponLevel"),3);
   assert.equal(app.eval("game.powerups.length"),0);
   assert.equal(app.eval("weaponMeta().name"),"SHOCKWAVE");
-  assert.equal(app.eval("getFireCooldown()"),.55);
+  assert.equal(app.eval("getFireCooldown()"),.1);
   app.eval('game.powerups=[];dropPlayerPowerOnHit()');
   assert.equal(app.eval("game.powerups.at(-1).type"),"P_ECLIPSE");
   app.eval('collectPowerup({type:"P_ECLIPSE",x:200,y:480,life:1});');
@@ -5202,7 +5202,7 @@ test("RED-ORANGE maintains RED five-plus-stars volley streak, .4s rest and 10% s
   assert.equal(app.eval("game.redWeapon.volleys"),0);
 });
 
-test("RED-ORANGE direct explosion deals exactly 3x once to every radius-100 victim",()=>{
+test("RED-ORANGE direct explosion deals exactly 1.6x once to every radius-100 victim",()=>{
   const app=boot();
   app.eval([
     'game.state="PLAYING";game.stageMode="WAVE";game.player.x=175;',
@@ -5213,8 +5213,8 @@ test("RED-ORANGE direct explosion deals exactly 3x once to every radius-100 vict
     '];firePlayerWeapons();game.bullets=game.bullets.slice(0,1);',
     'updatePlayerBullets(.2);'
   ].join("\n"));
-  assert.ok(Math.abs(app.eval("game.enemies[0].hp")-46.55)<1e-8);
-  assert.ok(Math.abs(app.eval("game.enemies[1].hp")-46.55)<1e-8);
+  assert.ok(Math.abs(app.eval("game.enemies[0].hp")-48.16)<1e-8);
+  assert.ok(Math.abs(app.eval("game.enemies[1].hp")-48.16)<1e-8);
   assert.equal(app.eval("game.enemies[2].hp"),50);
   assert.equal(app.eval("game.bullets.length"),0);
   assert.equal(app.eval("game.orangeExplosions.length"),1);
@@ -5222,7 +5222,7 @@ test("RED-ORANGE direct explosion deals exactly 3x once to every radius-100 vict
   assert.equal(app.eval("game.orangeExplosions[0].life"),orangeWeapon.RULES.explosionLifetimeSeconds);
 });
 
-test("RED-ORANGE inherits ORANGE frontal shield handling, never 1x+3x and never piercing",()=>{
+test("RED-ORANGE inherits ORANGE frontal shield handling, never 1x+1.6x and never piercing",()=>{
   const app=boot();
   app.eval([
     'game.state="PLAYING";game.stageMode="WAVE";game.player.x=175;',
@@ -5235,8 +5235,8 @@ test("RED-ORANGE inherits ORANGE frontal shield handling, never 1x+3x and never 
     'updatePlayerBullets(.2);'
   ].join("\n"));
   assert.equal(app.eval("game.enemies[0].hp"),50);
-  assert.ok(Math.abs(app.eval("game.enemies[0].shieldHp")-(20-3.45))<1e-9);
-  assert.ok(Math.abs(app.eval("game.enemies[1].hp")-46.55)<1e-9);
+  assert.ok(Math.abs(app.eval("game.enemies[0].shieldHp")-(20-1.84))<1e-9);
+  assert.ok(Math.abs(app.eval("game.enemies[1].hp")-48.16)<1e-9);
   assert.equal(app.eval("game.orangeExplosions.length"),1);
 });
 
@@ -5253,13 +5253,13 @@ test("RED-ORANGE inherits ORANGE Boss turret weak-point priority and radius-100 
     'updatePlayerBullets(.35);'
   ].join("\n"));
   assert.ok(Math.abs(app.eval("game.boss.parts[0].hp")-
-    (80-3.45*bossParts.BALANCE.weakPointDamageScale))<1e-9);
+    (80-1.84*bossParts.BALANCE.weakPointDamageScale))<1e-9);
   assert.equal(app.eval("game.boss.hp"),200);
-  assert.ok(Math.abs(app.eval("game.enemies[0].hp")-46.55)<1e-9);
+  assert.ok(Math.abs(app.eval("game.enemies[0].hp")-48.16)<1e-9);
   assert.equal(app.eval("game.orangeExplosions.length"),1);
 });
 
-test("RED-ORANGE Boss hull receives one 3x explosion, even when splash reaches nearby enemy",()=>{
+test("RED-ORANGE Boss hull receives one 1.6x explosion, even when splash reaches nearby enemy",()=>{
   const app=boot();
   app.eval([
     'game.state="PLAYING";game.stageMode="BOSS";game.player.x=175;',
@@ -5271,8 +5271,8 @@ test("RED-ORANGE Boss hull receives one 3x explosion, even when splash reaches n
     'firePlayerWeapons();game.bullets=game.bullets.slice(0,1);',
     'updatePlayerBullets(.35);'
   ].join("\n"));
-  assert.ok(Math.abs(app.eval("game.boss.hp")-196.55)<1e-9);
-  assert.ok(Math.abs(app.eval("game.enemies[0].hp")-46.55)<1e-9);
+  assert.ok(Math.abs(app.eval("game.boss.hp")-198.16)<1e-9);
+  assert.ok(Math.abs(app.eval("game.enemies[0].hp")-48.16)<1e-9);
   assert.equal(app.eval("game.orangeExplosions.length"),1);
 });
 
@@ -5291,7 +5291,7 @@ test("RED-ORANGE exploding a splitter never damages its freshly spawned children
   assert.equal(app.eval("game.orangeExplosions.length"),1);
 });
 
-test("RED-ORANGE fan uses 250 real 3x orange-explosion bullets at RED's .38 fan power",()=>{
+test("RED-ORANGE fan uses 250 real 1.6x orange-explosion bullets at RED's .38 fan power",()=>{
   const app=boot();
   app.eval([
     'game.state="PLAYING";game.stageMode="WAVE";game.weaponType="redorange";',
@@ -5322,7 +5322,7 @@ test("RED-ORANGE fan uses 250 real 3x orange-explosion bullets at RED's .38 fan 
   assert.equal(app.eval("game.bullets.every(b=>b.redOrangeShot&&b.orangeBlast)"),true);
 });
 
-test("RED-ORANGE individual special fan shot explodes at 3x its RED fan base, radius 100",()=>{
+test("RED-ORANGE individual special fan shot explodes at 1.6x its RED fan base, radius 100",()=>{
   const app=boot();
   app.eval([
     'game.state="PLAYING";game.stageMode="WAVE";game.player.x=175;',
@@ -5333,7 +5333,7 @@ test("RED-ORANGE individual special fan shot explodes at 3x its RED fan base, ra
     'updatePlayerBullets(.15);'
   ].join("\n"));
   for(let i=0;i<2;i++)
-    assert.ok(Math.abs(app.eval("game.enemies["+i+"].hp")-(50-.38*3))<1e-9);
+    assert.ok(Math.abs(app.eval("game.enemies["+i+"].hp")-(50-.38*1.6))<1e-9);
   assert.equal(app.eval("game.orangeExplosions.length"),1);
   assert.equal(app.eval("game.bullets.length"),0);
 });
@@ -5437,7 +5437,7 @@ test("RED-ORANGE gradient pickup, projectiles and HUD only draw, without causing
   assert.equal(v.hp,v.after);
   for(const c of ["#f72f50","#ffaf36","#fa344f","#ffad37"])
     assert.ok(v.colors.includes(c),c);
-  assert.ok(v.labels.includes("RED-ORANGE BLAST  R100 X3"));
+  assert.ok(v.labels.includes("RED-ORANGE BLAST  R100 X1.6"));
   assert.ok(v.labels.some(x=>x.includes("RED-ORANGE P")));
 });
 
@@ -6356,7 +6356,7 @@ test("DARK RED-GOLD fires starter twin DARK RED lanes with ORANGE blast, no chai
   assert.equal(app.eval("game.redWeapon.stars"),0);
 });
 
-test("DARK RED-GOLD first swept contact deals only one 3x explosion, then shifts DIRECT enemy 40",()=>{
+test("DARK RED-GOLD first swept contact deals only one 1.6x explosion, then shifts DIRECT enemy 40",()=>{
   const app=boot();
   app.eval([
     'game.state="PLAYING";game.stageMode="WAVE";',
@@ -6368,8 +6368,8 @@ test("DARK RED-GOLD first swept contact deals only one 3x explosion, then shifts
     'updatePlayerBullets(.32);'
   ].join("\n"));
   assert.equal(app.eval("game.bullets.length"),0);
-  assert.ok(Math.abs(app.eval("game.enemies[0].hp")-46.55)<1e-8);
-  assert.ok(Math.abs(app.eval("game.enemies[1].hp")-46.55)<1e-8);
+  assert.ok(Math.abs(app.eval("game.enemies[0].hp")-48.16)<1e-8);
+  assert.ok(Math.abs(app.eval("game.enemies[1].hp")-48.16)<1e-8);
   assert.equal(app.eval("game.enemies[2].hp"),50);
   assert.equal(app.eval("game.enemies[0].x"),440);
   assert.equal(app.eval("game.enemies[1].x"),480,
@@ -6391,13 +6391,13 @@ test("DARK RED-GOLD explosion radius is determined BEFORE direct target knockbac
     '];addPlayerShot(300,480,1100,0,9,1.15,"#a62540",darkRedGoldRules.createShot());',
     'updatePlayerBullets(.25);'
   ].join("\n"));
-  assert.ok(Math.abs(app.eval("game.enemies[1].hp")-46.55)<1e-9);
+  assert.ok(Math.abs(app.eval("game.enemies[1].hp")-48.16)<1e-9);
   assert.equal(app.eval("game.enemies[2].hp"),50);
   assert.equal(app.eval("game.enemies[0].x"),440);
   assert.ok(Math.abs(app.eval("game.orangeExplosions[0].x")-371)<1e-9);
 });
 
-test("DARK RED-GOLD shield takes one 3x explosion, but surviving shielded enemy moves 40",()=>{
+test("DARK RED-GOLD shield takes one 1.6x explosion, but surviving shielded enemy moves 40",()=>{
   const app=boot();
   app.eval([
     'game.state="PLAYING";game.stageMode="WAVE";',
@@ -6409,13 +6409,13 @@ test("DARK RED-GOLD shield takes one 3x explosion, but surviving shielded enemy 
     'updatePlayerBullets(.22);'
   ].join("\n"));
   assert.equal(app.eval("game.enemies[0].hp"),20);
-  assert.ok(Math.abs(app.eval("game.enemies[0].shieldHp")-6.55)<1e-9);
+  assert.ok(Math.abs(app.eval("game.enemies[0].shieldHp")-8.16)<1e-9);
   assert.equal(app.eval("game.enemies[0].x"),440);
-  assert.ok(Math.abs(app.eval("game.enemies[1].hp")-46.55)<1e-9);
+  assert.ok(Math.abs(app.eval("game.enemies[1].hp")-48.16)<1e-9);
   assert.equal(app.eval("game.enemies[1].x"),460);
 });
 
-test("DARK RED-GOLD on Boss HULL applies 3x only once and moves Boss anchor by 40",()=>{
+test("DARK RED-GOLD on Boss HULL applies 1.6x only once and moves Boss anchor by 40",()=>{
   const app=boot();
   app.eval([
     'game.state="PLAYING";game.stageMode="BOSS";',
@@ -6426,16 +6426,16 @@ test("DARK RED-GOLD on Boss HULL applies 3x only once and moves Boss anchor by 4
     'addPlayerShot(650,480,1100,0,9,1.15,"#a62540",darkRedGoldRules.createShot());',
     'updatePlayerBullets(.32);'
   ].join("\n"));
-  assert.ok(Math.abs(app.eval("game.boss.hp")-196.55)<1e-9);
+  assert.ok(Math.abs(app.eval("game.boss.hp")-198.16)<1e-9);
   assert.equal(app.eval("game.boss.x"),1010);
   assert.equal(app.eval("game.boss.targetX"),1005);
   assert.equal(app.eval("game.orangeExplosions.length"),1);
   assert.equal(app.eval("game.orangeExplosions[0].darkRedGold"),true);
-  assert.ok(Math.abs(app.eval("game.enemies[0].hp")-46.55)<1e-9);
+  assert.ok(Math.abs(app.eval("game.enemies[0].hp")-48.16)<1e-9);
   assert.equal(app.eval("game.enemies[0].x"),900);
 });
 
-test("DARK RED-GOLD Boss TURRET priority: weakpoint 3x, no hull damage, push Boss once",()=>{
+test("DARK RED-GOLD Boss TURRET priority: weakpoint 1.6x, no hull damage, push Boss once",()=>{
   const app=boot();
   app.eval([
     'game.state="PLAYING";game.stageMode="BOSS";',
@@ -6448,11 +6448,11 @@ test("DARK RED-GOLD Boss TURRET priority: weakpoint 3x, no hull damage, push Bos
     'updatePlayerBullets(.35);'
   ].join("\n"));
   assert.ok(Math.abs(app.eval("game.boss.parts[0].hp")-
-    (80-3.45*bossParts.BALANCE.weakPointDamageScale))<1e-8);
+    (80-1.84*bossParts.BALANCE.weakPointDamageScale))<1e-8);
   assert.equal(app.eval("game.boss.hp"),200);
   assert.equal(app.eval("game.boss.x"),990);
   assert.equal(app.eval("game.boss.targetX"),990);
-  assert.ok(Math.abs(app.eval("game.enemies[0].hp")-46.55)<1e-8);
+  assert.ok(Math.abs(app.eval("game.enemies[0].hp")-48.16)<1e-8);
   assert.equal(app.eval("game.enemies[0].x"),810);
 });
 
@@ -6468,8 +6468,8 @@ test("DARK RED-GOLD enemy direct hit splashes BOSS once and pushes enemy only",(
     'updatePlayerBullets(.32);'
   ].join("\n"));
   assert.equal(app.eval("game.enemies[0].x"),440);
-  assert.ok(Math.abs(app.eval("game.enemies[0].hp")-46.55)<1e-8);
-  assert.ok(Math.abs(app.eval("game.boss.hp")-96.55)<1e-8);
+  assert.ok(Math.abs(app.eval("game.enemies[0].hp")-48.16)<1e-8);
+  assert.ok(Math.abs(app.eval("game.boss.hp")-98.16)<1e-8);
   assert.equal(app.eval("game.boss.x"),620);
 });
 
@@ -6502,12 +6502,12 @@ test("DARK RED-GOLD fired projectile retains explosion, knockback and gold FX af
     'updatePlayerBullets(.3);'
   ].join("\n"));
   assert.equal(app.eval("game.weaponType"),"green");
-  assert.ok(Math.abs(app.eval("game.enemies[0].hp")-46.55)<1e-8);
+  assert.ok(Math.abs(app.eval("game.enemies[0].hp")-48.16)<1e-8);
   assert.equal(app.eval("game.enemies[0].x"),540);
   assert.equal(app.eval("game.orangeExplosions[0].darkRedGold"),true);
 });
 
-test("DARK RED-GOLD Overdrive scales ORANGE 3x blast, but knockback remains exactly 40",()=>{
+test("DARK RED-GOLD Overdrive scales ORANGE 1.6x blast, but knockback remains exactly 40",()=>{
   const app=boot();
   app.eval([
     'game.state="PLAYING";game.stageMode="WAVE";game.weaponType="darkredgold";',
@@ -6519,7 +6519,7 @@ test("DARK RED-GOLD Overdrive scales ORANGE 3x blast, but knockback remains exac
     'firePlayerWeapons();game.bullets=game.bullets.slice(0,1);',
     'updatePlayerBullets(.30);'
   ].join("\n"));
-  const expected=100-1.15*3*app.eval("game.currentScale");
+  const expected=100-1.15*1.6*app.eval("game.currentScale");
   assert.ok(Math.abs(app.eval("game.enemies[0].hp")-expected)<1e-8);
   assert.equal(app.eval("game.enemies[0].x"),540);
 });
@@ -6552,7 +6552,7 @@ test("DARK RED-GOLD gold blast FX is color-provenance-safe, 48-capped, purely co
   assert.ok(visuals.strokes.includes("#9e1839"));
   assert.ok(visuals.strokes.includes("#ff9c39"),
     "Ordinary ORANGE color must remain unchanged in same frame");
-  assert.ok(visuals.labels.includes("DARK RED-GOLD  PUSH40 X3"));
+  assert.ok(visuals.labels.includes("DARK RED-GOLD  PUSH40 X1.6"));
   app.eval('for(let i=0;i<80;i++)addOrangeExplosion(i,480,true)');
   assert.equal(app.eval("game.orangeExplosions.length"),48);
   app.eval('game.state="PAUSED";updatePlaying(2)');
