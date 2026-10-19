@@ -417,7 +417,7 @@ test("DARK RED-GOLD runtime is cache-versioned and built after DARK RED and ORAN
   const html=fs.readFileSync(path.join(__dirname,"../index.html"),"utf8");
   const build=fs.readFileSync(path.join(__dirname,"../scripts/build.mjs"),"utf8");
   const pkg=require("../package.json");
-  assert.equal(pkg.version,"26.24.0");
+  assert.equal(pkg.version,"26.25.0");
   assert.ok(html.includes('src="./src/dark-red-weapon.js?v='+pkg.version+'"'));
   assert.ok(html.includes('src="./src/dark-red-gold-weapon.js?v='+pkg.version+'"'));
   assert.ok(html.includes('src="./src/game.js?v='+pkg.version+'"'));
@@ -433,4 +433,14 @@ test("DARK RED-GOLD runtime is cache-versioned and built after DARK RED and ORAN
     orangeWeapon.RULES.damageMultiplier);
   assert.equal(darkRedGoldWeapon.RULES.normalDamage,
     darkRedWeapon.RULES.normalDamage);
+});
+
+test("v26.25 LIME homing successor is cache-fresh and bounded",()=>{
+  const html=fs.readFileSync(path.join(__dirname,"../index.html"),"utf8");
+  const pkg=require("../package.json");
+  assert.ok(html.includes('src="./src/lime-weapon.js?v='+pkg.version+'"'));
+  assert.ok(html.includes('src="./src/game.js?v='+pkg.version+'"'));
+  assert.equal(limeWeapon.RULES.bulletLifetimeSeconds,3.2);
+  assert.equal(limeWeapon.RULES.homingLifetimeSeconds,3.6);
+  assert.equal(limeWeapon.RULES.homingSpeed,940);
 });
