@@ -7,6 +7,16 @@ Independently maintained from NeonWings commit `5ebcb1de1adb288b41a3c5e387f747bc
 - [x] Configure standalone Pages workflow
 - [ ] Verify site deployment and controller tests on hardware
 
+## v26.23.0 — DARK RED-GOLD 40-unit knockback plus ORANGE blasts
+
+- [x] Add 28th uniform P drop: deep-red→gold gradient, collectible ONLY from currently equipped DARK RED or the same fusion, with nonconsuming ineligible pickup
+- [x] Keep DARK RED starter 2 bullets (y-10,+12, 1100 speed, 1.15 base) at 0.101s and convert into actual ORANGE first-swept-contact 100-radius 3x nonrecursive explosions
+- [x] Push only the DIRECT original surviving hit victim 40 units after resolving snapshot blast; keep splash victims in place, handle Boss scripted targetX and bounds, don't move dead/just-spawned targets
+- [x] Keep original DARK RED 30-hit 50% repeat and 5% 10x missile exclusive to DARK RED; new fusion has only knockback+explosion, preventing unrequested chained explosions
+- [x] Retain ORANGE original 48-effect .35s cap; deep red/gold event provenance after weapon swaps, FX-only drawing, no gameplay mutations
+- [x] Add P pickup/recovery, projectile, HUD, all-28 drop probabilities, updated build/cache/doc version and exhaustive hit/shield/Boss/Overdrive/splitter/visual/compatibility tests
+- [ ] Manually assess readability of crimson/gold bursts and crowded-wave FPS on real browser and handheld
+
 ## v26.22.0 — BLUE-BLACK gradient 90% slowing shots
 
 - [x] Add 27th collectible BLUE-to-BLACK P as an upgrade available exclusively from ordinary BLACK (or repeat BLUE-BLACK), with persistent rejected drops and safe pickup/recovery mapping

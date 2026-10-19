@@ -42,6 +42,8 @@ const W = 1280;
     if (!skyRules) throw new Error("NeonWings-Pan sky P runtime missing");
     const darkRedRules = window.NeonDarkRedWeapon;
     if (!darkRedRules) throw new Error("NeonWings-Pan dark red P runtime missing");
+    const darkRedGoldRules = window.NeonDarkRedGoldWeapon;
+    if (!darkRedGoldRules) throw new Error("NeonWings-Pan dark red-gold P runtime missing");
     const rainbowRules = window.NeonRainbowWeapon;
     if (!rainbowRules) throw new Error("NeonWings-Pan rainbow P runtime missing");
     const magnetRules = window.NeonMagnetWeapon;
@@ -1917,7 +1919,7 @@ const W = 1280;
       "P_BROWN", "P_LIME", "P_SKY", "P_DARK_RED", "P_RAINBOW",
       "P_MAGNET", "P_ARC_LASER", "P_STASIS", "P_ECLIPSE", "P_RECRUIT",
       "P_SOLAR", "P_RED_WHITE", "P_GRAY_FLAME", "P_RED_ORANGE", "P_BROWN_YELLOW",
-      "P_PURPLE_WHITE", "P_BLUE_BLACK"
+      "P_PURPLE_WHITE", "P_BLUE_BLACK", "P_DARK_RED_GOLD"
     ]);
     function randomPowerType() {
       return POWER_TYPES[Math.min(POWER_TYPES.length - 1,
@@ -1945,6 +1947,7 @@ const W = 1280;
       if (type === "lime") return { name: "ORBIT", short: "LIME", color: "#c7f542", core: "#fbffd4" };
       if (type === "sky") return { name: "ADAPT", short: "SKY", color: "#86d9ff", core: "#e7f9ff" };
       if (type === "darkred") return { name: "CHAIN", short: "DARK RED", color: "#981332", core: "#ffe0e8" };
+      if (type === "darkredgold") return { name: "GOLD BURST", short: "DARK RED-GOLD", color: "#9e1635", core: "#ffe092" };
       if (type === "rainbow") return { name: "PRISM", short: "RAINBOW", color: "#e59bff", core: "#ffffff" };
       if (type === "magnet") return { name: "MAGNET", short: "MAGNET", color: "#ff6f91", core: "#c8efff" };
       if (type === "arcLaser") return { name: "PIERCING ARC", short: "ARC LASER", color: "#9ee9ff", core: "#ffffff" };
@@ -1975,6 +1978,7 @@ const W = 1280;
       if (powerupType === "P_LIME") return "lime";
       if (powerupType === "P_SKY") return "sky";
       if (powerupType === "P_DARK_RED") return "darkred";
+      if (powerupType === "P_DARK_RED_GOLD") return "darkredgold";
       if (powerupType === "P_RAINBOW") return "rainbow";
       if (powerupType === "P_MAGNET") return "magnet";
       if (powerupType === "P_ARC_LASER") return "arcLaser";
@@ -2005,6 +2009,7 @@ const W = 1280;
       if (game.weaponType === "lime") return "P_LIME";
       if (game.weaponType === "sky") return "P_SKY";
       if (game.weaponType === "darkred") return "P_DARK_RED";
+      if (game.weaponType === "darkredgold") return "P_DARK_RED_GOLD";
       if (game.weaponType === "rainbow") return "P_RAINBOW";
       if (game.weaponType === "magnet") return "P_MAGNET";
       if (game.weaponType === "arcLaser") return "P_ARC_LASER";
@@ -2085,6 +2090,16 @@ const W = 1280;
     }
 
     function collectPowerup(p) {
+      // Deep-crimson/gold impact blasts are a DARK RED-only upgrade.
+      // Noneligible collectors must leave the P untouched in the arena.
+      if (p.type === "P_DARK_RED_GOLD" &&
+          !darkRedGoldRules.canEquip(game.weaponType)) {
+        if (!(p.lockHintCooldown > 0)) {
+          showMessage("DARK RED-GOLD  REQUIRES DARK RED P", 1.1);
+          p.lockHintCooldown = 1.2;
+        }
+        return false;
+      }
       // BLUE-BLACK is accessible only through ordinary BLACK, not BLUE.
       // Rejected drops persist and do not change score/weapon levels.
       if (p.type === "P_BLUE_BLACK" && !blueBlackRules.canEquip(game.weaponType)) {
@@ -2271,7 +2286,7 @@ const W = 1280;
               wt === "eclipse" || wt === "recruit" || wt === "solar" ||
               wt === "redwhite" || wt === "grayflame" || wt === "redorange" ||
               wt === "brownyellow" || wt === "purplewhite" ||
-              wt === "blueblack") {
+              wt === "blueblack" || wt === "darkredgold") {
             const gradient = ctx.createLinearGradient(-19, -19, 19, 19);
             gradient.addColorStop(0, wt === "magnet" ? "#ff4568"
               : wt === "arcLaser" ? "#8bdfff"
@@ -2283,7 +2298,8 @@ const W = 1280;
               : wt === "grayflame" ? "#e92840"
               : wt === "brownyellow" ? "#88502e"
               : wt === "purplewhite" ? "#7935d8"
-              : wt === "blueblack" ? "#276aff" : "#020408");
+              : wt === "blueblack" ? "#276aff"
+              : wt === "darkredgold" ? "#780e2c" : "#020408");
             gradient.addColorStop(1, wt === "magnet" ? "#a9e8ff"
               : wt === "eclipse" ? "#fb385c"
               : wt === "recruit" ? "#80bfff"
@@ -2293,7 +2309,8 @@ const W = 1280;
               : wt === "grayflame" ? "#777e90"
               : wt === "brownyellow" ? "#ffda52"
               : wt === "purplewhite" ? "#ffffff"
-              : wt === "blueblack" ? "#050713" : "#ffffff");
+              : wt === "blueblack" ? "#050713"
+              : wt === "darkredgold" ? "#f8c445" : "#ffffff");
             rect(-19, -19, 38, 38, gradient);
           } else rect(-19, -19, 38, 38, meta.color);
           rect(-13, -13, 26, 26, "#081020");
@@ -2400,6 +2417,25 @@ const W = 1280;
             rect(-32, -4, 9, 8, "#ff7fcf");
             rect(23, -4, 9, 8, "#82caff");
             rect(-3, -34, 6, 8, "#ffffff");
+          } else if (wt === "darkredgold") {
+            // Golden burst rays around a deep-crimson shell, different from
+            // original DARK RED's three chain zigzags.
+            ctx.shadowColor = "#efb645";
+            ctx.shadowBlur = 12;
+            ctx.strokeStyle = "#ffd76a";
+            ctx.lineWidth = 2.7;
+            for (const a of [0,Math.PI/3,2*Math.PI/3,Math.PI,
+                4*Math.PI/3,5*Math.PI/3]) {
+              ctx.beginPath();
+              ctx.moveTo(Math.cos(a)*24,Math.sin(a)*24);
+              ctx.lineTo(Math.cos(a)*33,Math.sin(a)*33);
+              ctx.stroke();
+            }
+            ctx.shadowBlur = 0;
+            rect(-30,-4,9,8,"#841330");
+            rect(21,-4,9,8,"#ffda67");
+            if (!darkRedGoldRules.canEquip(game.weaponType))
+              drawText("DARK RED",0,43,11,"center","#ffdc8b");
           } else if (wt === "darkred") {
             // Three nested deep-crimson strikes distinguish chained hits from
             // ordinary RED P's four fins and star progression.
@@ -2640,13 +2676,15 @@ const W = 1280;
       });
     }
 
-    function addOrangeExplosion(x, y) {
-      // Visual-only pool: only detonateOrangeShot resolves gameplay damage.
+    function addOrangeExplosion(x, y, darkRedGold = false) {
+      // Visual-only pool: only updateOrangeProjectile resolves damage.
+      // Per-impact palette is preserved even when the equipped P changes.
       if (game.orangeExplosions.length >= LIMITS.orangeExplosions) {
         game.orangeExplosions.shift();
       }
       game.orangeExplosions.push({
-        x, y, life: orangeRules.RULES.explosionLifetimeSeconds
+        x, y, life: orangeRules.RULES.explosionLifetimeSeconds,
+        darkRedGold: Boolean(darkRedGold)
       });
     }
 
@@ -2724,22 +2762,26 @@ const W = 1280;
         ctx.translate(blast.x, blast.y);
         ctx.globalAlpha = alpha;
         const fire = ctx.createRadialGradient(0, 0, 0, 0, 0, radius);
-        fire.addColorStop(0, "rgba(255,255,204,.56)");
-        fire.addColorStop(0.32, "rgba(255,165,47,.37)");
-        fire.addColorStop(0.75, "rgba(255,93,17,.15)");
-        fire.addColorStop(1, "rgba(255,93,17,0)");
+        fire.addColorStop(0, blast.darkRedGold
+          ? "rgba(255,238,169,.60)" : "rgba(255,255,204,.56)");
+        fire.addColorStop(0.32, blast.darkRedGold
+          ? "rgba(238,169,40,.40)" : "rgba(255,165,47,.37)");
+        fire.addColorStop(0.75, blast.darkRedGold
+          ? "rgba(116,10,38,.19)" : "rgba(255,93,17,.15)");
+        fire.addColorStop(1, blast.darkRedGold
+          ? "rgba(116,10,38,0)" : "rgba(255,93,17,0)");
         ctx.fillStyle = fire;
         ctx.beginPath();
         ctx.arc(0, 0, radius, 0, Math.PI * 2);
         ctx.fill();
-        ctx.shadowColor = "#ff7a1a";
+        ctx.shadowColor = blast.darkRedGold ? "#e7ad36" : "#ff7a1a";
         ctx.shadowBlur = 18;
-        ctx.strokeStyle = "#ff9c39";
+        ctx.strokeStyle = blast.darkRedGold ? "#9e1839" : "#ff9c39";
         ctx.lineWidth = 5 + (1 - progress) * 4;
         ctx.beginPath();
         ctx.arc(0, 0, ring, 0, Math.PI * 2);
         ctx.stroke();
-        ctx.strokeStyle = "#ffe1a3";
+        ctx.strokeStyle = blast.darkRedGold ? "#ffd963" : "#ffe1a3";
         ctx.lineWidth = 2;
         ctx.beginPath();
         ctx.arc(0, 0, ring * 0.73, 0, Math.PI * 2);
@@ -2970,6 +3012,18 @@ const W = 1280;
           addPlayerShot(muzzleX, baseY + lane, 1100, 0, 9,
             magnetRules.RULES.normalDamage, "#ff6080", { magneticShot: true });
         }
+      } else if (type === "darkredgold") {
+        // Two starter-grade DARK RED lanes; each projectile uses ORANGE's
+        // original first-contact radius-100 3x explosion pipeline, then
+        // pushes the directly hit living enemy/Boss exactly 40 units.
+        // No DARK RED recursive chain or probabilistic bonus missile.
+        for (const offset of darkRedGoldRules.RULES.muzzleOffsets) {
+          addPlayerShot(muzzleX,baseY+offset,
+            darkRedGoldRules.RULES.bulletSpeed,0,
+            darkRedGoldRules.RULES.bulletRadius,
+            darkRedGoldRules.RULES.normalDamage,"#c83c4e",
+            darkRedGoldRules.createShot());
+        }
       } else if (type === "darkred") {
         // Each regular dual-shot action independently rolls ONE 5% bonus
         // guided missile. Chain RNG is ONLY evaluated after real impacts.
@@ -3071,7 +3125,7 @@ const W = 1280;
       if (game.weaponType === "eclipse") return eclipseRules.RULES.cooldownSeconds;
       if (game.weaponType === "yellow") return Math.max(0.17, 0.25 - game.weaponLevel * 0.025);
       if (game.weaponType === "purple") return Math.max(0.10, 0.145 - game.weaponLevel * 0.012);
-      return Math.max(0.07, 0.115 - (game.weaponType === "green" || game.weaponType === "black" || game.weaponType === "blueblack" || game.weaponType === "white" || game.weaponType === "gray" || game.weaponType === "grayflame" || game.weaponType === "pink" || game.weaponType === "orange" || game.weaponType === "lime" || game.weaponType === "brown" || game.weaponType === "brownyellow" || game.weaponType === "purplewhite" || game.weaponType === "sky" || game.weaponType === "darkred" || game.weaponType === "magnet" || game.weaponType === "stasis" || game.weaponType === "arcLaser" || game.weaponType === "recruit" || game.weaponType === "solar" ? 1 : game.weaponLevel) * 0.014);
+      return Math.max(0.07, 0.115 - (game.weaponType === "green" || game.weaponType === "black" || game.weaponType === "blueblack" || game.weaponType === "white" || game.weaponType === "gray" || game.weaponType === "grayflame" || game.weaponType === "pink" || game.weaponType === "orange" || game.weaponType === "lime" || game.weaponType === "brown" || game.weaponType === "brownyellow" || game.weaponType === "purplewhite" || game.weaponType === "sky" || game.weaponType === "darkred" || game.weaponType === "darkredgold" || game.weaponType === "magnet" || game.weaponType === "stasis" || game.weaponType === "arcLaser" || game.weaponType === "recruit" || game.weaponType === "solar" ? 1 : game.weaponLevel) * 0.014);
     }
 
     function findMissileTarget(m) {
@@ -3791,17 +3845,33 @@ const W = 1280;
       const enemiesAtImpact = game.enemies.slice();
       const bossAtImpact = boss?.active && boss.hp > 0 ? boss : null;
       b.dead = true;
-      addOrangeExplosion(impact.x, impact.y);
+      addOrangeExplosion(impact.x, impact.y, Boolean(b.darkRedGoldShot));
       const power = b.power * orangeRules.RULES.damageMultiplier;
+      const directColor = b.darkRedGoldShot ? "#ffd064" : "#ffad4b";
+      const splashColor = b.darkRedGoldShot ? "#ae3750" : "#ff9c39";
       if (target === boss) {
-        damageBoss(power, impact.x, impact.y, "#ffad4b", part);
+        damageBoss(power, impact.x, impact.y, directColor, part);
       } else {
-        damageEnemy(target, power, impact.x, impact.y, "#ffad4b");
+        damageEnemy(target, power, impact.x, impact.y, directColor);
       }
+      // Snapshot and resolve Orange's entire blast BEFORE moving the primary
+      // target. Otherwise knockback could change who is in this explosion.
       orangeRules.splash(impact, enemiesAtImpact, bossAtImpact, target,
-        e => damageEnemy(e, power, e.x, e.y, "#ff9c39"),
-        hitBoss => damageBoss(power, impact.x, impact.y, "#ff9c39")
+        e => damageEnemy(e, power, e.x, e.y, splashColor),
+        hitBoss => damageBoss(power, impact.x, impact.y, splashColor)
       );
+      if (b.darkRedGoldShot) {
+        if (target === boss && game.boss === boss && boss.active && boss.hp > 0) {
+          darkRedGoldRules.knockback(boss,{
+            boss:true,direction:Math.sign(b.vx),minX:W-390,maxX:W-125
+          });
+        } else if (target !== boss && target.hp > 0 &&
+            game.enemies.includes(target)) {
+          darkRedGoldRules.knockback(target,{
+            direction:Math.sign(b.vx),minX:-120,maxX:W+120
+          });
+        }
+      }
     }
 
     // One physical ARC LASER tick pierces every direct enemy on the shared
@@ -5155,6 +5225,17 @@ const W = 1280;
           ctx.restore();
           continue;
         }
+        if (b.darkRedGoldShot) {
+          const gradient = ctx.createLinearGradient(-8,-7,32,7);
+          gradient.addColorStop(0,"#780c2d");
+          gradient.addColorStop(1,"#f7cc51");
+          ctx.shadowColor = "#e2ac43";
+          ctx.shadowBlur = 17;
+          rect(-8,-7,39,14,gradient);
+          rect(1,-3,30,6,"#fff1b3");
+          ctx.restore();
+          continue;
+        }
         if (b.redOrangeShot) {
           const gradient = ctx.createLinearGradient(-8, -7, 32, 7);
           gradient.addColorStop(0, "#fa344f");
@@ -5640,6 +5721,8 @@ const W = 1280;
         ? (game.hp > skyRules.RULES.thresholdHp ? "SKY BOOST  2.5X" : "SKY SEEK  BLACK SLOW")
         : game.weaponType === "darkred"
         ? "DARK RED  50%x30  M5%x10"
+        : game.weaponType === "darkredgold"
+        ? "DARK RED-GOLD  PUSH40 X3"
         : game.weaponType === "rainbow"
         ? "RAINBOW  7x13%  M9%"
         : game.weaponType === "magnet"
@@ -5821,7 +5904,7 @@ const W = 1280;
       ctx.fillRect(0, 0, W, H);
 
       drawText("NEON WINGS", W / 2, 195, 86, "center", "#e7fbff");
-      drawText("NEONWINGS PAN  /  v26.22.0", W / 2, 270, 28, "center", "#98f5ff");
+      drawText("NEONWINGS PAN  /  v26.23.0", W / 2, 270, 28, "center", "#98f5ff");
       drawText(`HIGH SCORE ${String(highScore()).padStart(6, "0")}`, W / 2, 318, 24, "center", "#fff4b7");
 
       drawPlayerShip(W / 2 - 170, 492, -0.20, false, ships[0]);
