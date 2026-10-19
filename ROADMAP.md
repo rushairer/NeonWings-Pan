@@ -7,6 +7,16 @@ Independently maintained from NeonWings commit `5ebcb1de1adb288b41a3c5e387f747bc
 - [x] Configure standalone Pages workflow
 - [ ] Verify site deployment and controller tests on hardware
 
+## v26.21.0 — PURPLE-WHITE five-lock converging lasers
+
+- [x] Add 26th P as a violet-to-white gradient, collectable only from PURPLE, BROWN or itself; rejected P remains without side effects
+- [x] Inherit BROWN continuous hold-FIRE, first-obstruction laser, 0.101s interval, 1.15 base damage, 1300-unit range and zero projectiles
+- [x] Make five visibly distinct beams prioritize five different visible targets; distribute spare channels fairly (one target 5x, two 3+2, three 2+2+1), aggregate damage once per victim
+- [x] Reuse BROWN's one damage clock and normal shield/Boss turret/score/splitter/Overdrive pipeline, with reassignment on kill rather than extra beam clocks
+- [x] Implement violet-white P and beams, 26 equal-probability P drops, loss/recovery, compact PENTA LOCK HUD and versioned Pages static build
+- [x] Add pure matching/geometry, collision, protection, single-target/no-double-count, scarce-target, fighter, controller, render and crowded-field regression tests
+- [ ] Visually check readability, multi-target lock switching and high-density FPS on actual browser/handheld
+
 ## v26.20.0 — BROWN-YELLOW one-hop refracted lock laser
 
 - [x] Add 25th brown→yellow gradient P, collectible only while BROWN or the same fusion is currently equipped; rejected drops remain with no score/level/state side effects

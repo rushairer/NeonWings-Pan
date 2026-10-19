@@ -30,6 +30,8 @@ const W = 1280;
     if (!redOrangeRules) throw new Error("NeonWings-Pan red-orange P runtime missing");
     const brownRules = window.NeonBrownWeapon;
     if (!brownRules) throw new Error("NeonWings-Pan brown P runtime missing");
+    const purpleWhiteRules = window.NeonPurpleWhiteWeapon;
+    if (!purpleWhiteRules) throw new Error("NeonWings-Pan purple-white P runtime missing");
     const brownYellowRules = window.NeonBrownYellowWeapon;
     if (!brownYellowRules) throw new Error("NeonWings-Pan brown-yellow P runtime missing");
     const limeRules = window.NeonLimeWeapon;
@@ -1897,7 +1899,8 @@ const W = 1280;
       "P_BLACK", "P_WHITE", "P_GRAY", "P_PINK", "P_ORANGE",
       "P_BROWN", "P_LIME", "P_SKY", "P_DARK_RED", "P_RAINBOW",
       "P_MAGNET", "P_ARC_LASER", "P_STASIS", "P_ECLIPSE", "P_RECRUIT",
-      "P_SOLAR", "P_RED_WHITE", "P_GRAY_FLAME", "P_RED_ORANGE", "P_BROWN_YELLOW"
+      "P_SOLAR", "P_RED_WHITE", "P_GRAY_FLAME", "P_RED_ORANGE", "P_BROWN_YELLOW",
+      "P_PURPLE_WHITE"
     ]);
     function randomPowerType() {
       return POWER_TYPES[Math.min(POWER_TYPES.length - 1,
@@ -1906,6 +1909,7 @@ const W = 1280;
 
     function weaponMeta(type = game.weaponType) {
       if (type === "purple") return { name: "SPREAD", short: "PURPLE", color: "#c084ff", core: "#f3d7ff" };
+      if (type === "purplewhite") return { name: "PENTA LOCK", short: "PURPLE-WHITE", color: "#b67aff", core: "#ffffff" };
       if (type === "yellow") return { name: "MISSILE", short: "YELLOW", color: "#ffd76b", core: "#fff4b7" };
       if (type === "red") return { name: "SCATTER", short: "RED", color: "#ff3d5f", core: "#ffe3e8" };
       if (type === "redwhite") return { name: "ARC SCATTER", short: "RED-WHITE", color: "#ff6479", core: "#ffffff" };
@@ -1934,6 +1938,7 @@ const W = 1280;
 
     function powerupWeaponType(powerupType) {
       if (powerupType === "P_PURPLE") return "purple";
+      if (powerupType === "P_PURPLE_WHITE") return "purplewhite";
       if (powerupType === "P_YELLOW") return "yellow";
       if (powerupType === "P_RED") return "red";
       if (powerupType === "P_RED_WHITE") return "redwhite";
@@ -1962,6 +1967,7 @@ const W = 1280;
 
     function currentPowerupType() {
       if (game.weaponType === "purple") return "P_PURPLE";
+      if (game.weaponType === "purplewhite") return "P_PURPLE_WHITE";
       if (game.weaponType === "yellow") return "P_YELLOW";
       if (game.weaponType === "red") return "P_RED";
       if (game.weaponType === "redwhite") return "P_RED_WHITE";
@@ -2059,6 +2065,15 @@ const W = 1280;
     }
 
     function collectPowerup(p) {
+      // The five-beam PURPLE-WHITE fusion is a PURPLE-or-BROWN evolution.
+      // Invalid users do not consume the pickup, gain a level or reset timers.
+      if (p.type === "P_PURPLE_WHITE" && !purpleWhiteRules.canEquip(game.weaponType)) {
+        if (!(p.lockHintCooldown > 0)) {
+          showMessage("PENTA LOCK  REQUIRES PURPLE OR BROWN P", 1.1);
+          p.lockHintCooldown = 1.2;
+        }
+        return false;
+      }
       // BROWN-YELLOW is a BROWN-exclusive one-refraction upgrade. Picking it
       // with any other currently equipped P never consumes its pickup.
       if (p.type === "P_BROWN_YELLOW" && !brownYellowRules.canEquip(game.weaponType)) {
@@ -2226,7 +2241,7 @@ const W = 1280;
           if (wt === "magnet" || wt === "arcLaser" || wt === "stasis" ||
               wt === "eclipse" || wt === "recruit" || wt === "solar" ||
               wt === "redwhite" || wt === "grayflame" || wt === "redorange" ||
-              wt === "brownyellow") {
+              wt === "brownyellow" || wt === "purplewhite") {
             const gradient = ctx.createLinearGradient(-19, -19, 19, 19);
             gradient.addColorStop(0, wt === "magnet" ? "#ff4568"
               : wt === "arcLaser" ? "#8bdfff"
@@ -2236,7 +2251,8 @@ const W = 1280;
               : wt === "redwhite" ? "#ff3957"
               : wt === "redorange" ? "#f72f50"
               : wt === "grayflame" ? "#e92840"
-              : wt === "brownyellow" ? "#88502e" : "#020408");
+              : wt === "brownyellow" ? "#88502e"
+              : wt === "purplewhite" ? "#7935d8" : "#020408");
             gradient.addColorStop(1, wt === "magnet" ? "#a9e8ff"
               : wt === "eclipse" ? "#fb385c"
               : wt === "recruit" ? "#80bfff"
@@ -2244,7 +2260,8 @@ const W = 1280;
               : wt === "redwhite" ? "#f9fcff"
               : wt === "redorange" ? "#ffaf36"
               : wt === "grayflame" ? "#777e90"
-              : wt === "brownyellow" ? "#ffda52" : "#ffffff");
+              : wt === "brownyellow" ? "#ffda52"
+              : wt === "purplewhite" ? "#ffffff" : "#ffffff");
             rect(-19, -19, 38, 38, gradient);
           } else rect(-19, -19, 38, 38, meta.color);
           rect(-13, -13, 26, 26, "#081020");
@@ -2259,6 +2276,21 @@ const W = 1280;
             rect(2, -29, 6, 6, meta.core);
             rect(-8, 23, 6, 6, meta.core);
             rect(2, 23, 6, 6, meta.core);
+          } else if (wt === "purplewhite") {
+            // Five-lane radiating laser glyph rather than ordinary PURPLE fins.
+            ctx.strokeStyle = "#f3e6ff";
+            ctx.shadowColor = "#af68ff";
+            ctx.shadowBlur = 10;
+            ctx.lineWidth = 2.5;
+            for (const o of [-2,-1,0,1,2]) {
+              ctx.beginPath();
+              ctx.moveTo(-30, o * 6);
+              ctx.lineTo(30, o * 9);
+              ctx.stroke();
+            }
+            ctx.shadowBlur = 0;
+            if (!purpleWhiteRules.canEquip(game.weaponType))
+              drawText("PURPLE/BROWN", 0, 43, 10, "center", "#e9c8ff");
           } else if (wt === "brownyellow") {
             // One angular bend in the beam marks the unique one-refraction P.
             ctx.strokeStyle = "#ffe080";
@@ -2816,8 +2848,9 @@ const W = 1280;
           addPlayerShot(muzzleX, baseY + lane, 1100, 0, 9, 1.15,
             "#e8f6ff", { stasisShot: true });
         }
-      } else if (type === "arcLaser") {
-        // Upgraded BROWN beam handled by updateBrownLaser(): no shot objects.
+      } else if (type === "arcLaser" || type === "purplewhite") {
+        // PENTA LOCK and ARC LASER share BROWN's hold-to-fire timer; ZERO
+        // projectile objects. All ray damage is handled by updateBrownLaser().
       } else if (type === "brown" || type === "brownyellow") {
         // Both BROWN lasers are continuous while held, with ZERO bullet
         // objects. Their damage and target locking live in updateBrownLaser().
@@ -2987,7 +3020,7 @@ const W = 1280;
       if (game.weaponType === "eclipse") return eclipseRules.RULES.cooldownSeconds;
       if (game.weaponType === "yellow") return Math.max(0.17, 0.25 - game.weaponLevel * 0.025);
       if (game.weaponType === "purple") return Math.max(0.10, 0.145 - game.weaponLevel * 0.012);
-      return Math.max(0.07, 0.115 - (game.weaponType === "green" || game.weaponType === "black" || game.weaponType === "white" || game.weaponType === "gray" || game.weaponType === "grayflame" || game.weaponType === "pink" || game.weaponType === "orange" || game.weaponType === "lime" || game.weaponType === "brown" || game.weaponType === "brownyellow" || game.weaponType === "sky" || game.weaponType === "darkred" || game.weaponType === "magnet" || game.weaponType === "stasis" || game.weaponType === "arcLaser" || game.weaponType === "recruit" || game.weaponType === "solar" ? 1 : game.weaponLevel) * 0.014);
+      return Math.max(0.07, 0.115 - (game.weaponType === "green" || game.weaponType === "black" || game.weaponType === "white" || game.weaponType === "gray" || game.weaponType === "grayflame" || game.weaponType === "pink" || game.weaponType === "orange" || game.weaponType === "lime" || game.weaponType === "brown" || game.weaponType === "brownyellow" || game.weaponType === "purplewhite" || game.weaponType === "sky" || game.weaponType === "darkred" || game.weaponType === "magnet" || game.weaponType === "stasis" || game.weaponType === "arcLaser" || game.weaponType === "recruit" || game.weaponType === "solar" ? 1 : game.weaponLevel) * 0.014);
     }
 
     function findMissileTarget(m) {
@@ -3772,7 +3805,8 @@ const W = 1280;
     function updateBrownLaser(dt, firing) {
       const isArc = game.weaponType === "arcLaser";
       const refracting = game.weaponType === "brownyellow";
-      const active = firing && (game.weaponType === "brown" || isArc || refracting) &&
+      const fiveBeams = game.weaponType === "purplewhite";
+      const active = firing && (game.weaponType === "brown" || isArc || refracting || fiveBeams) &&
         game.state === "PLAYING" &&
         (game.stageMode === "WAVE" || game.stageMode === "BOSS");
       if (!active) {
@@ -3784,6 +3818,46 @@ const W = 1280;
         x: game.player.x + brownRules.RULES.muzzleOffset,
         y: game.player.y
       };
+      if (fiveBeams) {
+        // Five bounded Brown-style first-obstruction rays, one shared .101s
+        // laser clock. Each lane gets a DISTINCT visible victim where possible;
+        // spare lanes reinforce the other locks, never multiplying 5x twice.
+        let locks = purpleWhiteRules.plan(from, game.enemies, game.boss);
+        game.brownBeam = locks.length ? {purpleWhite:true, beams:locks} : null;
+        brownRules.tick(game.brownWeapon, dt, locks.length > 0, () => {
+          if (game.state !== "PLAYING" ||
+              (game.stageMode !== "WAVE" && game.stageMode !== "BOSS"))
+            return;
+          const power = purpleWhiteRules.RULES.normalDamage *
+            combatRules.weaponDamageScale(game.combat, selectedShip().id);
+          let changed = false;
+          // One group per identity: 5 converging beams mean a single 5x hit.
+          // A turret is a separate identity from another Boss turret, but
+          // only one Boss hull may take each laser group's damage once.
+          for (const hit of purpleWhiteRules.groups(locks)) {
+            if (!purpleWhiteRules.alive(hit) ||
+                (hit.kind === "enemy" && !game.enemies.includes(hit.target)) ||
+                (hit.kind !== "enemy" && game.boss !== hit.target))
+              { changed = true; continue; }
+            const strength = power * hit.count;
+            if (hit.kind === "enemy")
+              damageEnemy(hit.target, strength, hit.x, hit.y, "#e4c6ff");
+            else
+              damageBoss(strength, hit.x, hit.y, "#f9e8ff", hit.part);
+            if (!purpleWhiteRules.alive(hit)) changed = true;
+            if (game.state !== "PLAYING" ||
+                (game.stageMode !== "WAVE" && game.stageMode !== "BOSS"))
+              return;
+          }
+          // A kill can free up several lanes within a long dt (multiple Brown
+          // ticks). Reacquire only when identities change; no extra clock,
+          // and new splitter minions never receive the SAME tick's damage.
+          if (changed)
+            locks = purpleWhiteRules.plan(from, game.enemies, game.boss);
+        });
+        game.brownBeam = locks.length ? {purpleWhite:true, beams:locks} : null;
+        return;
+      }
       const acquired = isArc
         ? arcLaserRules.trace(from, game.enemies, game.boss, brownRules)
         : brownRules.acquire(from, game.enemies, game.boss);
@@ -4609,7 +4683,8 @@ const W = 1280;
       const firing = readInput(dt);
       if (firing && game.weaponType !== "brown" &&
           game.weaponType !== "arcLaser" &&
-          game.weaponType !== "brownyellow" && game.fireCooldown <= 0) {
+          game.weaponType !== "brownyellow" &&
+          game.weaponType !== "purplewhite" && game.fireCooldown <= 0) {
         // A PINK firing action always emits one guided bolt. The extra guided
         // missile is a 15% independent proc on THAT action, not on hit/frame.
         const pinkVolley = game.weaponType === "pink"
@@ -4775,10 +4850,52 @@ const W = 1280;
       const beam = game.brownBeam;
       if (!beam || game.state !== "PLAYING" ||
           (game.weaponType !== "brown" && game.weaponType !== "arcLaser" &&
-           game.weaponType !== "brownyellow") ||
+           game.weaponType !== "brownyellow" && game.weaponType !== "purplewhite") ||
           (game.stageMode !== "WAVE" && game.stageMode !== "BOSS")) return;
       ctx.save();
       ctx.lineCap = "round";
+      if (game.weaponType === "purplewhite") {
+        // Five physically separated muzzles, with a single violet-to-white
+        // line each. Target selection and hit power are calculated ONLY
+        // in updateBrownLaser; this path never modifies game state or RNG.
+        for (const ray of beam.beams) {
+          const glow = 0.8 + 0.2 * Math.sin(game.t * 15 + ray.slot * 1.8);
+          const gradient = ctx.createLinearGradient(
+            ray.startX, ray.startY, ray.x, ray.y);
+          gradient.addColorStop(0, "#9446f5");
+          gradient.addColorStop(.50, "#cda1ff");
+          gradient.addColorStop(1, "#ffffff");
+          ctx.globalAlpha = glow;
+          ctx.shadowColor = "#a777fa";
+          ctx.shadowBlur = 17;
+          ctx.strokeStyle = "rgba(179,110,250,.30)";
+          ctx.lineWidth = 14;
+          ctx.beginPath();
+          ctx.moveTo(ray.startX,ray.startY);
+          ctx.lineTo(ray.x,ray.y);
+          ctx.stroke();
+          ctx.shadowBlur = 10;
+          ctx.strokeStyle = gradient;
+          ctx.lineWidth = 5;
+          ctx.beginPath();
+          ctx.moveTo(ray.startX,ray.startY);
+          ctx.lineTo(ray.x,ray.y);
+          ctx.stroke();
+          ctx.shadowBlur = 0;
+          ctx.strokeStyle = "#ffffff";
+          ctx.lineWidth = 1.8;
+          ctx.beginPath();
+          ctx.moveTo(ray.startX,ray.startY);
+          ctx.lineTo(ray.x,ray.y);
+          ctx.stroke();
+          ctx.fillStyle = "#f2d7ff";
+          ctx.beginPath();
+          ctx.arc(ray.x,ray.y,5+Math.sin(game.t*20+ray.slot)*1.2,0,Math.PI*2);
+          ctx.fill();
+        }
+        ctx.restore();
+        return;
+      }
       if (game.weaponType === "brownyellow") {
         // Warm BROWN base beam ending at the FIRST obstruction, followed by
         // one YELLOW segment to the independently acquired SECOND target.
@@ -5445,6 +5562,8 @@ const W = 1280;
         ? "ORANGE BLAST  R100  X3"
         : game.weaponType === "brown"
         ? "BROWN LOCK LASER"
+        : game.weaponType === "purplewhite"
+        ? "PENTA LOCK  5 BEAMS"
         : game.weaponType === "brownyellow"
         ? "REFRACT LASER  1 HOP"
         : game.weaponType === "lime"
@@ -5634,7 +5753,7 @@ const W = 1280;
       ctx.fillRect(0, 0, W, H);
 
       drawText("NEON WINGS", W / 2, 195, 86, "center", "#e7fbff");
-      drawText("NEONWINGS PAN  /  v26.19.0", W / 2, 270, 28, "center", "#98f5ff");
+      drawText("NEONWINGS PAN  /  v26.21.0", W / 2, 270, 28, "center", "#98f5ff");
       drawText(`HIGH SCORE ${String(highScore()).padStart(6, "0")}`, W / 2, 318, 24, "center", "#fff4b7");
 
       drawPlayerShip(W / 2 - 170, 492, -0.20, false, ships[0]);
