@@ -5390,7 +5390,7 @@ test("RED, RED-WHITE and RED-ORANGE display ONE shared five-star HUD, normal ORA
   app.eval('collectPowerup({type:"P_RED_ORANGE",x:240,y:480,life:1})');
   assert.equal(app.eval("game.redWeapon.stars"),4);
   assert.ok(hud().some(x=>x.includes("RED-ORANGE P")&&x.includes("★★★★☆")));
-  assert.ok(hud().includes("RED-ORANGE BLAST  R100 X3"));
+  assert.ok(hud().includes("RED-ORANGE BLAST  R100 X1.6"));
   app.eval('game.invuln=0;damagePlayer()');
   assert.equal(app.eval("game.redWeapon.stars"),3);
   assert.ok(hud().some(x=>x.includes("RED-ORANGE P")&&x.includes("★★★☆☆")));
