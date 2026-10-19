@@ -29,6 +29,20 @@ A controller-first, five-stage, side-scrolling neon arcade shooter built with br
 - **v26.2.0 NeonWings-Pan exclusive:** red P twin-line fire, a 250-projectile ±10° special fan triggered on 10% of eligible volleys, and an independent 0–5 star progression.
 - **v26.3.0 NeonWings-Pan exclusive:** green P retains starter-grade dual shots and adds a passive neon halo dealing area damage to nearby enemies once per second.
 
+## v26.23.0 — DARK RED-GOLD 深红金色击退爆炸武器
+
+新增第 **28 种 P 武器：DARK RED-GOLD（深红→金色渐变）**。只有**当前正在使用普通深红色 DARK RED P** 时才能拾取升级；已经装备 DARK RED-GOLD 可以重复拾取恢复等级。普通红、橙色、深红黑 ECLIPSE 等均不能直接领取；不能领取时掉落物不会消失，也不改变当前武器、得分与武器等级。
+
+**双发爆炸子弹**：继承深红色的普通双发弹道与基础攻击（y-10 / y+12，弹速 1100、基础单发伤害 1.15、约每 0.101 秒一轮），但使用橙色的真实 **100 游戏坐标半径爆炸**。每枚弹命中其路径上的第一个敌人、Boss 炮台或本体时立即爆炸，对直接命中者和范围内其他有效目标分别造成该弹攻击力的 **3 倍**，即未强化下 **3.45 点/目标**；并继续使用所选飞机、Overdrive、护盾及 Boss 弱点等已有结算。
+
+**命中击退 40 坐标**：本次爆炸的伤害与目标名单先按撞击瞬间坐标结算，然后只有**直接命中且仍存活**的敌人才向子弹飞行方向移动 **40 游戏坐标**；爆炸波及但并非直接撞上的其他敌人只受到范围伤害，不额外击退。Boss 被直接命中时可以在其可移动边界内击退，并同步移动 Boss 脚本位置锚点，不会下一帧瞬间弹回。死去的敌人或它刚分裂产生的子代均不会被同一弹丸额外推走或重复受伤。
+
+**新武器只包含指定的击退＋爆炸组合**：普通深红色 DARK RED 自身独有的 50% 多次命中、最高 30 次连锁，以及每轮 5% 额外 10 倍追踪导弹仍保留在原深红武器中；新深红金色武器不会无意把这两套额外伤害机制叠加到每次爆炸上。独立红色 RED 的五星机制也不受影响。
+
+外观采用独立深红和金色渐变的 P、飞弹及爆炸光环。**已经发射的深红金色爆炸弹即使切换武器仍按原弹种命中和击退**；爆炸特效按发射时的弹药标记配色，不会变成普通橙色。保留原橙色的 48 个爆炸特效上限与 0.35 秒时长，并纳入 **28 种 P 等概率掉落池**。
+
+**在线体验：** https://rushairer.github.io/NeonWings-Pan/?v=26.23.0
+
 ## v26.22.0 — BLUE-BLACK 蓝黑渐变极限减速武器
 
 新增第 **27 种 P 武器：BLUE-BLACK DEEP FREEZE（蓝色→黑色渐变）**。必须**当前正在使用普通黑色 BLACK P** 才能拾取进化；已装备 BLUE-BLACK 可以再次拾取同类升级或找回掉落。普通蓝色、彩色、浅蓝色自适应武器等均不能直接领取；未满足条件时物品不会消失，不增加分数或等级，提示 `REQUIRES BLACK P`。
