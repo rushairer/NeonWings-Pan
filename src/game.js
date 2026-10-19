@@ -32,6 +32,10 @@ const W = 1280;
     if (!rainbowRules) throw new Error("NeonWings-Pan rainbow P runtime missing");
     const magnetRules = window.NeonMagnetWeapon;
     if (!magnetRules) throw new Error("NeonWings-Pan magnet P runtime missing");
+    const arcLaserRules = window.NeonArcLaserWeapon;
+    if (!arcLaserRules) throw new Error("NeonWings-Pan arc laser P runtime missing");
+    const stasisRules = window.NeonStasisWeapon;
+    if (!stasisRules) throw new Error("NeonWings-Pan stasis P runtime missing");
     const collision = window.NeonCollision;
     if (!collision) throw new Error("NeonWings collision runtime missing");
     const enemyBehaviors = window.NeonEnemyBehaviors;
@@ -1076,6 +1080,7 @@ const W = 1280;
         bomb: 2,
         bombMax: 3,
         bombFlash: 0,
+        stasisRemaining: 0,
         weaponType: "blue",
         weaponLevel: 1,
         weaponMax: 3,
@@ -1741,6 +1746,7 @@ const W = 1280;
     }
 
     function fireEnemy(e) {
+      if (stasisRules.frozen(game.stasisRemaining)) return;
       const d = difficultyScale();
       const speed = (e.kind === "sniper" || e.kind === "elite") ? 430 + d * 28 : 310 + d * 25;
       const sx = e.x - e.r * 0.6;
@@ -1761,6 +1767,9 @@ const W = 1280;
     }
 
     function updateEnemies(dt) {
+      // A STASIS BOMB freezes all enemies, including those spawned mid-freeze.
+      // Do not advance their movement, shoot/escort timers or status clocks.
+      if (stasisRules.frozen(game.stasisRemaining)) return;
       // Newly-launched minions join the next frame, not this frame's iteration.
       const initialCount = game.enemies.length;
       for (let i = 0; i < initialCount; i++) {
@@ -1826,7 +1835,7 @@ const W = 1280;
       "P_BLUE", "P_PURPLE", "P_YELLOW", "P_RED", "P_GREEN",
       "P_BLACK", "P_WHITE", "P_GRAY", "P_PINK", "P_ORANGE",
       "P_BROWN", "P_LIME", "P_SKY", "P_DARK_RED", "P_RAINBOW",
-      "P_MAGNET"
+      "P_MAGNET", "P_ARC_LASER", "P_STASIS"
     ]);
     function randomPowerType() {
       return POWER_TYPES[Math.min(POWER_TYPES.length - 1,
@@ -1849,6 +1858,8 @@ const W = 1280;
       if (type === "darkred") return { name: "CHAIN", short: "DARK RED", color: "#981332", core: "#ffe0e8" };
       if (type === "rainbow") return { name: "PRISM", short: "RAINBOW", color: "#e59bff", core: "#ffffff" };
       if (type === "magnet") return { name: "MAGNET", short: "MAGNET", color: "#ff6f91", core: "#c8efff" };
+      if (type === "arcLaser") return { name: "PIERCING ARC", short: "ARC LASER", color: "#9ee9ff", core: "#ffffff" };
+      if (type === "stasis") return { name: "TIME FREEZE", short: "STASIS", color: "#d6dce6", core: "#ffffff" };
       return { name: "LINE", short: "BLUE", color: "#38e8ff", core: "#e8fdff" };
     }
 
@@ -1868,6 +1879,8 @@ const W = 1280;
       if (powerupType === "P_DARK_RED") return "darkred";
       if (powerupType === "P_RAINBOW") return "rainbow";
       if (powerupType === "P_MAGNET") return "magnet";
+      if (powerupType === "P_ARC_LASER") return "arcLaser";
+      if (powerupType === "P_STASIS") return "stasis";
       return "blue";
     }
 
@@ -1887,6 +1900,8 @@ const W = 1280;
       if (game.weaponType === "darkred") return "P_DARK_RED";
       if (game.weaponType === "rainbow") return "P_RAINBOW";
       if (game.weaponType === "magnet") return "P_MAGNET";
+      if (game.weaponType === "arcLaser") return "P_ARC_LASER";
+      if (game.weaponType === "stasis") return "P_STASIS";
       return "P_BLUE";
     }
 
@@ -1961,6 +1976,15 @@ const W = 1280;
     }
 
     function collectPowerup(p) {
+      // ARC LASER is a *BROWN-only* evolution, not a free equip from other
+      // colors. Ineligible pickups remain on the playfield for later collection.
+      if (p.type === "P_ARC_LASER" && !arcLaserRules.canEquip(game.weaponType)) {
+        if (!(p.lockHintCooldown > 0)) {
+          showMessage("ARC LASER  REQUIRES BROWN P", 1.1);
+          p.lockHintCooldown = 1.2;
+        }
+        return false;
+      }
       p.life = 0;
 
       if (p.type.startsWith("P_")) {
@@ -2039,6 +2063,7 @@ const W = 1280;
         p.y += (p.vy + Math.sin(p.t) * 18) * dt;
         p.life -= dt;
         p.safeTimer = Math.max(0, (p.safeTimer || 0) - dt);
+        p.lockHintCooldown = Math.max(0, (p.lockHintCooldown || 0) - dt);
 
         if (p.y < 54 || p.y > H - 54) p.vy *= -1;
         if ((p.safeTimer || 0) <= 0 && dist(game.player.x, game.player.y, p.x, p.y) < p.r + selectedShip().hitbox + 8) collectPowerup(p);
@@ -2061,11 +2086,11 @@ const W = 1280;
           const wt = powerupWeaponType(p.type);
           const meta = weaponMeta(wt);
           rect(-23, -23, 46, 46, "#07111f");
-          if (wt === "magnet") {
-            // The P itself transitions from saturated red to pale sky blue.
+          if (wt === "magnet" || wt === "arcLaser" || wt === "stasis") {
             const gradient = ctx.createLinearGradient(-19, -19, 19, 19);
-            gradient.addColorStop(0, "#ff4568");
-            gradient.addColorStop(1, "#a9e8ff");
+            gradient.addColorStop(0, wt === "magnet" ? "#ff4568"
+              : wt === "arcLaser" ? "#8bdfff" : "#020408");
+            gradient.addColorStop(1, wt === "magnet" ? "#a9e8ff" : "#ffffff");
             rect(-19, -19, 38, 38, gradient);
           } else rect(-19, -19, 38, 38, meta.color);
           rect(-13, -13, 26, 26, "#081020");
@@ -2149,6 +2174,28 @@ const W = 1280;
             ctx.beginPath();
             ctx.arc(0, 0, 28, 0, Math.PI * 2);
             ctx.stroke();
+          } else if (wt === "arcLaser") {
+            // Pale-blue/white twin stripe and lightning reticle.
+            rect(-38, -5, 16, 10, "#91e8ff");
+            rect(22, -3, 16, 6, "#ffffff");
+            ctx.strokeStyle = "#ffffff";
+            ctx.lineWidth = 2.5;
+            ctx.beginPath();
+            ctx.arc(0, 0, 29, 0, Math.PI * 2);
+            ctx.stroke();
+            rect(-4, -33, 8, 8, "#b5eeff");
+            if (!arcLaserRules.canEquip(game.weaponType)) {
+              // Pickup remains collectable only after equipping brown.
+              drawText("BROWN", 0, 41, 12, "center", "#a9e9ff");
+            }
+          } else if (wt === "stasis") {
+            ctx.strokeStyle = "#ffffff";
+            ctx.lineWidth = 2.5;
+            ctx.beginPath();
+            ctx.arc(0, 0, 29, 0, Math.PI * 2);
+            ctx.stroke();
+            rect(-4, -32, 8, 12, "#f7fbff");
+            rect(-4, 20, 8, 12, "#161e30");
           } else if (wt === "brown") {
             // Copper reticle and horizontal beam identify locking laser.
             ctx.strokeStyle = "#ffe3c4";
@@ -2487,6 +2534,15 @@ const W = 1280;
           addPlayerShot(orbit.x, orbit.y, orbit.vx, orbit.vy, orbit.r,
             limeRules.RULES.normalDamage, "#d1f74c", orbit);
         }
+      } else if (type === "stasis") {
+        // Starter-grade twin bullets. Its special is a 3s all-enemy freeze
+        // ONLY when a real BOMB is consumed, never on regular bullet hits.
+        for (const lane of [-10, 12]) {
+          addPlayerShot(muzzleX, baseY + lane, 1100, 0, 9, 1.15,
+            "#e8f6ff", { stasisShot: true });
+        }
+      } else if (type === "arcLaser") {
+        // Upgraded BROWN beam handled by updateBrownLaser(): no shot objects.
       } else if (type === "brown") {
         // Brown laser is continuous while held; no projectile is generated.
         // Laser targeting/damage lives in updateBrownLaser(), not here.
@@ -2629,7 +2685,7 @@ const W = 1280;
       if (game.weaponType === "rainbow") return rainbowRules.RULES.shotCooldownSeconds;
       if (game.weaponType === "yellow") return Math.max(0.17, 0.25 - game.weaponLevel * 0.025);
       if (game.weaponType === "purple") return Math.max(0.10, 0.145 - game.weaponLevel * 0.012);
-      return Math.max(0.07, 0.115 - (game.weaponType === "green" || game.weaponType === "black" || game.weaponType === "white" || game.weaponType === "gray" || game.weaponType === "pink" || game.weaponType === "orange" || game.weaponType === "lime" || game.weaponType === "brown" || game.weaponType === "sky" || game.weaponType === "darkred" || game.weaponType === "magnet" ? 1 : game.weaponLevel) * 0.014);
+      return Math.max(0.07, 0.115 - (game.weaponType === "green" || game.weaponType === "black" || game.weaponType === "white" || game.weaponType === "gray" || game.weaponType === "pink" || game.weaponType === "orange" || game.weaponType === "lime" || game.weaponType === "brown" || game.weaponType === "sky" || game.weaponType === "darkred" || game.weaponType === "magnet" || game.weaponType === "stasis" || game.weaponType === "arcLaser" ? 1 : game.weaponLevel) * 0.014);
     }
 
     function findMissileTarget(m) {
@@ -2766,6 +2822,7 @@ const W = 1280;
     }
 
     function fireBossBullet(x, y, angle, speed, r, c, glow) {
+      if (stasisRules.frozen(game.stasisRemaining)) return;
       if (game.enemyBullets.length >= LIMITS.enemyBullets) return;
       game.enemyBullets.push({
         x, y,
@@ -2790,7 +2847,7 @@ const W = 1280;
 
     function updateBoss(dt) {
       const b = game.boss;
-      if (!b) return;
+      if (!b || stasisRules.frozen(game.stasisRemaining)) return;
 
       const { movementDt, attackDt } = grayRules.advance(b, dt, blackRules);
       b.t += movementDt;
@@ -2970,6 +3027,9 @@ const W = 1280;
 
       game.shake = 22;
       game.boss = null;
+      // The defeated arena has no frozen enemies; never carry BOMB stasis
+      // into the next stage or Boss Rush reward screen.
+      game.stasisRemaining = 0;
       game.enemyBullets.length = 0;
       game.bullets.length = 0;
       game.missiles.length = 0;
@@ -3349,10 +3409,58 @@ const W = 1280;
       );
     }
 
-    // Each BROWN laser tick strikes ONLY the first ray obstruction (an enemy,
-    // intact turret or hull); never a target behind that object.
+    // One physical ARC LASER tick pierces every direct enemy on the shared
+    // BROWN-locked ray, then conducts using WHITE's exact shared victim ledger.
+    // All direct hits are premarked BEFORE conductivity, so a front enemy's
+    // first-hop arc cannot downgrade a rear ray target's full direct damage.
+    function applyArcLaserTick(beam) {
+      if (!beam || !beam.hits.length) return;
+      const enemiesAtTick = game.enemies.slice();
+      const bossAtTick = game.boss && game.boss.active ? game.boss : null;
+      const shot = whiteRules.createShot();
+      const direct = [];
+      for (const hit of beam.hits) {
+        if (hit.kind === "enemy") {
+          if (whiteRules.markEnemy(shot, hit.target)) direct.push(hit);
+        } else if (hit.target === bossAtTick && whiteRules.markBoss(shot, hit.target)) {
+          direct.push(hit);
+        }
+      }
+      const power = arcLaserRules.RULES.normalDamage *
+        combatRules.weaponDamageScale(game.combat, selectedShip().id);
+      for (const hit of direct) {
+        if (hit.kind === "enemy") {
+          if (hit.target.hp > 0) damageEnemy(hit.target, power, hit.x, hit.y, "#c6f2ff");
+        } else if (hit.target === game.boss && hit.target.hp > 0 &&
+            (!hit.part || hit.part.hp > 0)) {
+          damageBoss(power, hit.x, hit.y, "#ffffff", hit.part);
+        }
+      }
+      if (game.stageMode !== "WAVE" && game.stageMode !== "BOSS") return;
+      for (const hit of direct) {
+        whiteRules.conduct(shot, hit, enemiesAtTick, bossAtTick, greenRules,
+          (victim, source) => {
+            if (game.enemies.includes(victim) && victim.hp > 0) {
+              addElectricArc(source.x, source.y, victim.x, victim.y);
+              damageEnemy(victim, power * whiteRules.RULES.secondaryDamageFactor,
+                victim.x, victim.y, "#9cdfff");
+            }
+          },
+          (victim, source) => {
+            if (game.boss === victim && victim.hp > 0 && victim.active) {
+              addElectricArc(source.x, source.y, victim.x, victim.y);
+              damageBoss(power * whiteRules.RULES.secondaryDamageFactor,
+                victim.x, victim.y, "#9cdfff");
+            }
+          }, Math.random);
+      }
+    }
+
+    // BROWN never pierces; upgraded ARC LASER keeps BROWN's acquisition and
+    // timer but draws a full-length beam and hits every intersected target.
     function updateBrownLaser(dt, firing) {
-      const active = firing && game.weaponType === "brown" &&
+      const isArc = game.weaponType === "arcLaser";
+      const active = firing && (game.weaponType === "brown" || isArc) &&
         game.state === "PLAYING" &&
         (game.stageMode === "WAVE" || game.stageMode === "BOSS");
       if (!active) {
@@ -3364,10 +3472,14 @@ const W = 1280;
         x: game.player.x + brownRules.RULES.muzzleOffset,
         y: game.player.y
       };
-      const lock = brownRules.acquire(from, game.enemies, game.boss);
+      const lock = isArc
+        ? arcLaserRules.trace(from, game.enemies, game.boss, brownRules)
+        : brownRules.acquire(from, game.enemies, game.boss);
       game.brownBeam = lock;
       brownRules.tick(game.brownWeapon, dt, Boolean(lock), () => {
-        if (lock.kind === "enemy") {
+        if (isArc) {
+          applyArcLaserTick(lock);
+        } else if (lock.kind === "enemy") {
           if (lock.target.hp > 0)
             damageEnemy(lock.target, brownRules.RULES.normalDamage *
               combatRules.weaponDamageScale(game.combat, selectedShip().id),
@@ -3611,6 +3723,10 @@ const W = 1280;
     }
 
     function updateEnemyBullets(dt) {
+      if (stasisRules.frozen(game.stasisRemaining)) {
+        game.enemyBullets.length = 0;
+        return;
+      }
       for (const bullet of game.enemyBullets) {
         bullet.previousX = bullet.x;
         bullet.previousY = bullet.y;
@@ -3765,6 +3881,12 @@ const W = 1280;
       showMessage("BOMB  CLEAR BULLETS", 1.15);
 
       game.enemyBullets.length = 0;
+      if (game.weaponType === "stasis") {
+        // No additional BOMB charge is consumed. This augments the original
+        // BOMB blast/kill effects and persists if the P is switched afterward.
+        game.stasisRemaining = stasisRules.activate();
+        showMessage("STASIS BOMB  ALL ENEMIES FROZEN 3.0S", 1.5);
+      }
 
       for (const e of game.enemies) {
         if (e.hp <= 0) continue;
@@ -3834,6 +3956,7 @@ const W = 1280;
 
     function finishBossReward() {
       if (!game.pendingStageAdvance) return;
+      game.stasisRemaining = 0;
 
       if (game.mode === "bossRush" && game.pendingStageAdvance.kind === "complete") {
         game.highScore = saveModeHighScore(game.mode, game.score);
@@ -3981,7 +4104,7 @@ const W = 1280;
       }
 
       const firing = readInput(dt);
-      if (firing && game.weaponType !== "brown" && game.fireCooldown <= 0) {
+      if (firing && game.weaponType !== "brown" && game.weaponType !== "arcLaser" && game.fireCooldown <= 0) {
         // A PINK firing action always emits one guided bolt. The extra guided
         // missile is a 15% independent proc on THAT action, not on hit/frame.
         const pinkVolley = game.weaponType === "pink"
@@ -4072,6 +4195,7 @@ const W = 1280;
       }
 
       updateGreenAura(dt);
+      game.stasisRemaining = stasisRules.tick(game.stasisRemaining, dt);
       if (game.stageIntro > 0) game.stageIntro = Math.max(0, game.stageIntro - dt);
     }
 
@@ -4113,10 +4237,41 @@ const W = 1280;
     function drawBrownLaser() {
       const beam = game.brownBeam;
       if (!beam || game.state !== "PLAYING" ||
-          game.weaponType !== "brown" ||
+          (game.weaponType !== "brown" && game.weaponType !== "arcLaser") ||
           (game.stageMode !== "WAVE" && game.stageMode !== "BOSS")) return;
       ctx.save();
       ctx.lineCap = "round";
+      if (game.weaponType === "arcLaser") {
+        const gradient = ctx.createLinearGradient(
+          beam.startX, beam.startY - 12, beam.x, beam.y + 12);
+        gradient.addColorStop(0, "#8cddff");
+        gradient.addColorStop(.55, "#e1f9ff");
+        gradient.addColorStop(1, "#ffffff");
+        ctx.shadowColor = "#9bdeff";
+        ctx.shadowBlur = 25;
+        ctx.strokeStyle = "rgba(126,215,255,.30)";
+        ctx.lineWidth = 21;
+        ctx.beginPath();
+        ctx.moveTo(beam.startX,beam.startY);
+        ctx.lineTo(beam.x,beam.y);
+        ctx.stroke();
+        ctx.shadowBlur = 14;
+        ctx.strokeStyle = gradient;
+        ctx.lineWidth = 7;
+        ctx.beginPath();
+        ctx.moveTo(beam.startX,beam.startY);
+        ctx.lineTo(beam.x,beam.y);
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+        ctx.strokeStyle = "#ffffff";
+        ctx.lineWidth = 2.5;
+        ctx.beginPath();
+        ctx.moveTo(beam.startX,beam.startY);
+        ctx.lineTo(beam.x,beam.y);
+        ctx.stroke();
+        ctx.restore();
+        return;
+      }
       ctx.shadowColor = "#ffcd90";
       ctx.shadowBlur = 25;
       ctx.strokeStyle = "rgba(174,103,52,.55)";
@@ -4175,6 +4330,17 @@ const W = 1280;
         // LIME uses the SAME ordinary rectangular bullet sprite as BLUE.
         // Its only visual difference is the lime-colored core; the *path*,
         // not the projectile model, curves into an orbit.
+        if (b.stasisShot) {
+          const gradient = ctx.createLinearGradient(-8, -7, 33, 7);
+          gradient.addColorStop(0, "#20252e");
+          gradient.addColorStop(1, "#ffffff");
+          ctx.shadowColor = "#e0e9ff";
+          ctx.shadowBlur = 14;
+          rect(-8, -7, 39, 14, gradient);
+          rect(7, -2, 26, 4, "#d7e9ff");
+          ctx.restore();
+          continue;
+        }
         if (b.magneticShot) {
           const gradient = ctx.createLinearGradient(-9, -6, 35, 6);
           gradient.addColorStop(0, "#ff4267");
@@ -4385,6 +4551,29 @@ const W = 1280;
       }
     }
 
+    function drawStasisFreeze() {
+      if (!stasisRules.frozen(game.stasisRemaining) ||
+          (game.stageMode !== "WAVE" && game.stageMode !== "BOSS")) return;
+      ctx.save();
+      const opacity = 0.50 + 0.18 * Math.sin(game.t * 7);
+      ctx.strokeStyle = "#d6ecff";
+      ctx.lineWidth = 3;
+      ctx.globalAlpha = opacity;
+      for (const e of game.enemies) {
+        if (e.hp <= 0) continue;
+        ctx.beginPath();
+        ctx.arc(e.x, e.y, (e.r || 20) + 9, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+      const b = game.boss;
+      if (b?.active && b.hp > 0) {
+        ctx.beginPath();
+        ctx.ellipse(b.x, b.y, b.rx + 16, b.ry + 16, 0, 0, Math.PI * 2);
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+
     function drawGreenAura() {
       if (game.weaponType !== "green" ||
           (game.stageMode !== "WAVE" && game.stageMode !== "BOSS")) return;
@@ -4549,6 +4738,10 @@ const W = 1280;
         ? "RAINBOW  7x13%  M9%"
         : game.weaponType === "magnet"
         ? "MAGNET 10%  R360  2.0S"
+        : game.weaponType === "arcLaser"
+        ? "ARC LASER  PIERCE + CONDUCT"
+        : game.weaponType === "stasis"
+        ? "STASIS BOMB  FREEZE 3S"
         : `${meta.short} WEAPON  LV.${game.weaponLevel}`, 656, 80, 21, "left",
         game.weaponType === "black" ? "#9cccff" : meta.color);
 
@@ -4558,6 +4751,9 @@ const W = 1280;
         game.mode === "training" ? `TRAINING ${game.trainingRounds + 1}` :
         `LOOP ${game.loop}`, 1002, 50, 22, "left", "#e7fbff");
       drawText(`STAGE ${game.stageIndex + 1} / 5`, 1002, 80, 23, "left", "#e7fbff");
+      if (stasisRules.frozen(game.stasisRemaining))
+        drawText(`STASIS ${game.stasisRemaining.toFixed(1)}S`,
+          1088, 117, 20, "left", "#d3edff");
 
       if (game.stageMode === "WAVE") {
         ctx.fillStyle = "rgba(0,0,0,.36)";
@@ -5047,6 +5243,7 @@ const W = 1280;
       for (const e of game.enemies) drawEnemy(e);
       drawBossWarning(game.boss);
       drawBoss(game.boss);
+      drawStasisFreeze();
       drawPinkExplosions();
       drawOrangeExplosions();
       drawElectricArcs();
