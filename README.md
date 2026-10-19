@@ -29,6 +29,18 @@ A controller-first, five-stage, side-scrolling neon arcade shooter built with br
 - **v26.2.0 NeonWings-Pan exclusive:** red P twin-line fire, a 250-projectile ±10° special fan triggered on 10% of eligible volleys, and an independent 0–5 star progression.
 - **v26.3.0 NeonWings-Pan exclusive:** green P retains starter-grade dual shots and adds a passive neon halo dealing area damage to nearby enemies once per second.
 
+## v26.18.0 — 红灰渐变 GRAY FLAME 灼烧 P 武器
+
+新增第 **23 种 P 武器：GRAY FLAME（红色→灰色渐变）**。**必须当前装备灰色 GRAY P** 才能拾取变成 GRAY FLAME；已装备 GRAY FLAME 时可以再次拾取。其他武器无法领取，掉落物保持在原地，不改变分数、等级或灰色武器攻击节奏。
+
+普通攻击完全继承灰色：固定双发 1.15 基础伤害，每 5 次双发后休息 0.4 秒；实际命中独立产生原有三选一效果（20% 击退 100 游戏坐标、5% 击晕 0.5 秒、75% 造成原攻击的 1.5 倍伤害）。
+
+**新增火焰**：每次真实的 GRAY FLAME 子弹命中后，再独立判定 **20% 概率**使仍然存活的原目标燃烧。火焰附着于敌人，**持续 5 秒**，从点燃起**每 0.5 秒造成一次原普通子弹伤害的 0.6 倍**（未强化：1.15 × 0.6 = **0.69 点/次**，满 5 秒共 **10 次、6.9 点**）。高级灰色伤害那一击的 1.5 倍不传递给火焰；战机/Overdrive 的原始射击倍率保留。点燃没有立即额外伤害，重复点燃刷新持续时间且不会叠加多个燃烧层，保留较强的一次伤害。原灰色武器不会自己产生火焰。
+
+燃烧遵守游戏正常护盾、Boss 弱点及击杀记分；命中 Boss 炮台时火焰只附在那个炮台上，炮台被摧毁后不跳转机体。暂停、过场、奖励页面和 STASIS 全场冻结期间暂停计时，切换武器后已经附着的火焰继续有效。敌人身上显示红橙火焰和灼烧剩余时间。23 种 P 在掉落池中等概率出现。
+
+**在线体验：** https://rushairer.github.io/NeonWings-Pan/?v=26.18.0
+
 ## v26.17.0 — RED-WHITE FUSION 红白渐变导电散射武器
 
 新增第 **22** 种 P 武器：**RED-WHITE ARC SCATTER（红色→白色渐变）**，只有**当前正在使用红色 RED P 或白色 WHITE P**时才能拾取变成该武器；已经装备 RED-WHITE 时再次拾取可正常升级或恢复。其他武器无法领取，掉落仍留在场上，不增加分数或等级，仅提示需要红色或白色 P。
