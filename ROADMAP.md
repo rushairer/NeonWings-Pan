@@ -7,6 +7,16 @@ Independently maintained from NeonWings commit `5ebcb1de1adb288b41a3c5e387f747bc
 - [x] Configure standalone Pages workflow
 - [ ] Verify site deployment and controller tests on hardware
 
+## v26.17.0 — RED-WHITE P shared stars + conductive RED fan
+
+- [x] Add 22nd RED→WHITE gradient P that can be collected only while RED or WHITE or already this fusion is currently equipped; rejected drops remain in world
+- [x] Preserve RED's twin parallel bullets, 0.1s volley timing, rest after 5+star volleys for 0.4s, and one independent 10% 250-shot/3s fan opportunity per volley
+- [x] Swap fusion's ordinary and 250 fan projectiles to WHITE's penetrating 360-radius multi-hop electricity with unique per-projectile victim ledgers, same original RED shot powers and angles
+- [x] Maintain ONE shared RED star state and max-five progression: RED special completion or FUSION electric special completion upgrades the same star counter; star HUD visible for both
+- [x] Lock an active fan's projectile identity to its firing-time weapon, so switching P midfan never changes it; real HP loss still decrements stars
+- [x] Cover RED/WHITE inheritance, Boss/parts/shields, drop fairness, pickup and loss/recovery, render/FX caps, controller/platform/browser versioning and static build
+- [ ] Manual QA: 250 electric fan projectile readability and late-game FPS on handheld/browser
+
 ## v26.16.0 — SOLAR AURA red→yellow GREEN upgrade
 
 - [x] Add the twenty-first P color with an accurate red-to-yellow gradient pickup and glowing radius-360 halo; GREEN P is the only unlock path (current GREEN or same SOLAR), with nonconsuming rejected pickups
