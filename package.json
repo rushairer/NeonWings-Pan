@@ -1,10 +1,10 @@
 {
   "name": "neonwings-pan",
-  "version": "26.13.0",
+  "version": "26.14.0",
   "private": true,
   "description": "Handheld-first static Canvas arcade shooter",
   "scripts": {
-    "check": "node --check src/platform.js && node --check src/controller.js && node --check src/combat.js && node --check src/red-weapon.js && node --check src/green-weapon.js && node --check src/black-weapon.js && node --check src/white-weapon.js && node --check src/gray-weapon.js && node --check src/pink-weapon.js && node --check src/orange-weapon.js && node --check src/brown-weapon.js && node --check src/lime-weapon.js && node --check src/sky-weapon.js && node --check src/dark-red-weapon.js && node --check src/rainbow-weapon.js && node --check src/magnet-weapon.js && node --check src/collision.js && node --check src/enemy-behaviors.js && node --check src/worlds.js && node --check src/boss-parts.js && node --check src/modes.js && node --check src/records.js && node --check src/select-layout.js && node --check src/game.js && node --check scripts/build.mjs",
+    "check": "node --check src/platform.js && node --check src/controller.js && node --check src/combat.js && node --check src/red-weapon.js && node --check src/green-weapon.js && node --check src/black-weapon.js && node --check src/white-weapon.js && node --check src/gray-weapon.js && node --check src/pink-weapon.js && node --check src/orange-weapon.js && node --check src/brown-weapon.js && node --check src/lime-weapon.js && node --check src/sky-weapon.js && node --check src/dark-red-weapon.js && node --check src/rainbow-weapon.js && node --check src/magnet-weapon.js && node --check src/arc-laser-weapon.js && node --check src/stasis-weapon.js && node --check src/collision.js && node --check src/enemy-behaviors.js && node --check src/worlds.js && node --check src/boss-parts.js && node --check src/modes.js && node --check src/records.js && node --check src/select-layout.js && node --check src/game.js && node --check scripts/build.mjs",
     "test": "node --test",
     "build": "node scripts/build.mjs"
   },

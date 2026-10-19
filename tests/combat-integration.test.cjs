@@ -19,6 +19,8 @@ const skyWeapon = require("../src/sky-weapon.js");
 const darkRedWeapon = require("../src/dark-red-weapon.js");
 const rainbowWeapon = require("../src/rainbow-weapon.js");
 const magnetWeapon = require("../src/magnet-weapon.js");
+const arcLaserWeapon = require("../src/arc-laser-weapon.js");
+const stasisWeapon = require("../src/stasis-weapon.js");
 const collision = require("../src/collision.js");
 const enemyBehaviors = require("../src/enemy-behaviors.js");
 const worlds = require("../src/worlds.js");
@@ -45,7 +47,7 @@ function boot() {
   const canvas = { style: {}, getContext: () => ctx };
   const storage = new Map();
   const window = {
-    NeonPlatform: platform, NeonController: controller, NeonCombat: combat, NeonRedWeapon: redWeapon, NeonGreenWeapon: greenWeapon, NeonBlackWeapon: blackWeapon, NeonWhiteWeapon: whiteWeapon, NeonGrayWeapon: grayWeapon, NeonPinkWeapon: pinkWeapon, NeonOrangeWeapon: orangeWeapon, NeonBrownWeapon: brownWeapon, NeonLimeWeapon: limeWeapon, NeonSkyWeapon: skyWeapon, NeonDarkRedWeapon: darkRedWeapon, NeonRainbowWeapon: rainbowWeapon, NeonMagnetWeapon: magnetWeapon, NeonCollision: collision, NeonEnemyBehaviors: enemyBehaviors, NeonWorlds: worlds, NeonBossParts: bossParts, NeonModes: modes, NeonRecords: records, NeonSelectLayout: selectLayout,
+    NeonPlatform: platform, NeonController: controller, NeonCombat: combat, NeonRedWeapon: redWeapon, NeonGreenWeapon: greenWeapon, NeonBlackWeapon: blackWeapon, NeonWhiteWeapon: whiteWeapon, NeonGrayWeapon: grayWeapon, NeonPinkWeapon: pinkWeapon, NeonOrangeWeapon: orangeWeapon, NeonBrownWeapon: brownWeapon, NeonLimeWeapon: limeWeapon, NeonSkyWeapon: skyWeapon, NeonDarkRedWeapon: darkRedWeapon, NeonRainbowWeapon: rainbowWeapon, NeonMagnetWeapon: magnetWeapon, NeonArcLaserWeapon: arcLaserWeapon, NeonStasisWeapon: stasisWeapon, NeonCollision: collision, NeonEnemyBehaviors: enemyBehaviors, NeonWorlds: worlds, NeonBossParts: bossParts, NeonModes: modes, NeonRecords: records, NeonSelectLayout: selectLayout,
     innerWidth: 1280, innerHeight: 960,
     addEventListener: (name, fn) => events.set(name, fn)
   };
@@ -691,7 +693,7 @@ test("red P is a collectible fourth weapon and fires exactly two parallel red li
   assert.equal(app.eval("game.bullets.every(b => b.vx===1120 && b.vy===0 && b.redNormal)"), true);
   app.eval('game.weaponType="blue";game.bullets.length=0;firePlayerWeapons()');
   assert.equal(app.eval("game.bullets.some(b=>b.redNormal)"), false);
-  app.eval('Math.random=()=>0.24');
+  app.eval('Math.random=()=>.19444');
   assert.equal(app.eval("randomPowerType()"), "P_RED");
 });
 
@@ -814,7 +816,7 @@ test("green P pickup fires precisely the unupgraded starter bullets at every wea
   app.eval('game.combat.energy=100;activateOverdrive();game.bullets=[];firePlayerWeapons()');
   assert.equal(app.eval('game.bullets.length'), 2);
   assert.equal(app.eval('game.bullets.some(b=>b.lance)'), false);
-  app.eval('Math.random=()=>.28');
+  app.eval('Math.random=()=>.25');
   assert.equal(app.eval('randomPowerType()'), "P_GREEN");
 });
 
@@ -992,7 +994,7 @@ test("BLACK P drop is discoverable and its twin dark shots never inherit blue up
   assert.equal(app.eval("game.bullets.some(b=>b.lance)"), false);
   assert.equal(app.eval("game.missiles.length"), 0);
   assert.ok(Math.abs(app.eval("getFireCooldown()") - 0.101) < 1e-10);
-  app.eval("Math.random=()=>.34");
+  app.eval("Math.random=()=>.30556");
   assert.equal(app.eval("randomPowerType()"), "P_BLACK");
   app.eval("game.weaponLevel=3;game.powerups=[];dropPlayerPowerOnHit()");
   assert.equal(app.eval('game.powerups.at(-1).type'), "P_BLACK");
@@ -1166,7 +1168,7 @@ test("WHITE P is the seventh drop, fires paired unlimited-penetration bolts and 
   assert.equal(app.eval("game.bullets.every(b=>!b.dead && !b.whiteBossHit)"), true);
   assert.equal(app.eval("game.missiles.length"), 0);
   assert.ok(Math.abs(app.eval("getFireCooldown()") - 0.101) < 1e-10);
-  app.eval("Math.random=()=>.40");
+  app.eval("Math.random=()=>.36111");
   assert.equal(app.eval("randomPowerType()"), "P_WHITE");
   app.eval('game.weaponLevel=3;game.powerups=[];dropPlayerPowerOnHit()');
   assert.equal(app.eval("game.powerups.at(-1).type"), "P_WHITE");
@@ -1329,7 +1331,7 @@ test("GRAY P joins eighth-color drops and fires only baseline paired bullets", (
   assert.equal(app.eval('JSON.stringify(game.bullets.map(b=>({vx:b.vx,vy:b.vy,r:b.r,power:b.power})))'),baseline);
   assert.equal(app.eval("game.missiles.length"),0);
   assert.ok(Math.abs(app.eval("getFireCooldown()")-.101)<1e-10);
-  app.eval("Math.random=()=>.46");
+  app.eval("Math.random=()=>.41667");
   assert.equal(app.eval("randomPowerType()"),"P_GRAY");
   app.eval("game.powerups=[];dropPlayerPowerOnHit()");
   assert.equal(app.eval("game.powerups.at(-1).type"),"P_GRAY");
@@ -1651,7 +1653,7 @@ test("PINK P is the ninth pickup: one guided bolt at every level, with distinct 
   assert.equal(app.eval("game.bullets[0].life"), pinkWeapon.RULES.bulletLifetimeSeconds);
   assert.equal(app.eval("game.missiles.length"), 0);
   assert.ok(Math.abs(app.eval("getFireCooldown()") - 0.101) < 1e-10);
-  app.eval("Math.random=()=>.53");
+  app.eval("Math.random=()=>.47222");
   assert.equal(app.eval("randomPowerType()"), "P_PINK");
   app.eval("game.powerups=[];dropPlayerPowerOnHit()");
   assert.equal(app.eval("game.powerups.at(-1).type"), "P_PINK");
@@ -2029,7 +2031,7 @@ test("ORANGE P is the tenth pickup; two starter-grade shots and its HUD survive 
   assert.equal(app.eval('JSON.stringify(game.bullets.map(b=>({vx:b.vx,vy:b.vy,r:b.r,power:b.power})))'),blue);
   assert.ok(Math.abs(app.eval("getFireCooldown()")-.101)<1e-10);
   assert.equal(app.eval("game.missiles.length"),0);
-  app.eval("Math.random=()=>.59");
+  app.eval("Math.random=()=>.52778");
   assert.equal(app.eval("randomPowerType()"),"P_ORANGE");
   app.eval('game.powerups=[];dropPlayerPowerOnHit()');
   assert.equal(app.eval('game.powerups.at(-1).type'),"P_ORANGE");
@@ -2245,7 +2247,7 @@ test("BROWN P is a recoverable eleventh pickup and never spawns ordinary bullets
   app.eval('game.weaponLevel=3;firePlayerWeapons()');
   assert.equal(app.eval("game.bullets.length"),0);
   assert.ok(Math.abs(app.eval("getFireCooldown()")-0.101)<1e-10);
-  app.eval('Math.random=()=>.66');
+  app.eval('Math.random=()=>.58333');
   assert.equal(app.eval("randomPowerType()"),"P_BROWN");
   app.eval('game.powerups=[];dropPlayerPowerOnHit()');
   assert.equal(app.eval("game.powerups.at(-1).type"),"P_BROWN");
@@ -2382,7 +2384,7 @@ test("LIME P fires two ordinary twin-lane bullets from the muzzle, not prepositi
   assert.equal(app.eval("game.bullets[0].vx"),1100);
   assert.equal(app.eval("game.bullets[1].vx"),1100);
   assert.equal(app.eval("game.bullets.every(b=>b.r===9 && b.power===1.15 && b.orbitRadius<360)"),true);
-  app.eval("Math.random=()=>.72");
+  app.eval("Math.random=()=>.63889");
   assert.equal(app.eval("randomPowerType()"),"P_LIME");
   app.eval("game.powerups=[];dropPlayerPowerOnHit()");
   assert.equal(app.eval("game.powerups.at(-1).type"),"P_LIME");
@@ -2645,7 +2647,7 @@ test("SKY P is the 13th collectible and switches damage/homing/slow at actual ga
   assert.ok(low.includes("SKY SEEK  BLACK SLOW"));
   app.eval('game.hp=2;game.bullets=[];firePlayerWeapons()');
   assert.equal(app.eval("game.bullets.every(b=>b.skyHoming&&b.blackSlow)"),true);
-  app.eval('Math.random=()=>.79');
+  app.eval('Math.random=()=>.69444');
   assert.equal(app.eval("randomPowerType()"),"P_SKY");
   app.eval('game.weaponLevel=3;game.powerups=[];dropPlayerPowerOnHit()');
   assert.equal(app.eval("game.powerups.at(-1).type"),"P_SKY");
@@ -2799,7 +2801,7 @@ test("DARK RED is the fourteenth pickup with distinct twin 1x bullets and no RED
   assert.equal(app.eval("game.redWeapon.stars"),3);
   assert.equal(app.eval("game.redWeapon.volleys"),0);
   assert.ok(Math.abs(app.eval("getFireCooldown()")-.101)<1e-10);
-  app.eval("Math.random=()=>.84");
+  app.eval("Math.random=()=>.75");
   assert.equal(app.eval("randomPowerType()"),"P_DARK_RED");
   app.eval("game.powerups=[];dropPlayerPowerOnHit()");
   assert.equal(app.eval("game.powerups.at(-1).type"),"P_DARK_RED");
@@ -2812,11 +2814,11 @@ test("DARK RED is the fourteenth pickup with distinct twin 1x bullets and no RED
     "DARK RED must never expose ordinary RED star HUD");
 });
 
-test("MAGNET joins a uniform 16-color P pool and keeps old colors accessible",()=>{
+test("ARC LASER and STASIS complete a uniform 18-color P pool",()=>{
   const app=boot();
   const expected=[
     "P_BLUE","P_PURPLE","P_YELLOW","P_RED","P_GREEN","P_BLACK","P_WHITE",
-    "P_GRAY","P_PINK","P_ORANGE","P_BROWN","P_LIME","P_SKY","P_DARK_RED","P_RAINBOW","P_MAGNET"
+    "P_GRAY","P_PINK","P_ORANGE","P_BROWN","P_LIME","P_SKY","P_DARK_RED","P_RAINBOW","P_MAGNET","P_ARC_LASER","P_STASIS"
   ];
   for(let i=0;i<expected.length;i++){
     const roll=(i+.5)/expected.length;
@@ -3191,7 +3193,7 @@ test("RAINBOW P is the 15th collectible, recoverable, with a distinct 8-color ic
   assert.equal(app.eval("game.bullets.every(b=>b.grayImpact)"),true);
   assert.equal(app.eval("game.redWeapon.stars"),3);
   assert.equal(app.eval("getFireCooldown()"),.4);
-  app.eval('Math.random=()=>.90');
+  app.eval('Math.random=()=>.80556');
   assert.equal(app.eval("randomPowerType()"),"P_RAINBOW");
   app.eval('game.powerups=[];dropPlayerPowerOnHit()');
   assert.equal(app.eval("game.powerups.at(-1).type"),"P_RAINBOW");
@@ -3685,4 +3687,269 @@ test("MAGNET Boss attraction is capped to arena and resumes scripted movement sm
   assert.ok(Math.hypot(after.x-950,after.y-480)<=100+1e-8);
   app.eval("game.magneticFields=[];updateBoss(.016)");
   assert.ok(Math.hypot(app.eval("game.boss.x")-after.x,app.eval("game.boss.y")-after.y)<30);
+});
+
+
+test("ARC LASER pickup is gated to BROWN: wrong color cannot consume or level it",()=>{
+  const app=boot();
+  app.eval([
+    'game.state="PLAYING";game.weaponType="blue";game.weaponLevel=1;',
+    'game.powerups=[{type:"P_ARC_LASER",x:175,y:480,r:24,life:30,',
+    'vx:0,vy:0,t:0,safeTimer:0}];updatePowerups(.01);'
+  ].join("\n"));
+  assert.equal(app.eval("game.weaponType"),"blue");
+  assert.equal(app.eval("game.weaponLevel"),1);
+  assert.equal(app.eval("game.powerups.length"),1);
+  assert.ok(app.eval('game.message.includes("REQUIRES BROWN P")'));
+  const hint=app.eval("game.messageTimer");
+  app.eval('updatePowerups(.01)');
+  assert.ok(app.eval("game.messageTimer")<=hint,
+    "locked pickup must not continually retrigger hint");
+  app.eval('collectPowerup({type:"P_BROWN",x:200,y:480,life:1});');
+  assert.equal(app.eval("game.weaponType"),"brown");
+  app.eval("updatePowerups(.01)");
+  assert.equal(app.eval("game.weaponType"),"arcLaser");
+  assert.equal(app.eval("game.powerups.length"),0);
+  assert.equal(app.eval("weaponMeta().name"),"PIERCING ARC");
+  assert.equal(app.eval("game.weaponLevel"),3);
+  assert.equal(app.eval("game.bullets.length"),0);
+  app.eval('firePlayerWeapons()');
+  assert.equal(app.eval("game.bullets.length"),0);
+  app.eval('game.powerups=[];dropPlayerPowerOnHit()');
+  assert.equal(app.eval("game.powerups.at(-1).type"),"P_ARC_LASER");
+  app.eval('collectPowerup({type:"P_ARC_LASER",x:200,y:480,life:1})');
+  assert.equal(app.eval("game.weaponType"),"arcLaser");
+  app.eval('collectPowerup({type:"P_BLUE",x:200,y:480,life:1})');
+  app.eval('const locked={type:"P_ARC_LASER",x:200,y:480,life:8};collectPowerup(locked);game.lockedLife=locked.life');
+  assert.equal(app.eval("game.weaponType"),"blue");
+  assert.equal(app.eval("game.lockedLife"),8);
+});
+
+test("ARC LASER pierces aligned targets and conducts 60% to an off-ray victim only once",()=>{
+  const app=boot();
+  app.eval([
+    'game.state="PLAYING";game.stageMode="WAVE";game.weaponType="arcLaser";',
+    'game.player.x=175;game.player.y=480;',
+    'game.enemies=[',
+    ' {kind:"scout",x:460,y:480,r:25,hp:100,maxHp:100,score:30,color:"#fff",core:"#fff"},',
+    ' {kind:"scout",x:740,y:480,r:25,hp:100,maxHp:100,score:30,color:"#fff",core:"#fff"},',
+    ' {kind:"scout",x:600,y:635,r:22,hp:100,maxHp:100,score:30,color:"#fff",core:"#fff"},',
+    ' {kind:"scout",x:1200,y:900,r:22,hp:100,maxHp:100,score:30,color:"#fff",core:"#fff"}',
+    '];Math.random=()=>.99;updateBrownLaser(.101,true);'
+  ].join("\n"));
+  assert.equal(app.eval("game.bullets.length"),0);
+  assert.equal(app.eval("game.missiles.length"),0);
+  assert.equal(app.eval("game.brownBeam.arcLaser"),true);
+  assert.ok(app.eval("game.brownBeam.x")>1280);
+  assert.equal(app.eval("game.brownBeam.hits.length"),2);
+  assert.ok(Math.abs(app.eval("game.enemies[0].hp")-98.85)<1e-8);
+  assert.ok(Math.abs(app.eval("game.enemies[1].hp")-98.85)<1e-8,
+    "rear direct beam target must not be downgraded to 0.6x");
+  assert.ok(Math.abs(app.eval("game.enemies[2].hp")-99.31)<1e-8,
+    "off-ray neighbor must get exactly one secondary hit");
+  assert.equal(app.eval("game.enemies[3].hp"),100);
+  assert.ok(app.eval("game.electricArcs.length")>=1);
+  app.eval('game.weaponType="brown";brownRules.reset(game.brownWeapon);updateBrownLaser(.101,true)');
+  assert.ok(Math.abs(app.eval("game.enemies[0].hp")-97.7)<1e-8);
+  assert.ok(Math.abs(app.eval("game.enemies[1].hp")-98.85)<1e-8);
+});
+
+test("ARC LASER every held-fire tick does full direct hits, no shots, and pauses cleanly",()=>{
+  const app=boot();
+  app.eval([
+    'game.state="PLAYING";game.stageMode="WAVE";game.weaponType="arcLaser";',
+    'game.spawnTimer=999;game.formationTimer=999;',
+    'game.enemies=[{kind:"scout",x:600,y:480,r:25,hp:100,',
+    'maxHp:100,vx:0,vy:0,t:0,wave:0,shootCd:999,shootBase:999,',
+    'score:30,color:"#fff",core:"#fff"}];',
+    'keys.Space=true;updatePlaying(.06);updatePlaying(.05);'
+  ].join("\n"));
+  assert.ok(Math.abs(app.eval("game.enemies[0].hp")-98.85)<1e-8);
+  assert.equal(app.eval("game.bullets.length"),0);
+  assert.equal(app.eval("game.missiles.length"),0);
+  app.eval('game.state="PAUSED";updatePlaying(3)');
+  assert.ok(Math.abs(app.eval("game.enemies[0].hp")-98.85)<1e-8);
+  app.eval('game.state="PLAYING";game.stageMode="WAVE";updatePlaying(.101)');
+  assert.ok(Math.abs(app.eval("game.enemies[0].hp")-97.7)<1e-8);
+  app.eval('keys.Space=false;updatePlaying(.01)');
+  assert.equal(app.eval("game.brownBeam"),null);
+  assert.equal(app.eval("game.brownWeapon.elapsed"),0);
+});
+
+test("ARC LASER front shield and Boss weak point share WHITE electric victim ledger",()=>{
+  const app=boot();
+  app.eval([
+    'game.state="PLAYING";game.stageMode="BOSS";game.weaponType="arcLaser";',
+    'game.player.x=175;game.player.y=480;',
+    'game.enemies=[enemyBehaviors.initializeEnemy({kind:"shield",',
+    'x:450,y:480,r:39,hp:100,maxHp:100,score:50,color:"#abf",core:"#fff"})];',
+    'game.boss={active:true,x:900,y:480,rx:120,ry:90,',
+    'hp:200,maxHp:200,color:"#fff",core:"#eee",',
+    'parts:[{id:"GUN",x:-155,y:0,r:28,hp:100,maxHp:100}]}',
+    ';Math.random=()=>.99;updateBrownLaser(.101,true);'
+  ].join("\n"));
+  assert.equal(app.eval("game.enemies[0].hp"),100);
+  assert.ok(app.eval("game.enemies[0].shieldHp")<app.eval("game.enemies[0].shieldMax"));
+  assert.equal(app.eval("game.boss.hp"),200);
+  assert.ok(Math.abs(app.eval("game.boss.parts[0].hp")-(100-1.15*bossParts.BALANCE.weakPointDamageScale))<1e-8);
+  app.eval('game.boss.parts[0].hp=0;updateBrownLaser(.101,true)');
+  assert.ok(Math.abs(app.eval("game.boss.hp")-198.85)<1e-8);
+  assert.equal(app.eval("game.boss.parts[0].hp"),0);
+});
+
+test("ARC LASER gradients draw its pickup and beam without mutating health",()=>{
+  const app=boot();
+  const view=app.eval([
+    '(()=>{game.state="PLAYING";game.stageMode="WAVE";',
+    'game.weaponType="arcLaser";game.enemies=[{kind:"scout",x:560,y:480,',
+    'r:25,hp:100,maxHp:100,score:30,color:"#fff",core:"#fff"}];',
+    'game.powerups=[{type:"P_ARC_LASER",x:500,y:600,t:0,life:10}];',
+    'const stops=[];ctx.createLinearGradient=()=>({addColorStop:(pos,c)=>stops.push(c)});',
+    'updateBrownLaser(.04,true);const before=game.enemies[0].hp;',
+    'drawPowerups();drawBrownLaser();drawFrame(.016);',
+    'return {stops,before,after:game.enemies[0].hp};})()'
+  ].join("\n"));
+  assert.ok(view.stops.includes("#8bdfff"));
+  assert.ok(view.stops.includes("#ffffff"));
+  assert.ok(view.stops.includes("#8cddff"));
+  assert.equal(view.before,view.after);
+});
+
+test("STASIS P basic twin bullets and BOMB immediately clears missiles and freezes all enemies",()=>{
+  const app=boot();
+  app.eval([
+    'game.state="PLAYING";game.stageMode="WAVE";game.weaponType="stasis";',
+    'game.spawnTimer=999;game.formationTimer=999;',
+    'game.enemies=[{kind:"scout",x:800,y:480,r:25,hp:100,maxHp:100,',
+    'vx:-300,vy:0,t:0,wave:0,shootCd:.01,shootBase:.1,',
+    'score:30,color:"#fff",core:"#fff"}];',
+    'game.enemyBullets=[{x:350,y:480,vx:-400,vy:0,r:10,life:4}];',
+    'game.weaponLevel=3;firePlayerWeapons();useBomb();'
+  ].join("\n"));
+  assert.equal(app.eval("game.bullets.length"),2);
+  assert.equal(app.eval("game.bullets.every(b=>b.stasisShot&&b.power===1.15)"),true);
+  assert.equal(app.eval("game.bomb"),1);
+  assert.equal(app.eval("game.enemyBullets.length"),0);
+  assert.equal(app.eval("game.stasisRemaining"),3);
+  assert.equal(app.eval("game.enemies[0].hp"),28);
+  const x=app.eval("game.enemies[0].x");
+  const shoot=app.eval("game.enemies[0].shootCd");
+  app.eval("updatePlaying(1)");
+  assert.equal(app.eval("game.enemies[0].x"),x);
+  assert.equal(app.eval("game.enemies[0].shootCd"),shoot);
+  assert.equal(app.eval("game.enemyBullets.length"),0);
+  assert.equal(app.eval("game.stasisRemaining"),2);
+  app.eval('spawnEnemyOfKind("scout",950,500,{vx:-280,shootCd:0});updatePlaying(.5)');
+  assert.equal(app.eval("game.enemies[1].x"),950);
+  assert.equal(app.eval("game.enemyBullets.length"),0);
+  assert.equal(app.eval("game.stasisRemaining"),1.5);
+  app.eval("updatePlaying(1.5)");
+  assert.equal(app.eval("game.stasisRemaining"),0);
+  assert.equal(app.eval("game.enemies[0].x"),x);
+  app.eval("updatePlaying(.1)");
+  assert.ok(app.eval("game.enemies[0].x")<x);
+});
+
+test("STASIS BOMB keeps Boss phase/shoot/freeze clocks and clears bullets in Boss Rush",()=>{
+  const app=boot();
+  app.eval([
+    'game.state="PLAYING";game.stageMode="BOSS";game.mode="bossRush";',
+    'game.weaponType="stasis";',
+    'game.boss={active:true,x:950,y:480,targetX:950,',
+    'rx:120,ry:95,hp:500,maxHp:500,pattern:0,',
+    'parts:[],color:"#fff",core:"#eee",t:1,shoot:.01,',
+    'phase:0,lastPhase:0,warning:.2};',
+    'game.enemyBullets=[{x:400,y:400,life:2}];',
+    'useBomb();'
+  ].join("\n"));
+  assert.equal(app.eval("game.stasisRemaining"),3);
+  assert.equal(app.eval("game.enemyBullets.length"),0);
+  const before=app.eval("({x:game.boss.x,y:game.boss.y,t:game.boss.t,shoot:game.boss.shoot,warning:game.boss.warning})");
+  app.eval('updatePlaying(1);updatePlaying(1);updatePlaying(1)');
+  assert.equal(app.eval("game.stasisRemaining"),0);
+  assert.equal(app.eval("game.boss.x"),before.x);
+  assert.equal(app.eval("game.boss.y"),before.y);
+  assert.equal(app.eval("game.boss.t"),before.t);
+  assert.equal(app.eval("game.boss.shoot"),before.shoot);
+  assert.equal(app.eval("game.boss.warning"),before.warning);
+  assert.equal(app.eval("game.enemyBullets.length"),0);
+  app.eval("updatePlaying(.1)");
+  assert.ok(app.eval("game.boss.t")>before.t);
+});
+
+test("STASIS BOMB freeze survives weapon changes and pauses/transitions, but not empty bomb",()=>{
+  const app=boot();
+  app.eval([
+    'game.state="PLAYING";game.stageMode="WAVE";game.weaponType="stasis";',
+    'game.enemies=[{kind:"scout",x:800,y:480,r:24,hp:100,maxHp:100,',
+    'vx:-200,vy:0,t:0,wave:0,shootCd:3,shootBase:3,',
+    'color:"#fff",core:"#eee"}];useBomb();',
+    'collectPowerup({type:"P_BLUE",x:300,y:480,life:1});'
+  ].join("\n"));
+  assert.equal(app.eval("game.weaponType"),"blue");
+  assert.equal(app.eval("game.stasisRemaining"),3);
+  app.eval('game.state="PAUSED";updatePlaying(10)');
+  assert.equal(app.eval("game.stasisRemaining"),3);
+  app.eval('game.state="PLAYING";game.stageMode="TRANSITION";game.transition=10;updatePlaying(1)');
+  assert.equal(app.eval("game.stasisRemaining"),3);
+  app.eval('game.stageMode="WAVE";updatePlaying(.5)');
+  assert.equal(app.eval("game.stasisRemaining"),2.5);
+  app.eval('game.weaponType="stasis";useBomb()');
+  assert.equal(app.eval("game.stasisRemaining"),3);
+  app.eval('game.bomb=0;game.stasisRemaining=0;useBomb()');
+  assert.equal(app.eval("game.stasisRemaining"),0);
+});
+
+test("STASIS stops all enemy bullet creation and disposes even newly injected bullets",()=>{
+  const app=boot();
+  app.eval([
+    'game.state="PLAYING";game.stageMode="BOSS";game.stasisRemaining=3;',
+    'game.enemies=[{kind:"scout",x:740,y:480,r:20,hp:100,maxHp:100,',
+    'vx:-200,vy:0,t:0,wave:0,shootCd:0,shootBase:.2,',
+    'color:"#fff",core:"#eee"}];',
+    'fireEnemy(game.enemies[0]);',
+    'fireBossBullet(950,480,Math.PI,500,10,"#fff","#fff");',
+    'game.enemyBullets=[{x:560,y:480,vx:-400,vy:0,r:10,life:5}];',
+    'updateEnemyBullets(.1);'
+  ].join("\n"));
+  assert.equal(app.eval("game.enemyBullets.length"),0);
+  const before=app.eval("game.enemies[0].x");
+  app.eval("updateEnemies(2)");
+  assert.equal(app.eval("game.enemies[0].x"),before);
+});
+
+test("normal non-STASIS BOMB retains original damage and clears bullets without freeze",()=>{
+  const app=boot();
+  app.eval([
+    'game.state="PLAYING";game.stageMode="WAVE";game.weaponType="blue";',
+    'game.enemies=[{kind:"scout",x:700,y:480,r:24,hp:100,maxHp:100,',
+    'color:"#fff",core:"#fff",score:30}];',
+    'game.enemyBullets=[{x:400,y:460,life:3}];useBomb();'
+  ].join("\n"));
+  assert.equal(app.eval("game.bomb"),1);
+  assert.equal(app.eval("game.stasisRemaining"),0);
+  assert.equal(app.eval("game.enemies[0].hp"),28);
+  assert.equal(app.eval("game.enemyBullets.length"),0);
+});
+
+test("STASIS freeze HUD, timed rings and black-white pickups are cosmetic only",()=>{
+  const app=boot();
+  const image=app.eval([
+    '(()=>{game.state="PLAYING";game.stageMode="WAVE";',
+    'game.weaponType="stasis";game.stasisRemaining=2.1;',
+    'game.enemies=[{kind:"scout",x:680,y:480,r:24,hp:100,maxHp:100,',
+    'score:20,color:"#fff",core:"#fff"}];',
+    'game.powerups=[{type:"P_STASIS",x:400,y:640,t:0,life:10}];',
+    'const labels=[],stops=[];',
+    'ctx.fillText=s=>labels.push(String(s));',
+    'ctx.createLinearGradient=()=>({addColorStop:(p,c)=>stops.push(c)});',
+    'const hp=game.enemies[0].hp;',
+    'drawPowerups();drawStasisFreeze();drawHud();drawFrame(.016);',
+    'return {hp,before:game.enemies[0].hp,labels,stops};})()'
+  ].join("\n"));
+  assert.equal(image.hp,image.before);
+  assert.ok(image.labels.includes("STASIS BOMB  FREEZE 3S"));
+  assert.ok(image.labels.includes("STASIS 2.1S"));
+  assert.ok(image.stops.includes("#020408"));
+  assert.ok(image.stops.includes("#ffffff"));
 });

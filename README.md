@@ -29,6 +29,16 @@ A controller-first, five-stage, side-scrolling neon arcade shooter built with br
 - **v26.2.0 NeonWings-Pan exclusive:** red P twin-line fire, a 250-projectile ±10° special fan triggered on 10% of eligible volleys, and an independent 0–5 star progression.
 - **v26.3.0 NeonWings-Pan exclusive:** green P retains starter-grade dual shots and adds a passive neon halo dealing area damage to nearby enemies once per second.
 
+## v26.14.0 — ARC LASER + STASIS 双渐变 P 武器
+
+**第 17 种：ARC LASER（浅蓝→白）穿透导电激光。** 必须先装备棕色 BROWN P，然后拾取 ARC LASER 的浅蓝白 P 才能升级；使用其他武器碰到该 P 时不会消耗拾取物，仅提示 `REQUIRES BROWN P`。已装备 ARC LASER 时再拾取可正常升级武器等级。继承棕色激光的自动锁定方向、1300 游戏坐标射程和每 0.101 秒一次的伤害判定，但发射可穿透多个敌人的激光，射线上所有目标分别受 1.15 基础伤害。另继承白色 P 导电机制：周围未被同一光束击中的其他目标可受到 60% 二次电弧伤害；独立随机最多 3 跳。直击和连锁共享受击记录，不会重复击中同一目标；Boss 炮台优先于机体。棕色原激光仍不穿透。
+
+**第 18 种：STASIS（黑→白）冻结 BOMB。** 平时发射双排普通子弹。装备此 P 后消耗一次真实 BOMB，正常保留原版清弹幕与范围伤害，同时让全部普通敌人和 Boss **冻结 3 秒**：期间完全无法移动、射击或释放护卫；所有现存敌弹立即消失，并阻止新敌弹生成。冻结期间新出现的敌人也会暂停行动。重复使用 STASIS BOMB 刷新 3 秒而非叠加。冻结在切换武器后持续，暂停、场景转换期间不消耗时间；画面显示冰白色冻结描边及剩余秒数。其他武器使用 BOMB 时不附加冻结。
+
+**取得方式：**两种 P 均加入普通掉落池，18 种 P 平均概率；ARC LASER 的拾取受到 BROWN 装备门槛限制。升级受伤后的 P 恢复遵循原有掉落机制。
+
+**版本：** `v26.14.0`，在线体验 https://rushairer.github.io/NeonWings-Pan/?v=26.14.0
+
 ## v26.13.0 — MAGNET P (红色→浅蓝色渐变 / 磁场)
 
 The new **sixteenth P pickup** has a red-to-pale-blue gradient. It fires two ordinary 1.15-power gradient bolts at the original starter 0.101-second cadence, independent of weapon upgrades. Every REAL bullet impact on an enemy, shield or living Boss turret/hull rolls an independent **10% chance** to create a stationary magnetic field **at the actual first swept contact**, not at the player's location.

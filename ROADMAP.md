@@ -7,6 +7,16 @@ Independently maintained from NeonWings commit `5ebcb1de1adb288b41a3c5e387f747bc
 - [x] Configure standalone Pages workflow
 - [ ] Verify site deployment and controller tests on hardware
 
+## v26.14.0 — ARC LASER / STASIS P weapons
+
+- [x] Add light-cyan-to-white piercing conductive laser P, equipped ONLY after collecting its pickup while BROWN is active (or replenishing while ARC LASER active)
+- [x] Trace BROWN's lock direction through multiple targets up to 1300 logical units, retaining 0.101-second damage cadence; preserve BROWN's original first-hit-only behavior
+- [x] Reuse WHITE's 60%-power multi-hop electric conductivity, premarking beam-direct targets to prevent weaker duplicate damage; respect Boss turret-versus-hull priority
+- [x] Add black-to-white STASIS P with ordinary dual-shot fire and original BOMB damage, augmented by all-enemy/all-Boss 3-second freeze
+- [x] Clear all enemy bullets when frozen, block any new ones, freeze movement/shoot/escort/phase clocks, and preserve the freeze after weapon switches
+- [x] Add visual gradients, status text, freeze rings/counter, uniform 18-color P drops, asset version, build scripts and deterministic tests
+- [ ] Verify on real handheld: beam visibility, BOMB freeze pacing and large-enemy-wave FPS
+
 ## v26.13.0 — MAGNET P gradient-field attraction
 
 - [x] Add 16th uniform P color with red-to-pale-blue gradient pickup, bullets and HUD
