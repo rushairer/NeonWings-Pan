@@ -45,6 +45,10 @@
       return { fired: 0, completed: false, upgraded: false };
     }
     const special = state.special;
+    // RED-BLUE owns the SAME special slot but resolves it when the falling
+    // five-point star lands; it must never emit a RED-family 250-shot fan.
+    if (special.redBlue)
+      return { fired: 0, completed: false, upgraded: false };
     const before = special.emitted;
     special.elapsed = Math.min(RULES.specialSeconds, special.elapsed + dt);
     const target = special.elapsed >= RULES.specialSeconds
