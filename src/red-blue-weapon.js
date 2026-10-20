@@ -105,28 +105,31 @@
   // The origin is captured at firing, so moving the player cannot move the
   // switch threshold. The remainder of a long dt is NOT dropped. Collisions
   // are resolved only for ARMED/homing segments after radius 360.
-  function advanceShot(b,dt,selectTarget) {
+  // The game reuses one optional segments buffer for the ENTIRE shot pool
+  // each update. Standalone callers still get their own fresh result array.
+  // Do not keep references to the shared scratch output between bullets.
+  // Inlining both phases avoids allocating a closure per shot per frame.
+  function advanceShot(b,dt,selectTarget,segments=[]) {
+    segments.length=0;
     if (!b || !b.redBlueShot || !(dt>0) || !Number.isFinite(dt) ||
-        typeof selectTarget!=="function") return [];
-    const segments=[];
-    function step(seconds,phase) {
-      if (!(seconds>0)) return;
-      const fromX=b.x,fromY=b.y;
-      b.x+=b.vx*seconds;b.y+=b.vy*seconds;
-      segments.push({fromX,fromY,toX:b.x,toY:b.y,phase});
-    }
+        typeof selectTarget!=="function") return segments;
     let remaining=dt;
     if (b.redBluePhase==="outward") {
       const dx=b.x-b.redBlueOriginX,dy=b.y-b.redBlueOriginY;
       const vx=b.vx,vy=b.vy;
-      const a=vx*vx+vy*vy;
-      const radial=RULES.outboundDistance;
-      const c=dx*dx+dy*dy-radial*radial;
+      const speedSq=vx*vx+vy*vy;
+      if (!(speedSq>0)) return segments;
+      const c=dx*dx+dy*dy-RULES.outboundDistance**2;
       const dot=dx*vx+dy*vy;
       const until=c>=0?0:
-        (-dot+Math.sqrt(Math.max(0,dot*dot-a*c)))/a;
+        (-dot+Math.sqrt(Math.max(0,dot*dot-speedSq*c)))/speedSq;
       const outTime=Math.min(remaining,Math.max(0,until));
-      step(outTime,"outward");
+      if (outTime>0) {
+        const fromX=b.x,fromY=b.y;
+        b.x+=vx*outTime;
+        b.y+=vy*outTime;
+        segments.push({fromX,fromY,toX:b.x,toY:b.y,phase:"outward"});
+      }
       remaining-=outTime;
       if (until<=outTime+1e-9) {
         b.redBluePhase="homing";
@@ -141,7 +144,10 @@
     if(b.redBluePhase==="homing" && b.life>0 && remaining>0){
       const homingTime=Math.min(remaining,b.life);
       pink.steer(b,selectTarget(b),homingTime);
-      step(homingTime,"homing");
+      const fromX=b.x,fromY=b.y;
+      b.x+=b.vx*homingTime;
+      b.y+=b.vy*homingTime;
+      segments.push({fromX,fromY,toX:b.x,toY:b.y,phase:"homing"});
       b.life=Math.max(0,b.life-homingTime);
     }
     return segments;
