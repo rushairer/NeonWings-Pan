@@ -9,6 +9,15 @@ Independently maintained from NeonWings commit `5ebcb1de1adb288b41a3c5e387f747bc
 
 
 
+## v26.28.0 — 红蓝全圆弹幕性能与交互收口
+
+- [x] 360 发五角星特殊弹由逐弹 2 次 rect + 每弹 save/translate/rotate 改为按飞行阶段+颜色层批量 Canvas 描边，保持红蓝发光辨识（无每发单独光晕）
+- [x] 仅离屏渲染裁剪，不丢失弹丸追踪/命中或星级
+- [x] 消除 Red-Blue 每弹的扫掠数组/内层闭包，战斗中复用临时缓冲、惰性构造真实命中数据并原地移除失效弹丸
+- [x] 红蓝共享五星 HUD 显示独立 1.0s 五向发射节奏，普通 RED/RED-WHITE/RED-ORANGE 的 5+星齐射/0.4s 冷却完全不变
+- [x] 追加完整 360 绘制调用预算、离屏存续、最近命中/一次命中、复用接口、1800 弹 40 帧 Node 模拟性能回归和静态 CI 门禁
+- [ ] 在真实掌机 Chrome/触屏 WebView 中实测 360/1800 弹时的 FPS、帧间抖动、发热与星形可读性；Node Mock Canvas 并不能代替 GPU/设备表现
+
 ## v26.27.0 — 红蓝 STARFALL SEEK（29th P）
 
 - [x] P_RED_BLUE：仅黄色/普通红色/同色可拾取，原 28 色掉落槽不改位置，29 色新武器末尾加入
