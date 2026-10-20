@@ -4484,10 +4484,19 @@ const W = 1280;
             if (!first || impact.t<first.impact.t)
               first={target,part,impact};
           }
+          // Broad-phase conservative swept AABB: far-away enemy circles
+          // never need the expensive precise segment-circle test. Expanded
+          // by the bullet radius so this cannot change a genuine hit.
+          const left=Math.min(seg.fromX,seg.toX)-bullet.r;
+          const right=Math.max(seg.fromX,seg.toX)+bullet.r;
+          const top=Math.min(seg.fromY,seg.toY)-bullet.r;
+          const bottom=Math.max(seg.fromY,seg.toY)+bullet.r;
           for (const e of game.enemies) {
-            if (!(e.hp>0) || !collision.sweptCircleHit(
-              seg.fromX,seg.fromY,seg.toX,seg.toY,
-              e.x,e.y,bullet.r+e.r)) continue;
+            if (!(e.hp>0) || e.x+(e.r||0)<left ||
+                e.x-(e.r||0)>right || e.y+(e.r||0)<top ||
+                e.y-(e.r||0)>bottom ||
+                !collision.sweptCircleHit(seg.fromX,seg.fromY,
+                  seg.toX,seg.toY,e.x,e.y,bullet.r+e.r)) continue;
             candidate(e,null,orangeRules.circleImpact(
               trajectory,e,bullet.r+e.r));
           }
@@ -4514,7 +4523,13 @@ const W = 1280;
         if (bullet.redBluePhase==="homing" && bullet.life<=0)
           bullet.dead=true;
       }
-      game.redBlueBullets = game.redBlueBullets.filter(b=>!b.dead);
+      // Compact in place to avoid allocating a second (up to 1800-item)
+      // array on EVERY animation frame. Preserve shot order/provenance.
+      const shots=game.redBlueBullets;
+      let kept=0;
+      for (let i=0;i<shots.length;i++)
+        if (!shots[i].dead) shots[kept++]=shots[i];
+      shots.length=kept;
     }
 
     function updatePlayerBullets(dt) {
@@ -5411,26 +5426,56 @@ const W = 1280;
     }
 
 
-    // Lightweight Red-Blue shot art: the 360-ray Starfall uses simple
-    // primitives without per-bullet shadow/gradients (handheld FPS).
+    // 360 simultaneous STARFALL pellets draw in four shared Canvas paths
+    // (two firing phases x two layered strokes), instead of 360 individual
+    // save/translate/rotate/fill pairs. This is presentation-only: bullet
+    // state, each angle and all collision geometry are unchanged.
     function drawRedBlueBullets() {
+      const margin=48;
+      // Rare five-direction ordinary shots keep the existing gradient body.
       for (const b of game.redBlueBullets) {
+        if (b.redBlueSpecial || b.x < -margin || b.x > W+margin ||
+            b.y < -margin || b.y > H+margin) continue;
         ctx.save();
         ctx.translate(b.x,b.y);
         ctx.rotate(Math.atan2(b.vy,b.vx));
-        if (b.redBlueSpecial) {
-          ctx.globalAlpha=b.redBluePhase==="outward"?.85:1;
-          rect(-5,-3,18,6,"#e74c7e");
-          rect(2,-1.5,18,3,"#72bfff");
-        } else {
-          const gradient=ctx.createLinearGradient(-8,-6,30,6);
-          gradient.addColorStop(0,"#fb4060");
-          gradient.addColorStop(1,"#347ef7");
-          rect(-8,-6,35,12,gradient);
-          rect(1,-2,27,4,"#eff2ff");
-        }
+        const gradient=ctx.createLinearGradient(-8,-6,30,6);
+        gradient.addColorStop(0,"#fb4060");
+        gradient.addColorStop(1,"#347ef7");
+        rect(-8,-6,35,12,gradient);
+        rect(1,-2,27,4,"#eff2ff");
         ctx.restore();
       }
+      ctx.save();
+      ctx.lineCap="round";
+      // Both phases remain distinguishable: outward red/pale blue, then
+      // armed seekers blue/pink. 360 shots need at most four strokes.
+      for (const phase of ["outward","homing"]) {
+        ctx.beginPath();
+        let visible=0;
+        for (const b of game.redBlueBullets) {
+          if (!b.redBlueSpecial || b.redBluePhase!==phase ||
+              b.x < -margin || b.x > W+margin ||
+              b.y < -margin || b.y > H+margin) continue;
+          // PINK homing steering preserves each shot's speed exactly.
+          const inverse=phase==="outward"
+            ? 1/redBlueRules.RULES.outwardSpeed
+            : 1/redBlueRules.RULES.homingSpeed;
+          const ux=b.vx*inverse,uy=b.vy*inverse;
+          ctx.moveTo(b.x-5*ux,b.y-5*uy);
+          ctx.lineTo(b.x+13*ux,b.y+13*uy);
+          visible++;
+        }
+        if (!visible) continue;
+        ctx.globalAlpha=phase==="outward"?.85:1;
+        ctx.lineWidth=6;
+        ctx.strokeStyle=phase==="outward"?"#e74c7e":"#578fff";
+        ctx.stroke();
+        ctx.lineWidth=2.5;
+        ctx.strokeStyle=phase==="outward"?"#72bfff":"#ffafcd";
+        ctx.stroke();
+      }
+      ctx.restore();
     }
 
     function starShape(radius,inner) {

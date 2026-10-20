@@ -37,14 +37,23 @@
   }
 
   function shot(x,y,angle,power,anchorX,anchorY,isSpecial=false) {
+    const ux=Math.cos(angle), uy=Math.sin(angle);
+    // Compute the exact ray-circle intersection only ONCE at emission.
+    // The 360-pellet Starfall can otherwise repeat this square root for
+    // every live pellet on every rendering frame during outward travel.
+    const ox=x-anchorX,oy=y-anchorY;
+    const projection=ox*ux+oy*uy;
+    const toR360=Math.max(0,Math.sqrt(Math.max(0,
+      projection*projection+RULES.outboundDistance**2-ox*ox-oy*oy
+    ))-projection);
     return {
-      x,y, vx: Math.cos(angle)*RULES.outwardSpeed,
-      vy: Math.sin(angle)*RULES.outwardSpeed,
+      x,y, vx: ux*RULES.outwardSpeed,
+      vy: uy*RULES.outwardSpeed,
       r: isSpecial ? RULES.specialRadius : RULES.bulletRadius,
       power, c: isSpecial ? "#a9c3ff" : "#e05b8a",
       redBlueShot:true, redBlueSpecial: Boolean(isSpecial),
       redBluePhase:"outward", redBlueOriginX:anchorX,
-      redBlueOriginY:anchorY,
+      redBlueOriginY:anchorY, redBlueOutwardRemaining:toR360,
       life:0
     };
   }
@@ -103,7 +112,8 @@
 
   // Return up to TWO swept segments: outward-to-r360 and then homing.
   // The origin is captured at firing, so moving the player cannot move the
-  // switch threshold. The remainder of a long dt is NOT dropped. Collisions
+  // switch threshold. The exact outward distance is cached at emission.
+  // The remainder of a long dt is NOT dropped. Collisions
   // are resolved only for ARMED/homing segments after radius 360.
   function advanceShot(b,dt,selectTarget) {
     if (!b || !b.redBlueShot || !(dt>0) || !Number.isFinite(dt) ||
@@ -117,18 +127,15 @@
     }
     let remaining=dt;
     if (b.redBluePhase==="outward") {
-      const dx=b.x-b.redBlueOriginX,dy=b.y-b.redBlueOriginY;
-      const vx=b.vx,vy=b.vy;
-      const a=vx*vx+vy*vy;
-      const radial=RULES.outboundDistance;
-      const c=dx*dx+dy*dy-radial*radial;
-      const dot=dx*vx+dy*vy;
-      const until=c>=0?0:
-        (-dot+Math.sqrt(Math.max(0,dot*dot-a*c)))/a;
-      const outTime=Math.min(remaining,Math.max(0,until));
+      const outwardLeft=Math.max(0,b.redBlueOutwardRemaining);
+      const until=outwardLeft/RULES.outwardSpeed;
+      const outTime=Math.min(remaining,until);
       step(outTime,"outward");
+      b.redBlueOutwardRemaining=Math.max(0,
+        outwardLeft-outTime*RULES.outwardSpeed);
       remaining-=outTime;
-      if (until<=outTime+1e-9) {
+      if (b.redBlueOutwardRemaining<=1e-7) {
+        b.redBlueOutwardRemaining=0;
         b.redBluePhase="homing";
         b.life=RULES.homingLifetimeSeconds;
         const angle=Math.atan2(b.vy,b.vx);
