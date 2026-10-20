@@ -51,14 +51,14 @@ function makeCanvasContext() {
   });
 }
 
-function boot() {
+function boot(options = {}) {
   const ctx = makeCanvasContext();
   const events = new Map();
   const documentEvents = new Map();
   const canvas = { style: {}, getContext: () => ctx };
   const storage = new Map();
   const window = {
-    NeonPlatform: platform, NeonController: controller, NeonCombat: combat, NeonRedWeapon: redWeapon, NeonGreenWeapon: greenWeapon, NeonSolarAuraWeapon: solarAuraWeapon, NeonBlackWeapon: blackWeapon, NeonBlueBlackWeapon: blueBlackWeapon, NeonWhiteWeapon: whiteWeapon, NeonRedWhiteWeapon: redWhiteWeapon, NeonGrayWeapon: grayWeapon, NeonGrayFlameWeapon: grayFlameWeapon, NeonPinkWeapon: pinkWeapon, NeonOrangeWeapon: orangeWeapon, NeonRedOrangeWeapon: redOrangeWeapon, NeonRedBlueWeapon: redBlueWeapon, NeonBrownWeapon: brownWeapon, NeonPurpleWhiteWeapon: purpleWhiteWeapon, NeonBrownYellowWeapon: brownYellowWeapon, NeonLimeWeapon: limeWeapon, NeonSkyWeapon: skyWeapon, NeonDarkRedWeapon: darkRedWeapon, NeonDarkRedGoldWeapon: darkRedGoldWeapon, NeonRainbowWeapon: rainbowWeapon, NeonMagnetWeapon: magnetWeapon, NeonArcLaserWeapon: arcLaserWeapon, NeonStasisWeapon: stasisWeapon, NeonEclipseWeapon: eclipseWeapon, NeonRecruitWeapon: recruitWeapon, NeonCollision: collision, NeonEnemyBehaviors: enemyBehaviors, NeonWorlds: worlds, NeonBossParts: bossParts, NeonModes: modes, NeonRecords: records, NeonSelectLayout: selectLayout,
+    NeonPlatform: platform, NeonController: controller, NeonCombat: combat, NeonRedWeapon: redWeapon, NeonGreenWeapon: greenWeapon, NeonSolarAuraWeapon: solarAuraWeapon, NeonBlackWeapon: blackWeapon, NeonBlueBlackWeapon: blueBlackWeapon, NeonWhiteWeapon: whiteWeapon, NeonRedWhiteWeapon: redWhiteWeapon, NeonGrayWeapon: grayWeapon, NeonGrayFlameWeapon: grayFlameWeapon, NeonPinkWeapon: pinkWeapon, NeonOrangeWeapon: orangeWeapon, NeonRedOrangeWeapon: redOrangeWeapon, NeonRedBlueWeapon: redBlueWeapon, NeonBrownWeapon: brownWeapon, NeonPurpleWhiteWeapon: purpleWhiteWeapon, NeonBrownYellowWeapon: brownYellowWeapon, NeonLimeWeapon: limeWeapon, NeonSkyWeapon: skyWeapon, NeonDarkRedWeapon: darkRedWeapon, NeonDarkRedGoldWeapon: darkRedGoldWeapon, NeonRainbowWeapon: rainbowWeapon, NeonMagnetWeapon: magnetWeapon, NeonArcLaserWeapon: arcLaserWeapon, NeonStasisWeapon: stasisWeapon, NeonEclipseWeapon: eclipseWeapon, NeonRecruitWeapon: recruitWeapon, NeonCollision: options.collision || collision, NeonEnemyBehaviors: enemyBehaviors, NeonWorlds: worlds, NeonBossParts: bossParts, NeonModes: modes, NeonRecords: records, NeonSelectLayout: selectLayout,
     innerWidth: 1280, innerHeight: 960,
     addEventListener: (name, fn) => events.set(name, fn)
   };
@@ -7154,4 +7154,66 @@ test("RED-BLUE stress-smoke: 1800 live shots update and render without Canvas pe
   assert.ok(elapsed<15000, "1800-pellet 40-frame VM smoke exceeded 15 seconds");
   console.log("RED-BLUE simulated 1800 pellets / 40 frames:",
     Math.round(elapsed)+"ms Node VM (not handheld FPS)");
+});
+
+test("RED-BLUE R360 broad-phase skips distant enemy narrow-phase calls in a 360-shot field",()=>{
+  let narrowCalls=0;
+  const instrumented={
+    ...collision,
+    sweptCircleHit(...args){
+      narrowCalls++;
+      return collision.sweptCircleHit(...args);
+    }
+  };
+  const app=boot({collision:instrumented});
+  const count=app.eval([
+    '(()=>{game.state="PLAYING";game.stageMode="WAVE";',
+    'game.redBlueBullets=redBlueRules.radial({x:640,y:480},.38);',
+    'updateRedBlueBullets(.375);',
+    'game.enemies=Array.from({length:48},(_,i)=>({',
+    'x:2300+i*35,y:1700+i*7,r:24,hp:100,maxHp:100,',
+    'kind:"scout",score:5,color:"#fff",core:"#fff"}));',
+    'for(let i=0;i<12;i++)updateRedBlueBullets(1/60);',
+    'return game.redBlueBullets.length;})()'
+  ].join("\n"));
+  assert.equal(count,360);
+  assert.equal(narrowCalls,0,
+    "distant circles must never invoke expensive precise swept collision");
+});
+
+test("RED-BLUE R360 broad-phase preserves earliest swept contact and single-hit damage",()=>{
+  const app=boot();
+  app.eval([
+    'game.state="PLAYING";game.stageMode="WAVE";',
+    'const bullet=redBlueRules.volley({x:175,y:480})[2];',
+    'bullet.x=375;bullet.y=480;bullet.vx=940;bullet.vy=0;',
+    'bullet.life=3.6;bullet.redBluePhase="homing";',
+    'game.redBlueBullets=[bullet];',
+    'game.enemies=[',
+    '{kind:"scout",x:455,y:480,r:24,hp:100,maxHp:100,score:10,color:"#fff",core:"#fff"},',
+    '{kind:"scout",x:535,y:480,r:24,hp:100,maxHp:100,score:10,color:"#fff",core:"#fff"}];',
+    'updateRedBlueBullets(.25);'
+  ].join("\n"));
+  assert.equal(app.eval("game.redBlueBullets.length"),0);
+  assert.ok(Math.abs(app.eval("game.enemies[0].hp")-98.85)<1e-8);
+  assert.equal(app.eval("game.enemies[1].hp"),100);
+});
+
+test("RED-BLUE new broad-phase never skips protruding Boss weakpoint mounts",()=>{
+  const app=boot();
+  app.eval([
+    'game.state="PLAYING";game.stageMode="BOSS";',
+    'const bullet=redBlueRules.radial({x:420,y:480},.38)[0];',
+    'bullet.x=430;bullet.y=480;bullet.vx=940;bullet.vy=0;',
+    'bullet.life=3.6;bullet.redBluePhase="homing";',
+    'game.redBlueBullets=[bullet];',
+    'game.boss={active:true,x:900,y:480,rx:80,ry:75,hp:200,maxHp:200,',
+    'parts:[{id:"EXTENDED",x:-200,y:0,r:26,hp:80,maxHp:80}],',
+    'color:"#fff",core:"#fff"};',
+    'updateRedBlueBullets(.30);'
+  ].join("\n"));
+  assert.equal(app.eval("game.redBlueBullets.length"),0);
+  assert.equal(app.eval("game.boss.hp"),200);
+  const scale=app.eval("bossParts.BALANCE.weakPointDamageScale");
+  assert.ok(Math.abs(app.eval("game.boss.parts[0].hp")-(80-.38*scale))<1e-8);
 });
