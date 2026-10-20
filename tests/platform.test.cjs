@@ -419,7 +419,7 @@ test("DARK RED-GOLD runtime is cache-versioned and built after DARK RED and ORAN
   const html=fs.readFileSync(path.join(__dirname,"../index.html"),"utf8");
   const build=fs.readFileSync(path.join(__dirname,"../scripts/build.mjs"),"utf8");
   const pkg=require("../package.json");
-  assert.equal(pkg.version,"26.29.0");
+  assert.equal(pkg.version,"26.29.1");
   assert.ok(html.includes('src="./src/dark-red-weapon.js?v='+pkg.version+'"'));
   assert.ok(html.includes('src="./src/dark-red-gold-weapon.js?v='+pkg.version+'"'));
   assert.ok(html.includes('src="./src/game.js?v='+pkg.version+'"'));
@@ -451,7 +451,7 @@ test("v26.26 Purple-White duty timer and cache-versioned PENTA module",()=>{
   const html=fs.readFileSync(path.join(__dirname,"../index.html"),"utf8");
   const pkg=require("../package.json");
   const penta=require("../src/purple-white-weapon.js");
-  assert.equal(pkg.version,"26.29.0");
+  assert.equal(pkg.version,"26.29.1");
   assert.ok(html.includes('src="./src/purple-white-weapon.js?v='+pkg.version+'"'));
   assert.ok(html.includes('src="./src/game.js?v='+pkg.version+'"'));
   assert.equal(penta.RULES.firingSeconds,5);
@@ -463,7 +463,7 @@ test("v26.27 RED-BLUE 29th P module runs after RED/PINK and ships to Pages",()=>
   const html=fs.readFileSync(path.join(__dirname,"../index.html"),"utf8");
   const build=fs.readFileSync(path.join(__dirname,"../scripts/build.mjs"),"utf8");
   const pkg=require("../package.json");
-  assert.equal(pkg.version,"26.29.0");
+  assert.equal(pkg.version,"26.29.1");
   assert.ok(html.includes('src="./src/red-blue-weapon.js?v='+pkg.version+'"'));
   assert.ok(html.includes('src="./src/game.js?v='+pkg.version+'"'));
   assert.ok(html.indexOf('src="./src/pink-weapon.js"') <
@@ -482,7 +482,7 @@ test("v26.28 Red-Blue perf hardening keeps current Pages module URLs and scratch
   const html=fs.readFileSync(path.join(__dirname,"../index.html"),"utf8");
   const pkg=require("../package.json");
   const a=redBlueWeapon.volley({x:175,y:480})[2],buf=[];
-  assert.equal(pkg.version,"26.29.0");
+  assert.equal(pkg.version,"26.29.1");
   assert.ok(html.includes('src="./src/red-blue-weapon.js?v='+pkg.version+'"'));
   assert.ok(html.includes('src="./src/game.js?v='+pkg.version+'"'));
   assert.equal(redBlueWeapon.advanceShot(a,.05,()=>null,buf),buf);
@@ -493,9 +493,20 @@ test("v26.29 debug HUD code and cache release stay consistent",()=>{
   const html=fs.readFileSync(path.join(__dirname,"../index.html"),"utf8");
   const pkg=require("../package.json");
   const code=fs.readFileSync(path.join(__dirname,"../src/game.js"),"utf8");
-  assert.equal(pkg.version,"26.29.0");
+  assert.equal(pkg.version,"26.29.1");
   assert.ok(html.includes('src="./src/game.js?v='+pkg.version+'"'));
   assert.ok(code.includes('window.location?.search || ""'));
   assert.ok(code.includes("RED-BLUE "));
   assert.ok(code.includes('stats.frameTimes.slice(0,stats.count)'));
+});
+
+test("v26.29.1 cached R360 pellet shape and telemetry URLs remain fresh",()=>{
+  const pkg=require("../package.json");
+  const html=fs.readFileSync(path.join(__dirname,"../index.html"),"utf8");
+  const shot=redBlueWeapon.radial({x:640,y:480})[0];
+  assert.equal(pkg.version,"26.29.1");
+  assert.equal(shot.redBlueOutwardRemaining,360);
+  for(const name of ["red-blue-weapon","game"])
+    assert.ok(html.includes('src="./src/'+name+'.js?v='+pkg.version+'"'));
+  assert.equal(html.includes("?v=26.29.0"),false);
 });

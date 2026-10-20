@@ -179,3 +179,46 @@ test("RED-BLUE never moves a zero-speed invalid outgoing pellet offstage",()=>{
   assert.equal(b.x,640);
   assert.equal(b.y,480);
 });
+
+
+test("RED-BLUE cached R360 transition is exact across all 360 starburst angles",()=>{
+  const center={x:640,y:480},bullets=five.radial(center);
+  const reused=[{phase:"stale"}];
+  assert.equal(bullets.length,360);
+  for (const bullet of bullets){
+    assert.ok(Math.abs(bullet.redBlueOutwardRemaining-360)<1e-8);
+    const segments=five.advanceShot(bullet,.375,()=>null,reused);
+    assert.strictEqual(segments,reused);
+    assert.equal(segments.length,1);
+    assert.equal(segments[0].phase,"outward");
+    assert.ok(Math.abs(Math.hypot(segments[0].toX-center.x,
+      segments[0].toY-center.y)-360)<1e-8);
+    assert.equal(bullet.redBluePhase,"homing");
+    assert.equal(bullet.redBlueOutwardRemaining,0);
+    assert.equal(bullet.life,five.RULES.homingLifetimeSeconds);
+  }
+});
+
+test("RED-BLUE five normal angles consume cached distance and preserve same-frame seeking",()=>{
+  const bullets=five.volley({x:175,y:480}),scratch=[];
+  assert.equal(bullets.length,5);
+  for(const bullet of bullets){
+    const originX=bullet.redBlueOriginX,originY=bullet.redBlueOriginY;
+    const initial=bullet.redBlueOutwardRemaining;
+    assert.ok(initial>0&&initial<360);
+    const dt=initial/(2*five.RULES.outwardSpeed);
+    five.advanceShot(bullet,dt,()=>null,scratch);
+    assert.equal(bullet.redBluePhase,"outward");
+    assert.ok(Math.abs(bullet.redBlueOutwardRemaining-initial/2)<1e-8);
+    const result=five.advanceShot(bullet,dt+.02,()=>null,scratch);
+    const lastOut=result.find(seg=>seg.phase==="outward");
+    assert.ok(lastOut);
+    assert.ok(result.some(seg=>seg.phase==="homing"));
+    assert.ok(Math.abs(Math.hypot(lastOut.toX-originX,
+      lastOut.toY-originY)-360)<1e-7,
+      "validate the exact outward->homing boundary, not the final homing frame");
+    assert.equal(bullet.redBlueOutwardRemaining,0);
+    assert.ok(bullet.life<five.RULES.homingLifetimeSeconds);
+  }
+});
+
