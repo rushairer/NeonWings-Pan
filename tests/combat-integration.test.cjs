@@ -51,7 +51,7 @@ function makeCanvasContext() {
   });
 }
 
-function boot() {
+function boot(search = "") {
   const ctx = makeCanvasContext();
   const events = new Map();
   const documentEvents = new Map();
@@ -60,6 +60,7 @@ function boot() {
   const window = {
     NeonPlatform: platform, NeonController: controller, NeonCombat: combat, NeonRedWeapon: redWeapon, NeonGreenWeapon: greenWeapon, NeonSolarAuraWeapon: solarAuraWeapon, NeonBlackWeapon: blackWeapon, NeonBlueBlackWeapon: blueBlackWeapon, NeonWhiteWeapon: whiteWeapon, NeonRedWhiteWeapon: redWhiteWeapon, NeonGrayWeapon: grayWeapon, NeonGrayFlameWeapon: grayFlameWeapon, NeonPinkWeapon: pinkWeapon, NeonOrangeWeapon: orangeWeapon, NeonRedOrangeWeapon: redOrangeWeapon, NeonRedBlueWeapon: redBlueWeapon, NeonBrownWeapon: brownWeapon, NeonPurpleWhiteWeapon: purpleWhiteWeapon, NeonBrownYellowWeapon: brownYellowWeapon, NeonLimeWeapon: limeWeapon, NeonSkyWeapon: skyWeapon, NeonDarkRedWeapon: darkRedWeapon, NeonDarkRedGoldWeapon: darkRedGoldWeapon, NeonRainbowWeapon: rainbowWeapon, NeonMagnetWeapon: magnetWeapon, NeonArcLaserWeapon: arcLaserWeapon, NeonStasisWeapon: stasisWeapon, NeonEclipseWeapon: eclipseWeapon, NeonRecruitWeapon: recruitWeapon, NeonCollision: collision, NeonEnemyBehaviors: enemyBehaviors, NeonWorlds: worlds, NeonBossParts: bossParts, NeonModes: modes, NeonRecords: records, NeonSelectLayout: selectLayout,
     innerWidth: 1280, innerHeight: 960,
+    location: { search },
     addEventListener: (name, fn) => events.set(name, fn)
   };
   const document = {
@@ -272,6 +273,83 @@ test("F3 debug HUD toggles without affecting gameplay or overriding held keys", 
   assert.equal(app.eval("performanceOverlay"), true);
   app.events.get("keydown")({ code:"F3", repeat:false, preventDefault() {} });
   assert.equal(app.eval("performanceOverlay"), false);
+});
+
+
+test("handheld ?perf=1 enables performance diagnostics without keyboard F3",()=>{
+  const app=boot("?v=26.29.0&perf=1");
+  assert.equal(app.eval("performanceOverlay"),true);
+  const opt=boot("?perf=true&v=26.29.0");
+  assert.equal(opt.eval("performanceOverlay"),true);
+  const accidental=boot("?notperf=1&v=26.29.0");
+  assert.equal(accidental.eval("performanceOverlay"),false);
+  const disabled=boot("?perf=0");
+  assert.equal(disabled.eval("performanceOverlay"),false);
+  app.events.get("keydown")({code:"F3",repeat:false,preventDefault(){}});
+  assert.equal(app.eval("performanceOverlay"),false,
+    "F3 still toggles off URL-enabled debug view");
+});
+
+test("performance P95 samples only real active foreground frames and bounds its ring buffer",()=>{
+  const app=boot("?perf=1");
+  const samples=app.eval([
+    '(()=>{game.state="PLAYING";',
+    'for(let i=0;i<110;i++)recordPerformanceFrame(16.7);',
+    'for(let i=0;i<10;i++)recordPerformanceFrame(33.4);',
+    'recordPerformanceFrame(400);recordPerformanceFrame(NaN);',
+    'recordPerformanceFrame(-1);refreshPerformanceStats();',
+    'const first={count:performanceTelemetry.count,p95:performanceTelemetry.p95};',
+    'game.state="PAUSED";recordPerformanceFrame(50);',
+    'const countAfterPause=performanceTelemetry.count;',
+    'game.state="PLAYING";recordPerformanceFrame(12);',
+    'refreshPerformanceStats();',
+    'return {first,countAfterPause,finalCount:performanceTelemetry.count,',
+    'next:performanceTelemetry.next,finalP95:performanceTelemetry.p95,',
+    'maxStored:performanceTelemetry.frameTimes.length};})()'
+  ].join("\n"));
+  assert.equal(samples.first.count,120);
+  assert.ok(Math.abs(samples.first.p95-33.4)<1e-8);
+  assert.equal(samples.countAfterPause,120);
+  assert.equal(samples.finalCount,120);
+  assert.equal(samples.next,1);
+  assert.ok(samples.finalP95>=16.7);
+  assert.equal(samples.maxStored,120);
+});
+
+test("performance HUD reports actual Red-Blue outward/seeking counts without mutating bullets",()=>{
+  const app=boot("?perf=1");
+  const metrics=app.eval([
+    '(()=>{game.state="PLAYING";game.fps=59;game.slowFrames=7;',
+    'game.redBlueBullets=redBlueRules.radial({x:650,y:480},.38);',
+    'for(let i=0;i<120;i++){const b=game.redBlueBullets[i];',
+    'b.redBluePhase="homing";b.life=3.6;}',
+    'const before=game.redBlueBullets.map(b=>[b.x,b.y,b.life,b.redBluePhase]);',
+    'const lines=[];ctx.fillText=t=>lines.push(String(t));',
+    'for(let i=0;i<120;i++)recordPerformanceFrame(16.7);',
+    'refreshPerformanceStats();drawPerformanceOverlay();',
+    'const after=game.redBlueBullets.map(b=>[b.x,b.y,b.life,b.redBluePhase]);',
+    'return {lines,same:JSON.stringify(before)===JSON.stringify(after)};})()'
+  ].join("\n"));
+  assert.equal(metrics.same,true);
+  assert.ok(metrics.lines.some(s=>s.includes("FPS 59")&&s.includes("P95 16.7ms")));
+  assert.ok(metrics.lines.some(s=>s.includes("RED-BLUE 360/1800")&&
+    s.includes("OUT 240")&&s.includes("SEEK 120")));
+  assert.ok(metrics.lines.some(s=>s.includes("STAR IDLE")));
+});
+
+test("F3-off telemetry does not sample frames or render on normal default startup",()=>{
+  const app=boot();
+  const a=app.eval([
+    '(()=>{game.state="PLAYING";',
+    'for(let i=0;i<60;i++)recordPerformanceFrame(16.7);',
+    'const drawn=[];ctx.fillText=t=>drawn.push(t);',
+    'drawPerformanceOverlay();refreshPerformanceStats();',
+    'return {count:performanceTelemetry.count,p95:performanceTelemetry.p95,',
+    'drawn:drawn.length};})()'
+  ].join("\n"));
+  assert.equal(a.count,0);
+  assert.equal(a.p95,0);
+  assert.equal(a.drawn,0);
 });
 
 test("shield absorbs frontal damage before hull damage, visibly breaks after depletion", () => {
