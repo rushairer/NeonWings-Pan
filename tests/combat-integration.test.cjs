@@ -7286,3 +7286,74 @@ test("RED-BLUE broadphase retains earliest one-time swept hit and Boss protrudin
   const scale=app.eval("bossParts.BALANCE.weakPointDamageScale");
   assert.ok(Math.abs(app.eval("game.boss.parts[0].hp")-(80-.38*scale))<1e-8);
 });
+
+
+test("handheld RED-BLUE device bench rejects accidental/malformed URL inputs",()=>{
+  for(const query of [
+    "", "?bench=360", "?perf=0&bench=360",
+    "?notperf=1&bench=720", "?perf=1&xbench=360",
+    "?perf=1&bench=361", "?perf=1&bench=1800oops",
+    "?perf=1&bench=-360"
+  ]){
+    const app=boot(query);
+    assert.equal(app.eval("redBlueBench"),null,query);
+    assert.equal(app.eval("game.state"),"TITLE",query);
+    assert.equal(app.eval("game.redBlueBullets.length"),0,query);
+  }
+});
+
+test("handheld RED-BLUE benchmark initializes exact 360/720/1800 loads in unranked scene",()=>{
+  for(const count of [360,720,1800]){
+    const app=boot("?v=26.30.0&perf=1&bench="+count);
+    assert.equal(app.eval("performanceOverlay"),true);
+    assert.equal(app.eval("game.state"),"PLAYING");
+    assert.equal(app.eval("game.mode"),"training");
+    assert.equal(app.eval("game.weaponType"),"redblue");
+    assert.equal(app.eval("game.redBlueBullets.length"),count);
+    assert.equal(app.eval("game.enemies.length"),48);
+    assert.equal(app.eval("game.enemies.every(e=>e.hp===1e9)"),true);
+    assert.equal(app.eval("game.redBlueBullets.every(b=>b.redBlueSpecial&&b.redBluePhase==='outward')"),true);
+    assert.equal(app.eval("game.score"),0);
+    app.eval("updateRedBlueBenchmark(.375)");
+    assert.equal(app.eval("game.redBlueBullets.length"),count);
+    assert.equal(app.eval("game.redBlueBullets.every(b=>b.redBluePhase==='homing')"),true);
+    app.eval("updateRedBlueBenchmark(.05)");
+    assert.equal(app.eval("game.redBlueBullets.length"),count,
+      "the synthetic workload must replenish exactly the requested live pellet load");
+    assert.equal(app.eval("game.mode"),"training");
+    assert.equal(app.eval("game.stats.kills"),0);
+    assert.equal(app.eval("localStorage.getItem('neon_wings_pan_high_score_v1')"),null);
+  }
+});
+
+test("handheld benchmark uses actual rAF loop, telemetry and visible unranked scene label",()=>{
+  const app=boot("?bench=360&perf=true");
+  const lines=app.eval([
+    '(()=>{const lines=[];ctx.fillText=t=>lines.push(String(t));',
+    'drawFrame(0);return lines;})()'
+  ].join("\n"));
+  assert.ok(lines.some(x=>x.includes("BENCH 360")&&x.includes("UNRANKED")));
+  assert.ok(lines.some(x=>x.includes("RED-BLUE 360/1800")));
+  const before=app.eval("game.redBlueBullets.length");
+  app.eval("loop(game.last+16.7)");
+  assert.equal(app.eval("performanceTelemetry.count"),1);
+  assert.equal(app.eval("game.redBlueBullets.length"),before);
+  assert.equal(app.eval("game.enemies.length"),48);
+  assert.equal(app.eval("game.score"),0);
+});
+
+test("handheld benchmark respects PAUSE, blocks gameplay shortcuts, and disarms on exit",()=>{
+  const app=boot("?perf=1&bench=720");
+  assert.equal(app.eval("game.bomb"),2);
+  app.events.get("keydown")({code:"ShiftLeft",repeat:false,preventDefault(){}});
+  assert.equal(app.eval("game.bomb"),2);
+  const before=app.eval("game.redBlueBullets[0].redBlueOutwardRemaining");
+  app.eval("game.state='PAUSED';updateRedBlueBenchmark(5)");
+  assert.equal(app.eval("game.redBlueBullets[0].redBlueOutwardRemaining"),before);
+  app.eval("game.state='PLAYING';returnToTitle()");
+  assert.equal(app.eval("game.state"),"TITLE");
+  assert.equal(app.eval("redBlueBench.active"),false);
+  app.eval("game.state='PLAYING';game.redBlueBullets=[];updateRedBlueBenchmark(1)");
+  assert.equal(app.eval("game.redBlueBullets.length"),0,
+    "exiting the lab must not refill benchmark pellets in normal play");
+});
