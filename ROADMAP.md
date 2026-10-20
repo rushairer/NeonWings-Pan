@@ -9,6 +9,16 @@ Independently maintained from NeonWings commit `5ebcb1de1adb288b41a3c5e387f747bc
 
 
 
+## v26.30.0 — 红蓝弹幕三档可复现实机负载
+
+- [x] 为掌机支持 `?perf=1&bench=360`、`bench=720`、`bench=1800` 三档严格 URL 入口，自动启动不计分、不记录排名的红蓝专用诊断场景
+- [x] 固定 48 个静态高血量敌机与准确 N 枚红蓝特殊弹，实际运行原生追踪/扫掠碰撞/粒子更新和 Canvas 批量绘制，每帧只补充失效弹丸
+- [x] 不使用真实关卡刷怪/敌机 AI/武器随机概率、不发放游戏大招、不改变本地存档；覆盖 URL 无效值、默认无副作用、暂停与返回标题撤销场景
+- [x] 压测面板复用 v26.29 的 FPS/滚动 P95/慢帧计数/弹量分相统计，标记 BENCH、固定目标和 UNRANKED
+- [x] `redBlueRules.radialShot` 单弹生产方法与原 360 发 Starfall 在全部 360 个角度保持完全一致；测试专用 URL、现有战斗回归及 Pages 构建版本 26.30.0
+- [ ] AYANEO AIR MINI 真实打开三档链接、稳定运行并记录 FPS/P95/>25ms、设备刷新率和截图；请不要把 Node Mock Canvas 结果当作设备实测
+- [ ] 人工复核固定目标合成负载之外的真实五角星演出、实际 Boss/波次战斗卡顿与视觉可辨性
+
 ## v26.29.1 — 兼容性能监控的红蓝 R360 / 碰撞优化
 
 - [x] 完整保留 v26.29 `?perf=1` FPS/P95/弹量诊断及 v26.28 Canvas 批绘、追踪路径 Buffer 复用和五星 HUD 修正
