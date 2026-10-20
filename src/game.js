@@ -1149,7 +1149,31 @@ const W = 1280;
 
     let game = newGame();
     game.state = "TITLE";
-    let performanceOverlay = false;
+    // F3 remains available on keyboards. ?perf=1 gives handheld browsers
+    // the same diagnostics without requiring a physical function key.
+    let performanceOverlay = /[?&]perf=(?:1|true)(?:&|$)/.test(
+      window.location?.search || "");
+    const performanceTelemetry = {
+      frameTimes: new Array(120).fill(0), next:0, count:0, p95:0
+    };
+    function recordPerformanceFrame(ms) {
+      // No per-frame arrays or GPU reads. Ignore interrupted/background
+      // frames so an app switch cannot poison active-combat P95.
+      if (!performanceOverlay || game.state !== "PLAYING" ||
+          !Number.isFinite(ms) || ms <= 0 || ms > 250) return;
+      const stats=performanceTelemetry;
+      stats.frameTimes[stats.next]=ms;
+      stats.next=(stats.next+1)%stats.frameTimes.length;
+      stats.count=Math.min(stats.frameTimes.length,stats.count+1);
+    }
+    function refreshPerformanceStats() {
+      if (!performanceOverlay || !performanceTelemetry.count) return;
+      const stats=performanceTelemetry;
+      // A 120-float copy/sort only once per existing FPS half-second tick.
+      const frames=stats.frameTimes.slice(0,stats.count)
+        .sort((a,b)=>a-b);
+      stats.p95=frames[Math.ceil(frames.length*.95)-1];
+    }
 
     // Keep the original 4:3 playfield; letterbox instead of stretching on wide screens.
     function layoutCanvas() {
@@ -6235,16 +6259,28 @@ const W = 1280;
 
     function drawPerformanceOverlay() {
       if (!performanceOverlay) return;
-      const x = 552, y = H - 117;
+      let outward=0,homing=0;
+      for (const shot of game.redBlueBullets) {
+        if (shot.redBluePhase==="outward") outward++;
+        else if (shot.redBluePhase==="homing") homing++;
+      }
+      const x=448,y=H-173,w=572,h=154;
       ctx.save();
-      ctx.fillStyle = "rgba(0,0,0,.74)";
-      ctx.fillRect(x, y, 378, 98);
-      ctx.strokeStyle = "rgba(142,247,255,.6)";
-      ctx.lineWidth = 1.5;
-      ctx.strokeRect(x, y, 378, 98);
-      drawText(`FPS ${game.fps}   >25ms ${game.slowFrames}`, x + 14, y + 25, 19, "left", "#8ef7ff");
-      drawText(`FX ${game.particles.length}/${LIMITS.particles}  EB ${game.enemyBullets.length}/${LIMITS.enemyBullets}`, x + 14, y + 53, 18, "left");
-      drawText(`EN ${game.enemies.length}/${LIMITS.enemies} SHOTS ${game.bullets.length} MISSILES ${game.missiles.length}`, x + 14, y + 81, 17, "left");
+      ctx.fillStyle="rgba(0,0,0,.82)";
+      ctx.fillRect(x,y,w,h);
+      ctx.strokeStyle="rgba(142,247,255,.7)";
+      ctx.lineWidth=1.5;
+      ctx.strokeRect(x,y,w,h);
+      drawText(`FPS ${game.fps}  P95 ${performanceTelemetry.p95.toFixed(1)}ms  >25ms ${game.slowFrames}`,
+        x+14,y+24,19,"left","#8ef7ff");
+      drawText(`RED-BLUE ${game.redBlueBullets.length}/${LIMITS.redBlueBullets}  OUT ${outward}  SEEK ${homing}`,
+        x+14,y+51,18,"left","#c5b7ff");
+      drawText(`EN ${game.enemies.length}/${LIMITS.enemies}  SHOTS ${game.bullets.length}  MISSILES ${game.missiles.length}`,
+        x+14,y+78,18,"left","#e7fbff");
+      drawText(`FX ${game.particles.length}/${LIMITS.particles}  EB ${game.enemyBullets.length}/${LIMITS.enemyBullets}`,
+        x+14,y+105,18,"left","#e7fbff");
+      drawText(`STAR ${game.redBlueStarfall?"DESCENDING":"IDLE"}   F3 / ?perf=1`,
+        x+14,y+132,17,"left","#e7fbff");
       ctx.restore();
     }
 
@@ -6306,7 +6342,7 @@ const W = 1280;
       ctx.fillRect(0, 0, W, H);
 
       drawText("NEON WINGS", W / 2, 195, 86, "center", "#e7fbff");
-      drawText("NEONWINGS PAN  /  v26.28.0", W / 2, 270, 28, "center", "#98f5ff");
+      drawText("NEONWINGS PAN  /  v26.29.0", W / 2, 270, 28, "center", "#98f5ff");
       drawText(`HIGH SCORE ${String(highScore()).padStart(6, "0")}`, W / 2, 318, 24, "center", "#fff4b7");
 
       drawPlayerShip(W / 2 - 170, 492, -0.20, false, ships[0]);
@@ -6668,6 +6704,7 @@ const W = 1280;
     function loop(now) {
       const frameTime = Math.max(0, now - game.last);
       if (game.state === "PLAYING" && frameTime > 25) game.slowFrames += 1;
+      recordPerformanceFrame(frameTime);
       const dt = clamp(frameTime / 1000, 0, 0.033);
       game.last = now;
       game.frames += 1;
@@ -6676,6 +6713,7 @@ const W = 1280;
         game.fps = Math.round(game.frames * 1000 / (now - game.fpsTick));
         game.frames = 0;
         game.fpsTick = now;
+        refreshPerformanceStats();
       }
 
       pollGamepadSystemButtons();
