@@ -4470,51 +4470,78 @@ const W = 1280;
     function updateRedBlueBullets(dt) {
       if (!(dt>0) || (game.stageMode !== "WAVE" &&
           game.stageMode !== "BOSS")) return;
-      for (const bullet of game.redBlueBullets) {
+      // Reuse one swept-path array and one target-selector closure per frame.
+      // The previous implementation allocated both per projectile, and also
+      // created one candidate closure/temporary trajectory for every pellet.
+      const segments = [];
+      const selectTarget = shot =>
+        skyRules.selectTarget(shot,game.enemies,game.boss);
+      const bullets=game.redBlueBullets;
+      for (const bullet of bullets) {
         if (bullet.dead) continue;
-        const segments = redBlueRules.advanceShot(bullet,dt,
-          b=>skyRules.selectTarget(b,game.enemies,game.boss));
+        redBlueRules.advanceShot(bullet,dt,selectTarget,segments);
         for (const seg of segments) {
           if (seg.phase!=="homing" || bullet.dead) continue;
-          const trajectory = {previousX:seg.fromX,previousY:seg.fromY,
-            x:seg.toX,y:seg.toY};
-          let first = null;
-          function candidate(target,part,impact) {
-            if (!impact) return;
-            if (!first || impact.t<first.impact.t)
-              first={target,part,impact};
-          }
-          for (const e of game.enemies) {
-            if (!(e.hp>0) || !collision.sweptCircleHit(
+          let firstTarget=null, firstPart=null, firstImpact=null;
+          let trajectory=null; // Allocate only on genuine swept contact.
+          for (const enemy of game.enemies) {
+            if (!(enemy.hp>0) || !collision.sweptCircleHit(
               seg.fromX,seg.fromY,seg.toX,seg.toY,
-              e.x,e.y,bullet.r+e.r)) continue;
-            candidate(e,null,orangeRules.circleImpact(
-              trajectory,e,bullet.r+e.r));
-          }
-          const boss = game.boss;
-          if (boss?.active && boss.hp>0) {
-            const part = bossParts.findHit(boss,seg.fromX,seg.fromY,
-              seg.toX,seg.toY,bullet.r);
-            if (part) {
-              candidate(boss,part,orangeRules.circleImpact(trajectory,
-                {x:boss.x+part.x,y:boss.y+part.y},bullet.r+part.r));
-            } else {
-              candidate(boss,null,orangeRules.bossImpact(
-                trajectory,boss,bullet.r));
+              enemy.x,enemy.y,bullet.r+enemy.r)) continue;
+            if (!trajectory) trajectory={
+              previousX:seg.fromX,previousY:seg.fromY,
+              x:seg.toX,y:seg.toY
+            };
+            const impact=orangeRules.circleImpact(
+              trajectory,enemy,bullet.r+enemy.r);
+            if (!firstImpact || impact.t<firstImpact.t) {
+              firstTarget=enemy;
+              firstPart=null;
+              firstImpact=impact;
             }
           }
-          if (!first) continue;
-          bullet.dead = true;
-          bullet.x=first.impact.x;
-          bullet.y=first.impact.y;
-          if (first.target===boss)
-            damageBoss(bullet.power,bullet.x,bullet.y,bullet.c,first.part);
-          else damageEnemy(first.target,bullet.power,bullet.x,bullet.y,bullet.c);
+          const boss=game.boss;
+          if (boss?.active && boss.hp>0) {
+            const part=bossParts.findHit(boss,seg.fromX,seg.fromY,
+              seg.toX,seg.toY,bullet.r);
+            const hull= !part && collision.sweptAabbHit(
+              seg.fromX,seg.fromY,seg.toX,seg.toY,
+              boss.x-boss.rx-bullet.r,boss.x+boss.rx+bullet.r,
+              boss.y-boss.ry-bullet.r,boss.y+boss.ry+bullet.r);
+            if (part || hull) {
+              if (!trajectory) trajectory={
+                previousX:seg.fromX,previousY:seg.fromY,
+                x:seg.toX,y:seg.toY
+              };
+              const impact=part
+                ? orangeRules.circleImpact(trajectory,
+                  {x:boss.x+part.x,y:boss.y+part.y},bullet.r+part.r)
+                : orangeRules.bossImpact(trajectory,boss,bullet.r);
+              if (impact && (!firstImpact || impact.t<firstImpact.t)) {
+                firstTarget=boss;
+                firstPart=part;
+                firstImpact=impact;
+              }
+            }
+          }
+          if (!firstTarget) continue;
+          bullet.dead=true;
+          bullet.x=firstImpact.x;
+          bullet.y=firstImpact.y;
+          if (firstTarget===boss)
+            damageBoss(bullet.power,bullet.x,bullet.y,bullet.c,firstPart);
+          else damageEnemy(firstTarget,bullet.power,bullet.x,bullet.y,bullet.c);
         }
         if (bullet.redBluePhase==="homing" && bullet.life<=0)
           bullet.dead=true;
       }
-      game.redBlueBullets = game.redBlueBullets.filter(b=>!b.dead);
+      // In-place compaction preserves the pool object and avoids allocating
+      // a fresh 360-1800-element array on every 60fps simulation frame.
+      let live=0;
+      for (let i=0;i<bullets.length;i++) {
+        if (!bullets[i].dead) bullets[live++]=bullets[i];
+      }
+      bullets.length=live;
     }
 
     function updatePlayerBullets(dt) {
@@ -5414,21 +5441,54 @@ const W = 1280;
     // Lightweight Red-Blue shot art: the 360-ray Starfall uses simple
     // primitives without per-bullet shadow/gradients (handheld FPS).
     function drawRedBlueBullets() {
-      for (const b of game.redBlueBullets) {
+      const bullets=game.redBlueBullets;
+      if (!bullets.length) return;
+      // One Canvas path per visual layer/flight phase instead of a
+      // save/translate/rotate/rect/restore cycle for every one of the 360
+      // star pellets. Line orientation uses their velocity in world space.
+      // Offscreen pellets stay alive and still home/hit, but aren't drawn.
+      ctx.save();
+      ctx.lineCap="round";
+      for (const phase of ["outward","homing"]) {
+        ctx.globalAlpha=phase==="outward"?.85:1;
+        for (const layer of [
+          {color:"#e74c7e",width:6,from:-5,to:13},
+          {color:"#72bfff",width:3,from:2,to:20}
+        ]) {
+          ctx.strokeStyle=layer.color;
+          ctx.lineWidth=layer.width;
+          ctx.beginPath();
+          let visible=0;
+          for (const b of bullets) {
+            if (!b.redBlueSpecial || b.redBluePhase!==phase ||
+                b.x < -60 || b.x > W+60 ||
+                b.y < -60 || b.y > H+60) continue;
+            const speed=Math.hypot(b.vx,b.vy);
+            if (!(speed>0)) continue;
+            const ux=b.vx/speed,uy=b.vy/speed;
+            ctx.moveTo(b.x+ux*layer.from,b.y+uy*layer.from);
+            ctx.lineTo(b.x+ux*layer.to,b.y+uy*layer.to);
+            visible++;
+          }
+          if (visible) ctx.stroke();
+        }
+      }
+      ctx.restore();
+
+      // Only ordinary five-way bolts retain the richer gradient sprite.
+      // This is typically fewer than 25 simultaneously and is intentionally
+      // NOT used for the hundreds of 360-degree Starfall projectiles.
+      for (const b of bullets) {
+        if (b.redBlueSpecial || b.x < -60 || b.x > W+60 ||
+            b.y < -60 || b.y > H+60) continue;
         ctx.save();
         ctx.translate(b.x,b.y);
         ctx.rotate(Math.atan2(b.vy,b.vx));
-        if (b.redBlueSpecial) {
-          ctx.globalAlpha=b.redBluePhase==="outward"?.85:1;
-          rect(-5,-3,18,6,"#e74c7e");
-          rect(2,-1.5,18,3,"#72bfff");
-        } else {
-          const gradient=ctx.createLinearGradient(-8,-6,30,6);
-          gradient.addColorStop(0,"#fb4060");
-          gradient.addColorStop(1,"#347ef7");
-          rect(-8,-6,35,12,gradient);
-          rect(1,-2,27,4,"#eff2ff");
-        }
+        const gradient=ctx.createLinearGradient(-8,-6,30,6);
+        gradient.addColorStop(0,"#fb4060");
+        gradient.addColorStop(1,"#347ef7");
+        rect(-8,-6,35,12,gradient);
+        rect(1,-2,27,4,"#eff2ff");
         ctx.restore();
       }
     }
@@ -6115,8 +6175,9 @@ const W = 1280;
         drawText(`GRAZES ${combat.grazes}  /  BEST ${combat.maxCombo}`, W - 336, H - 37, 19, "left", "#e7fbff");
       }
 
-      // Exactly ONE shared RED five-star state for RED, RED-WHITE and
-      // RED-ORANGE. Equipping WHITE/ORANGE/other P hides stars, not resets.
+      // Exactly ONE shared RED five-star state for RED, RED-WHITE,
+      // RED-ORANGE and RED-BLUE. Red-Blue does NOT use Red's volley rest.
+      // Equipping other P hides stars without resetting the same state.
       if (game.weaponType === "red" || game.weaponType === "redwhite" ||
           game.weaponType === "redorange" || game.weaponType === "redblue") {
         const type = game.weaponType;
@@ -6134,6 +6195,8 @@ const W = 1280;
           ? "STARFALL  /  DESCENDING"
           : game.redWeapon.special
           ? `FAN ${game.redWeapon.special.emitted}/250  /  3.0s`
+          : type === "redblue"
+          ? "5-WAY  1.0s / SHOT  R360 SEEK"
           : `${redRules.RULES.baseVolleys + game.redWeapon.stars} VOLLEYS  /  0.4s REST`,
           570, H - 38, 18, "left", "#ffe3e8");
       }
@@ -6243,7 +6306,7 @@ const W = 1280;
       ctx.fillRect(0, 0, W, H);
 
       drawText("NEON WINGS", W / 2, 195, 86, "center", "#e7fbff");
-      drawText("NEONWINGS PAN  /  v26.27.0", W / 2, 270, 28, "center", "#98f5ff");
+      drawText("NEONWINGS PAN  /  v26.28.0", W / 2, 270, 28, "center", "#98f5ff");
       drawText(`HIGH SCORE ${String(highScore()).padStart(6, "0")}`, W / 2, 318, 24, "center", "#fff4b7");
 
       drawPlayerShip(W / 2 - 170, 492, -0.20, false, ships[0]);

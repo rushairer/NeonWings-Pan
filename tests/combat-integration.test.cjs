@@ -7049,3 +7049,109 @@ test("DARK RED-GOLD effect does not alter regular ORANGE / DARK RED chain or mis
   app.eval('addOrangeExplosion(150,480)');
   assert.equal(app.eval("game.orangeExplosions.at(-1).darkRedGold"),false);
 });
+
+
+test("RED-BLUE draws 360 special pellets in batched world-space paths",()=>{
+  const app=boot();
+  const stats=app.eval([
+    '(()=>{game.state="PLAYING";game.stageMode="WAVE";',
+    'game.redBlueBullets=redBlueRules.radial({x:640,y:480},.38);',
+    'const draws={save:0,restore:0,translate:0,rotate:0,fillRect:0,',
+    'moveTo:0,lineTo:0,stroke:0};',
+    'for(const key of Object.keys(draws)){const original=ctx[key];',
+    'ctx[key]=(...args)=>{draws[key]++;return original(...args);};}',
+    'const before=game.redBlueBullets.map(b=>[b.x,b.y,b.life,b.redBluePhase]);',
+    'drawRedBlueBullets();',
+    'const after=game.redBlueBullets.map(b=>[b.x,b.y,b.life,b.redBluePhase]);',
+    'return {draws,unchanged:JSON.stringify(before)===JSON.stringify(after),',
+    'shotCount:game.redBlueBullets.length};})()'
+  ].join("\n"));
+  assert.equal(stats.shotCount,360);
+  assert.equal(stats.unchanged,true,"render must not mutate live pellet state");
+  assert.ok(stats.draws.save<=2,"full 360-shot fan must not save Canvas per pellet");
+  assert.ok(stats.draws.restore<=2);
+  assert.equal(stats.draws.rotate,0);
+  assert.equal(stats.draws.translate,0);
+  assert.equal(stats.draws.fillRect,0);
+  assert.equal(stats.draws.moveTo,720,"every pellet contributes red and blue trail");
+  assert.equal(stats.draws.lineTo,720);
+  assert.ok(stats.draws.stroke<=4,"constant number of batch strokes, not 720");
+});
+
+test("RED-BLUE culls offscreen visuals without despawning or re-targeting the actual pellets",()=>{
+  const app=boot();
+  const stats=app.eval([
+    '(()=>{game.state="PLAYING";game.stageMode="WAVE";',
+    'game.redBlueBullets=redBlueRules.radial({x:640,y:480},.38);',
+    'for(const b of game.redBlueBullets){b.x=2000;b.y=2000;}',
+    'let stroke=0,moveTo=0;ctx.stroke=()=>{stroke++;};',
+    'ctx.moveTo=()=>{moveTo++;};drawRedBlueBullets();',
+    'return {stroke,moveTo,count:game.redBlueBullets.length,',
+    'alive:game.redBlueBullets.every(b=>!b.dead)};})()'
+  ].join("\n"));
+  assert.equal(stats.stroke,0);
+  assert.equal(stats.moveTo,0);
+  assert.equal(stats.count,360);
+  assert.equal(stats.alive,true);
+});
+
+test("RED-BLUE swept tracking still damages nearest real enemy once after allocation hardening",()=>{
+  const app=boot();
+  app.eval([
+    'game.state="PLAYING";game.stageMode="WAVE";',
+    'const shot=redBlueRules.volley({x:175,y:480})[2];',
+    'shot.x=450;shot.y=480;shot.vx=940;shot.vy=0;',
+    'shot.life=3.6;shot.redBluePhase="homing";',
+    'game.redBlueBullets=[shot];game.redBluePoolRef=game.redBlueBullets;',
+    'game.enemies=[',
+    ' {kind:"scout",x:520,y:480,r:12,hp:100,maxHp:100,score:20,color:"#fff",core:"#eee"},',
+    ' {kind:"scout",x:560,y:480,r:12,hp:100,maxHp:100,score:20,color:"#fff",core:"#eee"}',
+    '];updateRedBlueBullets(.2);'
+  ].join("\n"));
+  assert.equal(app.eval("game.redBlueBullets.length"),0);
+  assert.equal(app.eval("game.redBlueBullets===game.redBluePoolRef"),true,
+    "pool must be compacted in-place");
+  assert.ok(Math.abs(app.eval("game.enemies[0].hp")-98.85)<1e-8);
+  assert.equal(app.eval("game.enemies[1].hp"),100,
+    "earlier swept hit cannot pass through into the next enemy");
+});
+
+test("RED-BLUE five-star HUD advertises the actual 1-second cadence, not RED 0.4s rest",()=>{
+  const app=boot();
+  const ui=()=>app.eval('(()=>{const a=[];ctx.fillText=x=>a.push(String(x));drawHud();return a;})()');
+  app.eval('game.state="PLAYING";game.weaponType="redblue";game.redWeapon.stars=3');
+  assert.ok(ui().includes("5-WAY  1.0s / SHOT  R360 SEEK"));
+  assert.equal(ui().some(x=>x.includes("VOLLEYS")),false);
+  app.eval('game.weaponType="red"');
+  assert.ok(ui().some(x=>x.includes("8 VOLLEYS  /  0.4s REST")),
+    "original RED burst/rest HUD remains unchanged");
+});
+
+test("RED-BLUE stress-smoke: 1800 live shots update and render without Canvas per-pellet transforms",()=>{
+  const app=boot();
+  const start=performance.now();
+  const result=app.eval([
+    '(()=>{game.state="PLAYING";game.stageMode="WAVE";',
+    'game.redBlueBullets=[];',
+    'for(let i=0;i<5;i++)game.redBlueBullets.push(',
+    '...redBlueRules.radial({x:620+(i-2)*32,y:460+(i-2)*19},.38));',
+    'const pool=game.redBlueBullets;',
+    'let rotations=0,strokes=0;',
+    'ctx.rotate=()=>{rotations++};ctx.stroke=()=>{strokes++};',
+    'for(let f=0;f<40;f++){updateRedBlueBullets(1/60);drawRedBlueBullets();}',
+    'return {retained:game.redBlueBullets===pool,',
+    'count:game.redBlueBullets.length,rotations,strokes,',
+    'homing:game.redBlueBullets.every(b=>b.redBluePhase==="homing")};})()'
+  ].join("\n"));
+  const elapsed=performance.now()-start;
+  assert.equal(result.retained,true);
+  assert.equal(result.count,1800);
+  assert.equal(result.homing,true);
+  assert.equal(result.rotations,0,"no per-pellet Canvas rotation in dense ring");
+  assert.ok(result.strokes<=160,"at most four batch strokes per frame");
+  // Loose guard against catastrophic algorithmic regression; this is NOT a
+  // device FPS test (Node VM mocked Canvas; no GPU compositing).
+  assert.ok(elapsed<15000, "1800-pellet 40-frame VM smoke exceeded 15 seconds");
+  console.log("RED-BLUE simulated 1800 pellets / 40 frames:",
+    Math.round(elapsed)+"ms Node VM (not handheld FPS)");
+});
