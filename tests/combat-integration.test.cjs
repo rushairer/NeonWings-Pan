@@ -51,14 +51,14 @@ function makeCanvasContext() {
   });
 }
 
-function boot() {
+function boot(options = {}) {
   const ctx = makeCanvasContext();
   const events = new Map();
   const documentEvents = new Map();
   const canvas = { style: {}, getContext: () => ctx };
   const storage = new Map();
   const window = {
-    NeonPlatform: platform, NeonController: controller, NeonCombat: combat, NeonRedWeapon: redWeapon, NeonGreenWeapon: greenWeapon, NeonSolarAuraWeapon: solarAuraWeapon, NeonBlackWeapon: blackWeapon, NeonBlueBlackWeapon: blueBlackWeapon, NeonWhiteWeapon: whiteWeapon, NeonRedWhiteWeapon: redWhiteWeapon, NeonGrayWeapon: grayWeapon, NeonGrayFlameWeapon: grayFlameWeapon, NeonPinkWeapon: pinkWeapon, NeonOrangeWeapon: orangeWeapon, NeonRedOrangeWeapon: redOrangeWeapon, NeonRedBlueWeapon: redBlueWeapon, NeonBrownWeapon: brownWeapon, NeonPurpleWhiteWeapon: purpleWhiteWeapon, NeonBrownYellowWeapon: brownYellowWeapon, NeonLimeWeapon: limeWeapon, NeonSkyWeapon: skyWeapon, NeonDarkRedWeapon: darkRedWeapon, NeonDarkRedGoldWeapon: darkRedGoldWeapon, NeonRainbowWeapon: rainbowWeapon, NeonMagnetWeapon: magnetWeapon, NeonArcLaserWeapon: arcLaserWeapon, NeonStasisWeapon: stasisWeapon, NeonEclipseWeapon: eclipseWeapon, NeonRecruitWeapon: recruitWeapon, NeonCollision: collision, NeonEnemyBehaviors: enemyBehaviors, NeonWorlds: worlds, NeonBossParts: bossParts, NeonModes: modes, NeonRecords: records, NeonSelectLayout: selectLayout,
+    NeonPlatform: platform, NeonController: controller, NeonCombat: combat, NeonRedWeapon: redWeapon, NeonGreenWeapon: greenWeapon, NeonSolarAuraWeapon: solarAuraWeapon, NeonBlackWeapon: blackWeapon, NeonBlueBlackWeapon: blueBlackWeapon, NeonWhiteWeapon: whiteWeapon, NeonRedWhiteWeapon: redWhiteWeapon, NeonGrayWeapon: grayWeapon, NeonGrayFlameWeapon: grayFlameWeapon, NeonPinkWeapon: pinkWeapon, NeonOrangeWeapon: orangeWeapon, NeonRedOrangeWeapon: redOrangeWeapon, NeonRedBlueWeapon: redBlueWeapon, NeonBrownWeapon: brownWeapon, NeonPurpleWhiteWeapon: purpleWhiteWeapon, NeonBrownYellowWeapon: brownYellowWeapon, NeonLimeWeapon: limeWeapon, NeonSkyWeapon: skyWeapon, NeonDarkRedWeapon: darkRedWeapon, NeonDarkRedGoldWeapon: darkRedGoldWeapon, NeonRainbowWeapon: rainbowWeapon, NeonMagnetWeapon: magnetWeapon, NeonArcLaserWeapon: arcLaserWeapon, NeonStasisWeapon: stasisWeapon, NeonEclipseWeapon: eclipseWeapon, NeonRecruitWeapon: recruitWeapon, NeonCollision: options.collision || collision, NeonEnemyBehaviors: enemyBehaviors, NeonWorlds: worlds, NeonBossParts: bossParts, NeonModes: modes, NeonRecords: records, NeonSelectLayout: selectLayout,
     innerWidth: 1280, innerHeight: 960,
     addEventListener: (name, fn) => events.set(name, fn)
   };
@@ -2937,6 +2937,104 @@ test("DARK RED is the fourteenth pickup with distinct twin 1x bullets and no RED
     "DARK RED must never expose ordinary RED star HUD");
 });
 
+
+
+test("RED-BLUE Starfall 360-pellet draw is Canvas-batched with four or fewer strokes",()=>{
+  const app=boot();
+  const measured=app.eval([
+    '(()=>{game.state="PLAYING";game.stageMode="WAVE";game.weaponType="redblue";',
+    'game.redBlueBullets=redBlueRules.radial({x:640,y:480},.38);',
+    'let saves=0,restores=0,strokes=0,moves=0,lines=0,gradients=0;',
+    'ctx.save=()=>saves++;ctx.restore=()=>restores++;ctx.stroke=()=>strokes++;',
+    'ctx.moveTo=()=>moves++;ctx.lineTo=()=>lines++;',
+    'ctx.createLinearGradient=()=>{gradients++;return {addColorStop(){}};};',
+    'const original=game.redBlueBullets;',
+    'drawRedBlueBullets();const outbound={saves,restores,strokes,moves,lines,gradients};',
+    'updateRedBlueBullets(.375);',
+    'saves=0;restores=0;strokes=0;moves=0;lines=0;gradients=0;',
+    'drawRedBlueBullets();',
+    'return {outbound,homing:{saves,restores,strokes,moves,lines,gradients},',
+    'count:game.redBlueBullets.length,sameArray:original===game.redBlueBullets};})()'
+  ].join("\n"));
+  assert.equal(measured.count,360);
+  assert.equal(measured.sameArray,true,"per-frame cleanup must compact in place");
+  for(const data of [measured.outbound,measured.homing]){
+    assert.equal(data.saves,1,"the full 360 pellets use ONE saved Canvas context");
+    assert.equal(data.restores,1);
+    assert.ok(data.strokes<=4,"no per-pellet Canvas strokes");
+    assert.equal(data.gradients,0,"no gradient allocations for any star pellet");
+    assert.ok(data.moves>150&&data.lines>150,"all visible star pellets must be batched");
+  }
+});
+
+test("RED-BLUE offscreen Starfall pellets do not submit invisible Canvas paths",()=>{
+  const app=boot();
+  const result=app.eval([
+    '(()=>{game.redBlueBullets=redBlueRules.radial({x:640,y:480},.38);',
+    'for(const b of game.redBlueBullets){b.x=8000;b.y=9000;}',
+    'let strokes=0,saves=0;ctx.stroke=()=>strokes++;ctx.save=()=>saves++;',
+    'drawRedBlueBullets();return {strokes,saves,count:game.redBlueBullets.length};})()'
+  ].join("\n"));
+  assert.equal(result.strokes,0);
+  assert.equal(result.saves,1);
+  assert.equal(result.count,360,"render culling must NEVER delete gameplay bullets");
+});
+
+test("RED-BLUE 360 seekers + 48 far enemies use broad-phase to avoid expensive swept circles",()=>{
+  let expensive=0;
+  const fastCollision={
+    ...collision,
+    sweptCircleHit(...args){expensive++;return collision.sweptCircleHit(...args);}
+  };
+  const app=boot({collision:fastCollision});
+  const total=app.eval([
+    '(()=>{game.state="PLAYING";game.stageMode="WAVE";game.weaponType="blue";',
+    'game.redBlueBullets=redBlueRules.radial({x:640,y:480},.38);',
+    'updateRedBlueBullets(.375);',
+    'game.enemies=Array.from({length:48},(_,i)=>({x:2500+i*25,y:1800+i*5,',
+    'hp:100,r:24,maxHp:100,kind:"scout",score:5,color:"#fff",core:"#fff"}));',
+    'for(let i=0;i<12;i++)updateRedBlueBullets(1/60);',
+    'return game.redBlueBullets.length;})()'
+  ].join("\n"));
+  assert.equal(total,360);
+  assert.equal(expensive,0,
+    "no far enemy circles should reach narrow-phase collision in dense fields");
+});
+
+test("RED-BLUE collision broad-phase retains earliest swept target and never double hits",()=>{
+  const app=boot();
+  app.eval([
+    'game.state="PLAYING";game.stageMode="WAVE";game.weaponType="blue";',
+    'const b=redBlueRules.volley({x:175,y:480})[2];',
+    'b.x=375;b.y=480;b.vx=940;b.vy=0;b.life=3.6;b.redBluePhase="homing";',
+    'game.redBlueBullets=[b];',
+    'game.enemies=[',
+    '{kind:"scout",x:455,y:480,r:24,hp:100,maxHp:100,score:10,color:"#fff",core:"#fff"},',
+    '{kind:"scout",x:535,y:480,r:24,hp:100,maxHp:100,score:10,color:"#fff",core:"#fff"}];',
+    'updateRedBlueBullets(.25);'
+  ].join("\n"));
+  assert.equal(app.eval("game.redBlueBullets.length"),0);
+  assert.ok(Math.abs(app.eval("game.enemies[0].hp")-98.85)<1e-8);
+  assert.equal(app.eval("game.enemies[1].hp"),100);
+});
+
+test("RED-BLUE high-density blast still hits extended Boss turret beyond hull bounds",()=>{
+  const app=boot();
+  app.eval([
+    'game.state="PLAYING";game.stageMode="BOSS";game.weaponType="redblue";',
+    'const b=redBlueRules.radial({x:420,y:480},.38)[0];',
+    'b.x=430;b.y=480;b.vx=940;b.vy=0;b.life=3.6;b.redBluePhase="homing";',
+    'game.redBlueBullets=[b];',
+    'game.boss={active:true,x:900,y:480,rx:80,ry:75,hp:200,maxHp:200,',
+    'parts:[{id:"EXTENDED",x:-200,y:0,r:26,hp:80,maxHp:80}],',
+    'color:"#fff",core:"#fff"};',
+    'updateRedBlueBullets(.30);'
+  ].join("\n"));
+  assert.equal(app.eval("game.redBlueBullets.length"),0);
+  assert.equal(app.eval("game.boss.hp"),200);
+  const scale=app.eval("bossParts.BALANCE.weakPointDamageScale");
+  assert.ok(Math.abs(app.eval("game.boss.parts[0].hp")-(80-.38*scale))<1e-8);
+});
 
 test("RED-BLUE only evolves from YELLOW or RED and drops as itself after damage",()=>{
   const app=boot();

@@ -72,6 +72,40 @@ test("RED-BLUE homing has a strict 3.6-active-second secondary TTL",()=>{
   assert.deepEqual(five.advanceShot(b,1,()=>null),[]);
 });
 
+
+test("RED-BLUE R360 remaining path is cached once, decreases monotonically and arms at exact circle edge",()=>{
+  const origins=[{x:175,y:480},{x:640,y:480}];
+  for(const origin of origins){
+    const bullets=[
+      ...five.volley(origin),
+      five.radial(origin)[0],
+      five.radial(origin)[90],
+      five.radial(origin)[179],
+      five.radial(origin)[270],
+      five.radial(origin)[359]
+    ];
+    for(const b of bullets){
+      assert.ok(Number.isFinite(b.redBlueOutwardRemaining));
+      assert.ok(b.redBlueOutwardRemaining>0);
+      const initial=b.redBlueOutwardRemaining;
+      let last=initial,frames=0;
+      while(b.redBluePhase==="outward" && frames++<1000){
+        const before=b.redBlueOutwardRemaining;
+        five.advanceShot(b,1/240,()=>null);
+        assert.ok(b.redBlueOutwardRemaining<=before+1e-9);
+        assert.ok(b.redBlueOutwardRemaining>=0);
+        last=b.redBlueOutwardRemaining;
+      }
+      assert.equal(b.redBluePhase,"homing");
+      assert.equal(last,0);
+      assert.ok(Math.abs(Math.hypot(b.x-b.redBlueOriginX,
+        b.y-b.redBlueOriginY)-360)<1e-7,
+        "must transition at exact 360, not nearby render/radius sample");
+      assert.ok(initial>0);
+    }
+  }
+});
+
 test("RED-BLUE Starfall has 360 exact unique 1-degree radial rays with immutable impact origin",()=>{
   const center={x:920,y:480};
   const bolts=five.radial(center);
