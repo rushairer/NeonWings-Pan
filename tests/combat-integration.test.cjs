@@ -2937,6 +2937,249 @@ test("DARK RED is the fourteenth pickup with distinct twin 1x bullets and no RED
     "DARK RED must never expose ordinary RED star HUD");
 });
 
+
+test("RED-BLUE only evolves from YELLOW or RED and drops as itself after damage",()=>{
+  const app=boot();
+  app.eval([
+    'game.state="PLAYING";game.stageMode="WAVE";game.weaponType="blue";',
+    'game.redWeapon.stars=3;game.weaponLevel=2;game.score=0;',
+    'const wrong={type:"P_RED_BLUE",x:240,y:480,life:12};',
+    'game.wrongRedBlue=wrong;game.invalidResult=collectPowerup(wrong);'
+  ].join("\n"));
+  assert.equal(app.eval("game.invalidResult"),false);
+  assert.equal(app.eval("game.wrongRedBlue.life"),12);
+  assert.equal(app.eval("game.weaponType"),"blue");
+  assert.equal(app.eval("game.redWeapon.stars"),3);
+  assert.equal(app.eval("game.weaponLevel"),2);
+  assert.equal(app.eval("game.score"),0);
+  assert.ok(app.eval('game.message.includes("REQUIRES YELLOW OR RED P")'));
+  for(const source of ["yellow","red"]) {
+    app.eval('game.weaponType="'+source+'";collectPowerup({type:"P_RED_BLUE",x:240,y:480,life:12})');
+    assert.equal(app.eval("game.weaponType"),"redblue");
+    assert.equal(app.eval("game.redWeapon.stars"),3);
+  }
+  app.eval('game.weaponLevel=2;game.powerups=[];dropPlayerPowerOnHit()');
+  assert.equal(app.eval("game.powerups.at(-1).type"),"P_RED_BLUE");
+  app.eval('collectPowerup({type:"P_RED_BLUE",x:240,y:480,life:12})');
+  assert.equal(app.eval("game.weaponType"),"redblue");
+});
+
+test("RED-BLUE fires precisely five independent initial rays once per held-FIRE second",()=>{
+  const app=boot();
+  app.eval([
+    'game.state="PLAYING";game.stageMode="WAVE";game.weaponType="redblue";',
+    'game.spawnTimer=999;game.formationTimer=999;game.invuln=999;',
+    'game.player.x=175;game.player.y=480;Math.random=()=>.99;',
+    'keys.Space=true;updatePlaying(.001);'
+  ].join("\n"));
+  assert.equal(app.eval("getFireCooldown()"),1);
+  assert.equal(app.eval("game.fireCooldown"),1);
+  assert.equal(app.eval("game.redBlueBullets.length"),5);
+  assert.equal(app.eval("game.bullets.length"),0);
+  assert.equal(app.eval("game.missiles.length"),0);
+  assert.equal(app.eval("game.redBlueBullets.every(b=>b.power===1.15&&b.redBluePhase==='outward')"),true);
+  assert.equal(app.eval("game.redBlueStarfall"),null);
+  const vectors=app.eval("game.redBlueBullets.map(b=>Math.round(Math.atan2(b.vy,b.vx)*180/Math.PI))");
+  assert.deepEqual(Array.from(vectors),[-60,-30,0,30,60]);
+  app.eval("updatePlaying(.999)");
+  assert.equal(app.eval("game.redBlueBullets.length"),5);
+  app.eval("updatePlaying(.002)");
+  assert.equal(app.eval("game.redBlueBullets.length"),10);
+  assert.equal(app.eval("game.fireCooldown"),1);
+});
+
+test("RED-BLUE outward five-way shots do not hit enemies until launch-radius 360",()=>{
+  const app=boot();
+  app.eval([
+    'game.state="PLAYING";game.stageMode="WAVE";game.weaponType="redblue";',
+    'game.player.x=175;game.player.y=480;',
+    'game.enemies=[{kind:"scout",x:430,y:480,r:25,hp:100,maxHp:100,score:20,color:"#fff",core:"#eee"}];',
+    'Math.random=()=>.99;firePlayerWeapons();updateRedBlueBullets(.2);'
+  ].join("\n"));
+  assert.equal(app.eval("game.enemies[0].hp"),100);
+  assert.equal(app.eval("game.redBlueBullets.length"),5);
+  assert.equal(app.eval("game.redBlueBullets[2].redBluePhase"),"outward");
+  app.eval("updateRedBlueBullets(.12)");
+  assert.equal(app.eval("game.redBlueBullets[2].redBluePhase"),"homing");
+  assert.equal(app.eval("game.redBlueBullets[2].redBlueOriginX"),175);
+});
+
+test("RED-BLUE Starfall 10% roll is per five-shot volley, lands after .8s and awards one shared star",()=>{
+  const app=boot();
+  app.eval([
+    'game.state="PLAYING";game.stageMode="WAVE";game.weaponType="redblue";',
+    'game.player.x=175;game.player.y=480;',
+    'game.enemies=[',
+    '{kind:"scout",x:720,y:260,r:22,hp:100,maxHp:100,score:20,color:"#fff",core:"#fff"},',
+    '{kind:"scout",x:890,y:650,r:22,hp:100,maxHp:100,score:20,color:"#fff",core:"#fff"}',
+    '];Math.random=()=>.1;firePlayerWeapons();'
+  ].join("\n"));
+  assert.equal(app.eval("game.redBlueStarfall"),null);
+  assert.equal(app.eval("game.redWeapon.special"),null);
+  app.eval("Math.random=()=>.09999;firePlayerWeapons()");
+  assert.equal(app.eval("game.redBlueBullets.length"),10);
+  assert.equal(app.eval("game.redWeapon.special.redBlue"),true);
+  assert.equal(app.eval("game.redWeapon.stars"),0);
+  app.eval("updateRedBlueStarfall(.799)");
+  assert.equal(app.eval("game.enemies[0].hp"),100);
+  assert.equal(app.eval("game.enemies[1].hp"),100);
+  assert.ok(app.eval("game.redBlueStarfall.elapsed")>.79);
+  app.eval("updateRedBlueStarfall(.001)");
+  assert.equal(app.eval("game.redBlueStarfall"),null);
+  assert.ok(Math.abs(app.eval("game.enemies[0].hp")-88.5)<1e-8);
+  assert.ok(Math.abs(app.eval("game.enemies[1].hp")-88.5)<1e-8);
+  assert.equal(app.eval("game.redBlueBullets.length"),370);
+  assert.equal(app.eval("game.redBlueBullets.filter(b=>b.redBlueSpecial).length"),360);
+  assert.equal(app.eval("game.redWeapon.stars"),1);
+  assert.equal(app.eval("game.redWeapon.special"),null);
+  assert.equal(app.eval("game.redBlueStarFx.length"),1);
+});
+
+test("RED-BLUE radial burst fires a complete 360-degree circle and tracks after R360",()=>{
+  const app=boot();
+  app.eval([
+    'game.state="PLAYING";game.stageMode="WAVE";',
+    'game.redBlueBullets=redBlueRules.radial({x:640,y:480},.38);',
+    'game.enemies=[];updateRedBlueBullets(.375);'
+  ].join("\n"));
+  assert.equal(app.eval("game.redBlueBullets.length"),360);
+  assert.equal(app.eval("game.redBlueBullets.every(b=>b.redBluePhase==='homing')"),true);
+  assert.equal(app.eval("game.redBlueBullets.every(b=>b.life===3.6)"),true);
+  assert.equal(app.eval("new Set(game.redBlueBullets.map(b=>Math.round(Math.atan2(b.vy,b.vx)*180/Math.PI+360)%360)).size"),360);
+  assert.ok(Math.abs(app.eval("Math.hypot(game.redBlueBullets[90].x-640,game.redBlueBullets[90].y-480)")-360)<1e-7);
+  app.eval("game.redBlueBullets=[game.redBlueBullets[0]];game.enemies=[{kind:'scout',x:1040,y:480,r:23,hp:100,maxHp:100,score:20,color:'#fff',core:'#fff'}];updateRedBlueBullets(.1)");
+  assert.equal(app.eval("game.redBlueBullets.length"),0);
+  assert.ok(Math.abs(app.eval("game.enemies[0].hp")-99.62)<1e-7);
+});
+
+test("RED-BLUE full-field Starfall hits Boss hull once without treating mounts as multiple Bosses",()=>{
+  const app=boot();
+  app.eval([
+    'game.state="PLAYING";game.stageMode="BOSS";game.weaponType="redblue";',
+    'game.boss={active:true,x:950,y:480,rx:100,ry:90,hp:300,maxHp:300,color:"#fff",core:"#fff",',
+    'parts:[{id:"TURRET",x:-130,y:0,r:25,hp:90,maxHp:90}]};',
+    'Math.random=()=>0;firePlayerWeapons();updateRedBlueStarfall(.8);'
+  ].join("\n"));
+  assert.ok(Math.abs(app.eval("game.boss.hp")-288.5)<1e-8);
+  assert.equal(app.eval("game.boss.parts[0].hp"),90);
+  assert.equal(app.eval("game.redBlueBullets.filter(b=>b.redBlueSpecial).length"),360);
+  assert.equal(app.eval("game.redWeapon.stars"),1);
+});
+
+test("RED-BLUE seeking shot hits first Boss weakpoint via swept collision, not the hull",()=>{
+  const app=boot();
+  app.eval([
+    'game.state="PLAYING";game.stageMode="BOSS";game.weaponType="blue";',
+    'const b=redBlueRules.volley({x:175,y:480})[2];',
+    'b.x=450;b.y=480;b.vx=940;b.vy=0;b.life=3.6;b.redBluePhase="homing";',
+    'game.redBlueBullets=[b];',
+    'game.boss={active:true,x:730,y:480,rx:90,ry:90,hp:300,maxHp:300,color:"#fff",core:"#fff",',
+    'parts:[{id:"LEFT",x:-140,y:0,r:24,hp:70,maxHp:70}]};',
+    'updateRedBlueBullets(.23);'
+  ].join("\n"));
+  assert.equal(app.eval("game.redBlueBullets.length"),0);
+  assert.equal(app.eval("game.boss.hp"),300);
+  const scale=app.eval("bossParts.BALANCE.weakPointDamageScale");
+  assert.ok(Math.abs(app.eval("game.boss.parts[0].hp")-(70-1.15*scale))<1e-7);
+});
+
+test("RED-BLUE global blast does not damage freshly split children from same impact",()=>{
+  const app=boot();
+  app.eval([
+    'game.state="PLAYING";game.stageMode="WAVE";game.weaponType="redblue";',
+    'game.enemies=[{kind:"splitter",x:670,y:460,r:24,hp:5,maxHp:5,',
+    'vx:0,vy:0,t:0,wave:0,score:40,color:"#fff",core:"#eee"}];',
+    'Math.random=()=>0;firePlayerWeapons();updateRedBlueStarfall(.8);'
+  ].join("\n"));
+  assert.equal(app.eval("game.stats.kills"),1);
+  assert.equal(app.eval("game.enemies.filter(e=>e.hp>0).length"),2);
+  assert.equal(app.eval("game.enemies.filter(e=>e.hp>0&&e.hp===e.maxHp).length"),2);
+});
+
+test("RED-BLUE Starfall persists after weapon swap, suppresses RED fan and pauses correctly",()=>{
+  const app=boot();
+  app.eval([
+    'game.state="PLAYING";game.stageMode="WAVE";game.weaponType="redblue";',
+    'game.spawnTimer=999;game.formationTimer=999;game.invuln=999;',
+    'Math.random=()=>0;firePlayerWeapons();',
+    'collectPowerup({type:"P_YELLOW",x:250,y:480,life:1});',
+    'game.state="PAUSED";updatePlaying(3);'
+  ].join("\n"));
+  assert.equal(app.eval("game.weaponType"),"yellow");
+  assert.equal(app.eval("game.redBlueStarfall.elapsed"),0);
+  assert.equal(app.eval("game.redWeapon.special.redBlue"),true);
+  assert.equal(app.eval("redRules.tick(game.redWeapon,3,()=>{}).fired"),0);
+  app.eval('game.state="PLAYING";game.stageMode="TRANSITION";game.transition=10;updatePlaying(2)');
+  assert.equal(app.eval("game.redBlueStarfall.elapsed"),0);
+  app.eval('game.stageMode="WAVE";updateRedBlueStarfall(.8)');
+  assert.equal(app.eval("game.redWeapon.stars"),1);
+  assert.equal(app.eval("game.redWeapon.special"),null);
+  assert.equal(app.eval("game.redBlueBullets.length"),365);
+});
+
+test("RED-BLUE regular fire cannot start a star while an original RED fan already owns special",()=>{
+  const app=boot();
+  app.eval([
+    'game.state="PLAYING";game.stageMode="WAVE";game.weaponType="red";',
+    'Math.random=()=>0;firePlayerWeapons();redRules.fire(game.redWeapon,0);',
+    'game.weaponType="redblue";firePlayerWeapons();'
+  ].join("\n"));
+  assert.equal(app.eval("game.redWeapon.special.redBlue"),undefined);
+  assert.equal(app.eval("game.redBlueStarfall"),null);
+  assert.equal(app.eval("game.redBlueBullets.length"),5);
+});
+
+test("RED-BLUE uses one shared five-star HUD with RED/RED-WHITE/RED-ORANGE and loses star on HP hit",()=>{
+  const app=boot();
+  const hud=()=>app.eval('(()=>{const a=[];ctx.fillText=x=>a.push(String(x));drawHud();return a;})()');
+  app.eval('game.state="PLAYING";game.weaponType="redblue";game.redWeapon.stars=4');
+  assert.ok(hud().some(t=>t.includes("RED-BLUE P")&&t.includes("★★★★☆")));
+  assert.ok(hud().includes("RED-BLUE  5-WAY R360 SEEK"));
+  app.eval('game.invuln=0;damagePlayer()');
+  assert.equal(app.eval("game.redWeapon.stars"),3);
+  app.eval('game.weaponType="red"');
+  assert.ok(hud().some(t=>t.includes("RED P")&&t.includes("★★★☆☆")));
+  app.eval('game.weaponType="redwhite"');
+  assert.ok(hud().some(t=>t.includes("RED-WHITE P")&&t.includes("★★★☆☆")));
+  app.eval('game.weaponType="redorange"');
+  assert.ok(hud().some(t=>t.includes("RED-ORANGE P")&&t.includes("★★★☆☆")));
+  app.eval('game.weaponType="yellow"');
+  assert.equal(hud().some(t=>t.includes("RED-BLUE P")),false);
+  assert.equal(app.eval("game.redWeapon.stars"),3);
+});
+
+test("RED-BLUE never truncates the NEW complete 360 ring even with older active shots",()=>{
+  const app=boot();
+  app.eval([
+    'game.state="PLAYING";game.weaponType="redblue";',
+    'game.redBlueBullets=Array.from({length:1700},()=>redBlueRules.volley(game.player)[0]);',
+    'pushRedBlueBullets(redBlueRules.radial({x:850,y:460},.38));'
+  ].join("\n"));
+  assert.equal(app.eval("game.redBlueBullets.length"),redBlueWeapon.RULES.maxBullets);
+  assert.equal(app.eval("game.redBlueBullets.slice(-360).filter(b=>b.redBlueSpecial).length"),360);
+});
+
+test("RED-BLUE pickup, lasers, star visuals and 360 pellets only DRAW without combat mutation",()=>{
+  const app=boot();
+  const state=app.eval([
+    '(()=>{game.state="PLAYING";game.stageMode="WAVE";game.weaponType="redblue";',
+    'game.powerups=[{type:"P_RED_BLUE",x:460,y:660,t:0,life:12}];',
+    'game.enemies=[{kind:"scout",x:800,y:480,r:20,hp:100,maxHp:100,color:"#fff"}];',
+    'game.redBlueBullets=redBlueRules.radial({x:850,y:480},.38);',
+    'game.redBlueStarfall={x:850,y:480,elapsed:.4,power:11.5,bulletPower:.38};',
+    'const hp=game.enemies[0].hp,counts=game.redBlueBullets.length;',
+    'const labels=[],lines=[];ctx.fillText=t=>labels.push(String(t));',
+    'ctx.lineTo=(x,y)=>lines.push([x,y]);',
+    'drawPowerups();drawRedBlueBullets();drawRedBlueStarfall();drawHud();',
+    'return {hp,after:game.enemies[0].hp,count:counts,afterCount:game.redBlueBullets.length,',
+    'elapsed:game.redBlueStarfall.elapsed,labels,lines};})()'
+  ].join("\n"));
+  assert.equal(state.hp,state.after);
+  assert.equal(state.count,state.afterCount);
+  assert.equal(state.elapsed,.4);
+  assert.ok(state.lines.length>=10);
+  assert.ok(state.labels.includes("RED-BLUE  5-WAY R360 SEEK"));
+});
 test("RED-BLUE extends uniform P drop pool to all 29 types without reordering old slots",()=>{
   const app=boot();
   const expected=[
