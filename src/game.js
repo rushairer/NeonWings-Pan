@@ -4484,10 +4484,19 @@ const W = 1280;
           if (seg.phase!=="homing" || bullet.dead) continue;
           let firstTarget=null, firstPart=null, firstImpact=null;
           let trajectory=null; // Allocate only on genuine swept contact.
+          // Conservative broad-phase: only nearby enemy circles need
+          // the expensive sweptCircleHit narrow phase. Include the entire
+          // moving bullet radius so real tangent collisions cannot be lost.
+          const left=Math.min(seg.fromX,seg.toX)-bullet.r;
+          const right=Math.max(seg.fromX,seg.toX)+bullet.r;
+          const top=Math.min(seg.fromY,seg.toY)-bullet.r;
+          const bottom=Math.max(seg.fromY,seg.toY)+bullet.r;
           for (const enemy of game.enemies) {
-            if (!(enemy.hp>0) || !collision.sweptCircleHit(
-              seg.fromX,seg.fromY,seg.toX,seg.toY,
-              enemy.x,enemy.y,bullet.r+enemy.r)) continue;
+            if (!(enemy.hp>0) ||
+                enemy.x+enemy.r<left || enemy.x-enemy.r>right ||
+                enemy.y+enemy.r<top || enemy.y-enemy.r>bottom ||
+                !collision.sweptCircleHit(seg.fromX,seg.fromY,seg.toX,seg.toY,
+                  enemy.x,enemy.y,bullet.r+enemy.r)) continue;
             if (!trajectory) trajectory={
               previousX:seg.fromX,previousY:seg.fromY,
               x:seg.toX,y:seg.toY
@@ -6306,7 +6315,7 @@ const W = 1280;
       ctx.fillRect(0, 0, W, H);
 
       drawText("NEON WINGS", W / 2, 195, 86, "center", "#e7fbff");
-      drawText("NEONWINGS PAN  /  v26.28.0", W / 2, 270, 28, "center", "#98f5ff");
+      drawText("NEONWINGS PAN  /  v26.28.1", W / 2, 270, 28, "center", "#98f5ff");
       drawText(`HIGH SCORE ${String(highScore()).padStart(6, "0")}`, W / 2, 318, 24, "center", "#fff4b7");
 
       drawPlayerShip(W / 2 - 170, 492, -0.20, false, ships[0]);
