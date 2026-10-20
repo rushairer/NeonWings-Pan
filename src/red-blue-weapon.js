@@ -37,14 +37,22 @@
   }
 
   function shot(x,y,angle,power,anchorX,anchorY,isSpecial=false) {
+    const ux=Math.cos(angle),uy=Math.sin(angle);
+    // One analytic ray/circle intersection at emission rather than each
+    // outward flight frame. The captured anchor does not follow the player.
+    const ox=x-anchorX,oy=y-anchorY;
+    const projected=ox*ux+oy*uy;
+    const remaining=Math.max(0,Math.sqrt(Math.max(0,
+      projected*projected+RULES.outboundDistance**2-ox*ox-oy*oy
+    ))-projected);
     return {
-      x,y, vx: Math.cos(angle)*RULES.outwardSpeed,
-      vy: Math.sin(angle)*RULES.outwardSpeed,
+      x,y,vx:ux*RULES.outwardSpeed,
+      vy:uy*RULES.outwardSpeed,
       r: isSpecial ? RULES.specialRadius : RULES.bulletRadius,
       power, c: isSpecial ? "#a9c3ff" : "#e05b8a",
       redBlueShot:true, redBlueSpecial: Boolean(isSpecial),
       redBluePhase:"outward", redBlueOriginX:anchorX,
-      redBlueOriginY:anchorY,
+      redBlueOriginY:anchorY,redBlueOutwardRemaining:remaining,
       life:0
     };
   }
@@ -103,7 +111,9 @@
 
   // Return up to TWO swept segments: outward-to-r360 and then homing.
   // The origin is captured at firing, so moving the player cannot move the
-  // switch threshold. The remainder of a long dt is NOT dropped. Collisions
+  // switch threshold. Cache exact outbound travel at creation so no
+  // ray/circle quadratic root is needed per frame. The remainder of a
+  // long dt is NOT dropped. Collisions
   // are resolved only for ARMED/homing segments after radius 360.
   // The game reuses one optional segments buffer for the ENTIRE shot pool
   // each update. Standalone callers still get their own fresh result array.
@@ -115,23 +125,23 @@
         typeof selectTarget!=="function") return segments;
     let remaining=dt;
     if (b.redBluePhase==="outward") {
-      const dx=b.x-b.redBlueOriginX,dy=b.y-b.redBlueOriginY;
       const vx=b.vx,vy=b.vy;
-      const speedSq=vx*vx+vy*vy;
-      if (!(speedSq>0)) return segments;
-      const c=dx*dx+dy*dy-RULES.outboundDistance**2;
-      const dot=dx*vx+dy*vy;
-      const until=c>=0?0:
-        (-dot+Math.sqrt(Math.max(0,dot*dot-speedSq*c)))/speedSq;
-      const outTime=Math.min(remaining,Math.max(0,until));
+      // Preserve zero-speed handling even for malformed external input.
+      if (!(vx*vx+vy*vy>0)) return segments;
+      const distance=Math.max(0,b.redBlueOutwardRemaining);
+      const until=distance/RULES.outwardSpeed;
+      const outTime=Math.min(remaining,until);
       if (outTime>0) {
         const fromX=b.x,fromY=b.y;
         b.x+=vx*outTime;
         b.y+=vy*outTime;
         segments.push({fromX,fromY,toX:b.x,toY:b.y,phase:"outward"});
       }
+      b.redBlueOutwardRemaining=Math.max(0,
+        distance-outTime*RULES.outwardSpeed);
       remaining-=outTime;
-      if (until<=outTime+1e-9) {
+      if (b.redBlueOutwardRemaining<=1e-7) {
+        b.redBlueOutwardRemaining=0;
         b.redBluePhase="homing";
         b.life=RULES.homingLifetimeSeconds;
         const angle=Math.atan2(b.vy,b.vx);
