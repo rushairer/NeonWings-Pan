@@ -30,6 +30,8 @@ const W = 1280;
     if (!orangeRules) throw new Error("NeonWings-Pan orange P runtime missing");
     const redOrangeRules = window.NeonRedOrangeWeapon;
     if (!redOrangeRules) throw new Error("NeonWings-Pan red-orange P runtime missing");
+    const redBlueRules = window.NeonRedBlueWeapon;
+    if (!redBlueRules) throw new Error("NeonWings-Pan red-blue P runtime missing");
     const brownRules = window.NeonBrownWeapon;
     if (!brownRules) throw new Error("NeonWings-Pan brown P runtime missing");
     const purpleWhiteRules = window.NeonPurpleWhiteWeapon;
@@ -83,6 +85,8 @@ const W = 1280;
       particles: 800,
       enemyBullets: 340,
       playerBullets: 360,
+      redBlueBullets: redBlueRules.RULES.maxBullets,
+      redBlueStarFx: 3,
       electricArcs: 96,
       pinkExplosions: pinkRules.RULES.maxExplosionEffects,
       orangeExplosions: orangeRules.RULES.maxExplosionEffects,
@@ -1065,6 +1069,9 @@ const W = 1280;
         newBadges: [],
         combat: combatRules.createState(),
         redWeapon: redRules.createState(),
+        redBlueBullets: [],
+        redBlueStarfall: null,
+        redBlueStarFx: [],
         grayWeapon: grayRules.createState(),
         pinkWeapon: pinkRules.createState(),
         brownWeapon: brownRules.createState(),
@@ -1333,6 +1340,9 @@ const W = 1280;
       game.shockwaves.length = 0;
       game.allies.length = 0;
       game.allyBullets.length = 0;
+      game.redBlueBullets.length = 0;
+      game.redBlueStarfall = null;
+      game.redBlueStarFx.length = 0;
       game.boss = null;
       sfx("gameOver");
       haptic("gameOver", 0.78, 0.70, 300, 0.8);
@@ -1920,7 +1930,7 @@ const W = 1280;
       "P_BROWN", "P_LIME", "P_SKY", "P_DARK_RED", "P_RAINBOW",
       "P_MAGNET", "P_ARC_LASER", "P_STASIS", "P_ECLIPSE", "P_RECRUIT",
       "P_SOLAR", "P_RED_WHITE", "P_GRAY_FLAME", "P_RED_ORANGE", "P_BROWN_YELLOW",
-      "P_PURPLE_WHITE", "P_BLUE_BLACK", "P_DARK_RED_GOLD"
+      "P_PURPLE_WHITE", "P_BLUE_BLACK", "P_DARK_RED_GOLD", "P_RED_BLUE"
     ]);
     function randomPowerType() {
       return POWER_TYPES[Math.min(POWER_TYPES.length - 1,
@@ -1934,6 +1944,7 @@ const W = 1280;
       if (type === "red") return { name: "SCATTER", short: "RED", color: "#ff3d5f", core: "#ffe3e8" };
       if (type === "redwhite") return { name: "ARC SCATTER", short: "RED-WHITE", color: "#ff6479", core: "#ffffff" };
       if (type === "redorange") return { name: "BLAST SCATTER", short: "RED-ORANGE", color: "#ff574c", core: "#ffb36b" };
+      if (type === "redblue") return { name: "STARFALL SEEK", short: "RED-BLUE", color: "#ed426f", core: "#74c9ff" };
       if (type === "green") return { name: "AURA", short: "GREEN", color: "#43ff87", core: "#e0ffed" };
       if (type === "solar") return { name: "SOLAR AURA", short: "SOLAR", color: "#ff544e", core: "#ffe779" };
       if (type === "black") return { name: "SLOW", short: "BLACK", color: "#191e2a", core: "#dce9ff" };
@@ -1965,6 +1976,7 @@ const W = 1280;
       if (powerupType === "P_RED") return "red";
       if (powerupType === "P_RED_WHITE") return "redwhite";
       if (powerupType === "P_RED_ORANGE") return "redorange";
+      if (powerupType === "P_RED_BLUE") return "redblue";
       if (powerupType === "P_GREEN") return "green";
       if (powerupType === "P_SOLAR") return "solar";
       if (powerupType === "P_BLACK") return "black";
@@ -1996,6 +2008,7 @@ const W = 1280;
       if (game.weaponType === "red") return "P_RED";
       if (game.weaponType === "redwhite") return "P_RED_WHITE";
       if (game.weaponType === "redorange") return "P_RED_ORANGE";
+      if (game.weaponType === "redblue") return "P_RED_BLUE";
       if (game.weaponType === "green") return "P_GREEN";
       if (game.weaponType === "solar") return "P_SOLAR";
       if (game.weaponType === "black") return "P_BLACK";
@@ -2091,6 +2104,14 @@ const W = 1280;
     }
 
     function collectPowerup(p) {
+      // Red/blue evolves ONLY from ordinary YELLOW/RED or itself.
+      if (p.type === "P_RED_BLUE" && !redBlueRules.canEquip(game.weaponType)) {
+        if (!(p.lockHintCooldown > 0)) {
+          showMessage("RED-BLUE  REQUIRES YELLOW OR RED P", 1.1);
+          p.lockHintCooldown = 1.2;
+        }
+        return false;
+      }
       // Deep-crimson/gold impact blasts are a DARK RED-only upgrade.
       // Noneligible collectors must leave the P untouched in the arena.
       if (p.type === "P_DARK_RED_GOLD" &&
@@ -2285,7 +2306,7 @@ const W = 1280;
           rect(-23, -23, 46, 46, "#07111f");
           if (wt === "magnet" || wt === "arcLaser" || wt === "stasis" ||
               wt === "eclipse" || wt === "recruit" || wt === "solar" ||
-              wt === "redwhite" || wt === "grayflame" || wt === "redorange" ||
+              wt === "redwhite" || wt === "grayflame" || wt === "redorange" || wt === "redblue" ||
               wt === "brownyellow" || wt === "purplewhite" ||
               wt === "blueblack" || wt === "darkredgold") {
             const gradient = ctx.createLinearGradient(-19, -19, 19, 19);
@@ -2296,6 +2317,7 @@ const W = 1280;
               : wt === "solar" ? "#ff3d4f"
               : wt === "redwhite" ? "#ff3957"
               : wt === "redorange" ? "#f72f50"
+              : wt === "redblue" ? "#f42c4b"
               : wt === "grayflame" ? "#e92840"
               : wt === "brownyellow" ? "#88502e"
               : wt === "purplewhite" ? "#7935d8"
@@ -2307,6 +2329,7 @@ const W = 1280;
               : wt === "solar" ? "#ffe04c"
               : wt === "redwhite" ? "#f9fcff"
               : wt === "redorange" ? "#ffaf36"
+              : wt === "redblue" ? "#177aff"
               : wt === "grayflame" ? "#777e90"
               : wt === "brownyellow" ? "#ffda52"
               : wt === "purplewhite" ? "#ffffff"
@@ -2357,6 +2380,24 @@ const W = 1280;
             rect(23, -23, 7, 9, "#ffe279");
             if (!brownYellowRules.canEquip(game.weaponType))
               drawText("BROWN", 0, 43, 12, "center", "#ffd781");
+          } else if (wt === "redblue") {
+            // Red-blue gradient pickup, with a five-point star reticle.
+            ctx.strokeStyle = "#f5ecff";
+            ctx.lineWidth = 2.8;
+            ctx.shadowColor = "#75baff";
+            ctx.shadowBlur = 9;
+            ctx.beginPath();
+            for (let i=0;i<10;i++) {
+              const a=-Math.PI/2+i*Math.PI/5;
+              const r=i%2?11:28;
+              if (i===0) ctx.moveTo(Math.cos(a)*r,Math.sin(a)*r);
+              else ctx.lineTo(Math.cos(a)*r,Math.sin(a)*r);
+            }
+            ctx.closePath();
+            ctx.stroke();
+            ctx.shadowBlur = 0;
+            if (!redBlueRules.canEquip(game.weaponType))
+              drawText("YELLOW/RED", 0, 43, 11, "center", "#b5ccff");
           } else if (wt === "redorange") {
             // A red-to-orange explosion corona distinguishes this RED variant
             // from ordinary orange and from electric RED-WHITE.
@@ -2850,6 +2891,17 @@ const W = 1280;
       });
     }
 
+    // A 360-direction starburst must not be truncated by the ordinary
+    // 360-bullet cap. Reclaim the oldest bounded Red-Blue shots if saturated,
+    // while always inserting all 360 consecutive angular samples.
+    function pushRedBlueBullets(shots) {
+      if (!shots?.length) return;
+      const overflow = game.redBlueBullets.length + shots.length -
+        LIMITS.redBlueBullets;
+      if (overflow > 0) game.redBlueBullets.splice(0, overflow);
+      game.redBlueBullets.push(...shots);
+    }
+
     function firePlayerWeapons(pinkSpecial = false) {
       sfx("shot");
       hapticShot();
@@ -3059,6 +3111,24 @@ const W = 1280;
             enhanced ? "#2760f5" : "#121522",
             enhanced ? blueBlackRules.createShot() : { blackSlow: true });
         }
+      } else if (type === "redblue") {
+        // ONE five-direction firing action each second. Initial paths extend
+        // to radius 360 around the captured launch position, then seek.
+        const scale = combatRules.weaponDamageScale(game.combat,selectedShip().id);
+        pushRedBlueBullets(redBlueRules.volley(game.player,
+          redBlueRules.RULES.normalDamage * scale));
+        // The existing red-star special slot blocks overlapping fans/stars.
+        if (redBlueRules.tryStartSpecial(game.redWeapon,Math.random())) {
+          game.redBlueStarfall = {
+            ...redBlueRules.landing(game.enemies,game.boss,W,H),
+            elapsed:0,
+            power:redBlueRules.RULES.normalDamage *
+              redBlueRules.RULES.starfallMultiplier * scale,
+            bulletPower:redBlueRules.RULES.specialBulletDamage * scale
+          };
+          sfx("overdriveReady");
+          showMessage("RED-BLUE  STARFALL INCOMING",1.0);
+        }
       } else if (type === "red" || type === "redwhite" || type === "redorange") {
         // THREE RED family P types share the SAME two lanes and RED star
         // firing cadence; contact behavior is exclusively determined by
@@ -3122,6 +3192,7 @@ const W = 1280;
     }
 
     function getFireCooldown() {
+      if (game.weaponType === "redblue") return redBlueRules.RULES.volleySeconds;
       if (game.weaponType === "red" || game.weaponType === "redwhite" || game.weaponType === "redorange") return redRules.RULES.volleySeconds;
       if (game.weaponType === "rainbow") return rainbowRules.RULES.shotCooldownSeconds;
       if (game.weaponType === "eclipse") return eclipseRules.RULES.cooldownSeconds;
@@ -3478,6 +3549,10 @@ const W = 1280;
       game.enemyBullets.length = 0;
       game.bullets.length = 0;
       game.missiles.length = 0;
+      game.redBlueBullets.length = 0;
+      game.redBlueStarfall = null;
+      game.redBlueStarFx.length = 0;
+      if (game.redWeapon.special?.redBlue) game.redWeapon.special = null;
       game.magneticFields.length = 0;
       game.magneticBursts.length = 0;
       game.shockwaves.length = 0;
@@ -4343,6 +4418,105 @@ const W = 1280;
       }
     }
 
+
+    // The five-point star uses a single visual descent and a single 10x
+    // screen-wide damage pulse, then emits 360 unique radial bullets.
+    // Attack strength is captured when triggered: switching P cannot change
+    // impact power. Ordinary and burst projectiles use one-hit swept damage.
+    function updateRedBlueStarfall(dt) {
+      for (const fx of game.redBlueStarFx) fx.life = Math.max(0,fx.life-dt);
+      game.redBlueStarFx = game.redBlueStarFx.filter(fx=>fx.life>0);
+      const star = game.redBlueStarfall;
+      if (!star || !(dt>0) || (game.stageMode !== "WAVE" &&
+          game.stageMode !== "BOSS")) return;
+      star.elapsed = Math.min(redBlueRules.RULES.starfallSeconds,
+        star.elapsed+dt);
+      if (star.elapsed < redBlueRules.RULES.starfallSeconds) return;
+      game.redBlueStarfall = null;
+      // Award the ONE original RED star at completed impact, before a
+      // potential Boss kill clears stage attack state.
+      const upgraded = redBlueRules.finishSpecial(game.redWeapon);
+      if (upgraded.completed && game.weaponType === "redblue")
+        showMessage(upgraded.upgraded
+          ? "RED-BLUE  STAR UP  "+game.redWeapon.stars+"/5"
+          : "RED-BLUE  MAX 5 STARS",1.3);
+      if (game.redBlueStarFx.length >= LIMITS.redBlueStarFx)
+        game.redBlueStarFx.shift();
+      game.redBlueStarFx.push({x:star.x,y:star.y,life:.72});
+      game.shake = Math.max(game.shake,18);
+      sfx("explode");
+      hapticExplosion();
+      // All 360 angles from 0° to 359°, never dependent on the shared
+      // 360 ordinary-bullet quota. Their first 360 units are OUTWARD ONLY;
+      // after that, homing shots can collide once and disappear.
+      pushRedBlueBullets(redBlueRules.radial(star,star.bulletPower));
+      // Snapshot BEFORE damage: freshly spawned split drones / a newly
+      // summoned Boss must not take the same full-field pulse.
+      const targets = game.enemies.slice();
+      const boss = game.boss?.active && game.boss.hp>0 ? game.boss : null;
+      for (const e of targets) {
+        if (e.hp>0 && game.enemies.includes(e))
+          damageEnemy(e,star.power,e.x,e.y,"#ff6d99");
+      }
+      if (boss && game.boss===boss && boss.active && boss.hp>0)
+        damageBoss(star.power,boss.x,boss.y,"#92caff");
+    }
+
+    // The red-blue projectile pool is separate from normal player bullets:
+    // 360 simultaneous special shots MUST remain a complete 360° ring.
+    // A cheap outward phase turns to PINK-style homing at exactly R360.
+    // The outward phase does not deal damage, avoiding an instantaneous
+    // 360-hit pile-up on the star's initial landing position.
+    function updateRedBlueBullets(dt) {
+      if (!(dt>0) || (game.stageMode !== "WAVE" &&
+          game.stageMode !== "BOSS")) return;
+      for (const bullet of game.redBlueBullets) {
+        if (bullet.dead) continue;
+        const segments = redBlueRules.advanceShot(bullet,dt,
+          b=>skyRules.selectTarget(b,game.enemies,game.boss));
+        for (const seg of segments) {
+          if (seg.phase!=="homing" || bullet.dead) continue;
+          const trajectory = {previousX:seg.fromX,previousY:seg.fromY,
+            x:seg.toX,y:seg.toY};
+          let first = null;
+          function candidate(target,part,impact) {
+            if (!impact) return;
+            if (!first || impact.t<first.impact.t)
+              first={target,part,impact};
+          }
+          for (const e of game.enemies) {
+            if (!(e.hp>0) || !collision.sweptCircleHit(
+              seg.fromX,seg.fromY,seg.toX,seg.toY,
+              e.x,e.y,bullet.r+e.r)) continue;
+            candidate(e,null,orangeRules.circleImpact(
+              trajectory,e,bullet.r+e.r));
+          }
+          const boss = game.boss;
+          if (boss?.active && boss.hp>0) {
+            const part = bossParts.findHit(boss,seg.fromX,seg.fromY,
+              seg.toX,seg.toY,bullet.r);
+            if (part) {
+              candidate(boss,part,orangeRules.circleImpact(trajectory,
+                {x:boss.x+part.x,y:boss.y+part.y},bullet.r+part.r));
+            } else {
+              candidate(boss,null,orangeRules.bossImpact(
+                trajectory,boss,bullet.r));
+            }
+          }
+          if (!first) continue;
+          bullet.dead = true;
+          bullet.x=first.impact.x;
+          bullet.y=first.impact.y;
+          if (first.target===boss)
+            damageBoss(bullet.power,bullet.x,bullet.y,bullet.c,first.part);
+          else damageEnemy(first.target,bullet.power,bullet.x,bullet.y,bullet.c);
+        }
+        if (bullet.redBluePhase==="homing" && bullet.life<=0)
+          bullet.dead=true;
+      }
+      game.redBlueBullets = game.redBlueBullets.filter(b=>!b.dead);
+    }
+
     function updatePlayerBullets(dt) {
       for (const b of game.bullets) {
         if (b.dead) continue;
@@ -4971,6 +5145,8 @@ const W = 1280;
       // Settle previous fields BEFORE player hits can spawn new ones this frame.
       updateMagneticFields(dt);
       updateBrownLaser(dt, firing);
+      updateRedBlueStarfall(dt);
+      updateRedBlueBullets(dt);
       updatePlayerBullets(dt);
       updateMissiles(dt);
       updateEnemyBullets(dt);
@@ -5232,6 +5408,82 @@ const W = 1280;
       ctx.arc(game.player.x,game.player.y,limeRules.RULES.radius,0,Math.PI*2);
       ctx.stroke();
       ctx.restore();
+    }
+
+
+    // Lightweight Red-Blue shot art: the 360-ray Starfall uses simple
+    // primitives without per-bullet shadow/gradients (handheld FPS).
+    function drawRedBlueBullets() {
+      for (const b of game.redBlueBullets) {
+        ctx.save();
+        ctx.translate(b.x,b.y);
+        ctx.rotate(Math.atan2(b.vy,b.vx));
+        if (b.redBlueSpecial) {
+          ctx.globalAlpha=b.redBluePhase==="outward"?.85:1;
+          rect(-5,-3,18,6,"#e74c7e");
+          rect(2,-1.5,18,3,"#72bfff");
+        } else {
+          const gradient=ctx.createLinearGradient(-8,-6,30,6);
+          gradient.addColorStop(0,"#fb4060");
+          gradient.addColorStop(1,"#347ef7");
+          rect(-8,-6,35,12,gradient);
+          rect(1,-2,27,4,"#eff2ff");
+        }
+        ctx.restore();
+      }
+    }
+
+    function starShape(radius,inner) {
+      ctx.beginPath();
+      for (let i=0;i<10;i++) {
+        const a=-Math.PI/2+i*Math.PI/5;
+        const r=i%2?inner:radius;
+        const x=Math.cos(a)*r,y=Math.sin(a)*r;
+        if(i===0)ctx.moveTo(x,y);
+        else ctx.lineTo(x,y);
+      }
+      ctx.closePath();
+    }
+
+    function drawRedBlueStarfall() {
+      const star=game.redBlueStarfall;
+      if (star && (game.stageMode==="WAVE" || game.stageMode==="BOSS")) {
+        const p=redBlueRules.starPosition(star);
+        ctx.save();
+        ctx.translate(p.x,p.y);
+        ctx.rotate(star.elapsed*3.8);
+        ctx.shadowColor="#c26dff";
+        ctx.shadowBlur=27;
+        const gradient=ctx.createLinearGradient(-70,-70,70,70);
+        gradient.addColorStop(0,"#f32d51");
+        gradient.addColorStop(.5,"#f7e4fd");
+        gradient.addColorStop(1,"#327df9");
+        starShape(72,30);
+        ctx.fillStyle=gradient;
+        ctx.fill();
+        ctx.strokeStyle="#ffffff";
+        ctx.lineWidth=4;
+        ctx.stroke();
+        ctx.restore();
+      }
+      for(const fx of game.redBlueStarFx) {
+        ctx.save();
+        ctx.translate(fx.x,fx.y);
+        const ratio=1-fx.life/.72;
+        ctx.globalAlpha=clamp(fx.life/.72,0,1);
+        ctx.strokeStyle="#81c6ff";
+        ctx.lineWidth=8;
+        ctx.shadowColor="#f761a6";
+        ctx.shadowBlur=18;
+        ctx.beginPath();
+        ctx.arc(0,0,Math.max(1,ratio*410),0,Math.PI*2);
+        ctx.stroke();
+        ctx.rotate(ratio*Math.PI);
+        starShape(47+ratio*35,18+ratio*14);
+        ctx.fillStyle="#fd83b6";
+        ctx.fill();
+        ctx.restore();
+      }
     }
 
     function drawPlayerBullets() {
@@ -5780,6 +6032,8 @@ const W = 1280;
         ? "RED-WHITE ARC 60% HOPS"
         : game.weaponType === "redorange"
         ? "RED-ORANGE BLAST  R100 X1.6"
+        : game.weaponType === "redblue"
+        ? "RED-BLUE  5-WAY R360 SEEK"
         : game.weaponType === "gray"
         ? "GRAY 20/5/75  1.5X"
         : game.weaponType === "grayflame"
@@ -5864,17 +6118,21 @@ const W = 1280;
       // Exactly ONE shared RED five-star state for RED, RED-WHITE and
       // RED-ORANGE. Equipping WHITE/ORANGE/other P hides stars, not resets.
       if (game.weaponType === "red" || game.weaponType === "redwhite" ||
-          game.weaponType === "redorange") {
+          game.weaponType === "redorange" || game.weaponType === "redblue") {
         const type = game.weaponType;
         const name = type === "red" ? "RED"
-          : type === "redwhite" ? "RED-WHITE" : "RED-ORANGE";
+          : type === "redwhite" ? "RED-WHITE"
+          : type === "redblue" ? "RED-BLUE" : "RED-ORANGE";
         ctx.fillStyle = "rgba(23, 3, 16, .70)";
         ctx.fillRect(552, H - 94, 354, 72);
         const stars = "★".repeat(game.redWeapon.stars) + "☆".repeat(5 - game.redWeapon.stars);
         drawText(`${name} P  ${stars}`,
           570, H - 66, 22, "left",
-          type === "redwhite" ? "#ffd2d9" : type === "redorange" ? "#ffbc7b" : "#ff5574");
-        drawText(game.redWeapon.special
+          type === "redwhite" ? "#ffd2d9" : type === "redorange" ? "#ffbc7b"
+            : type === "redblue" ? "#8db9ff" : "#ff5574");
+        drawText(game.redWeapon.special?.redBlue
+          ? "STARFALL  /  DESCENDING"
+          : game.redWeapon.special
           ? `FAN ${game.redWeapon.special.emitted}/250  /  3.0s`
           : `${redRules.RULES.baseVolleys + game.redWeapon.stars} VOLLEYS  /  0.4s REST`,
           570, H - 38, 18, "left", "#ffe3e8");
@@ -5985,7 +6243,7 @@ const W = 1280;
       ctx.fillRect(0, 0, W, H);
 
       drawText("NEON WINGS", W / 2, 195, 86, "center", "#e7fbff");
-      drawText("NEONWINGS PAN  /  v26.26.0", W / 2, 270, 28, "center", "#98f5ff");
+      drawText("NEONWINGS PAN  /  v26.27.0", W / 2, 270, 28, "center", "#98f5ff");
       drawText(`HIGH SCORE ${String(highScore()).padStart(6, "0")}`, W / 2, 318, 24, "center", "#fff4b7");
 
       drawPlayerShip(W / 2 - 170, 492, -0.20, false, ships[0]);
@@ -6318,6 +6576,7 @@ const W = 1280;
       drawBombFlash();
 
       drawPlayerBullets();
+      drawRedBlueBullets();
       drawAllyBullets();
       drawBrownLaser();
       drawMissiles();
@@ -6330,6 +6589,7 @@ const W = 1280;
       drawStasisFreeze();
       drawPinkExplosions();
       drawOrangeExplosions();
+      drawRedBlueStarfall();
       drawElectricArcs();
       drawPowerups();
       drawParticles();
