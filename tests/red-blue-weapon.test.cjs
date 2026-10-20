@@ -88,19 +88,23 @@ test("RED-BLUE R360 remaining path is cached once, decreases monotonically and a
       assert.ok(Number.isFinite(b.redBlueOutwardRemaining));
       assert.ok(b.redBlueOutwardRemaining>0);
       const initial=b.redBlueOutwardRemaining;
-      let last=initial,frames=0;
+      let last=initial,frames=0,boundary=null;
       while(b.redBluePhase==="outward" && frames++<1000){
         const before=b.redBlueOutwardRemaining;
-        five.advanceShot(b,1/240,()=>null);
+        const segments=five.advanceShot(b,1/240,()=>null);
         assert.ok(b.redBlueOutwardRemaining<=before+1e-9);
         assert.ok(b.redBlueOutwardRemaining>=0);
         last=b.redBlueOutwardRemaining;
+        if(b.redBluePhase==="homing")
+          boundary=segments.find(seg=>seg.phase==="outward");
       }
       assert.equal(b.redBluePhase,"homing");
       assert.equal(last,0);
-      assert.ok(Math.abs(Math.hypot(b.x-b.redBlueOriginX,
-        b.y-b.redBlueOriginY)-360)<1e-7,
-        "must transition at exact 360, not nearby render/radius sample");
+      assert.ok(boundary,
+        "the final 1/240s tick must include an actual outward segment");
+      assert.ok(Math.abs(Math.hypot(boundary.toX-b.redBlueOriginX,
+        boundary.toY-b.redBlueOriginY)-360)<1e-7,
+        "the OUTWARD segment ends at exactly R360, even when the same dt continues homing");
       assert.ok(initial>0);
     }
   }
