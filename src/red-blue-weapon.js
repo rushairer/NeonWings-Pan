@@ -104,16 +104,16 @@
   // Return up to TWO swept segments: outward-to-r360 and then homing.
   // The origin is captured at firing, so moving the player cannot move the
   // switch threshold. The remainder of a long dt is NOT dropped. Collisions
-  // are resolved by the caller in segment order, before TTL removal.
+  // are resolved only for ARMED/homing segments after radius 360.
   function advanceShot(b,dt,selectTarget) {
     if (!b || !b.redBlueShot || !(dt>0) || !Number.isFinite(dt) ||
         typeof selectTarget!=="function") return [];
     const segments=[];
-    function step(seconds) {
+    function step(seconds,phase) {
       if (!(seconds>0)) return;
       const fromX=b.x,fromY=b.y;
       b.x+=b.vx*seconds;b.y+=b.vy*seconds;
-      segments.push({fromX,fromY,toX:b.x,toY:b.y});
+      segments.push({fromX,fromY,toX:b.x,toY:b.y,phase});
     }
     let remaining=dt;
     if (b.redBluePhase==="outward") {
@@ -126,7 +126,7 @@
       const until=c>=0?0:
         (-dot+Math.sqrt(Math.max(0,dot*dot-a*c)))/a;
       const outTime=Math.min(remaining,Math.max(0,until));
-      step(outTime);
+      step(outTime,"outward");
       remaining-=outTime;
       if (until<=outTime+1e-9) {
         b.redBluePhase="homing";
@@ -141,7 +141,7 @@
     if(b.redBluePhase==="homing" && b.life>0 && remaining>0){
       const homingTime=Math.min(remaining,b.life);
       pink.steer(b,selectTarget(b),homingTime);
-      step(homingTime);
+      step(homingTime,"homing");
       b.life=Math.max(0,b.life-homingTime);
     }
     return segments;
