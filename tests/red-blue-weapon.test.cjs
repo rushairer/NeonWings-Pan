@@ -222,3 +222,19 @@ test("RED-BLUE five normal angles consume cached distance and preserve same-fram
   }
 });
 
+
+test("RED-BLUE one-shot radial fixture matches every production Starfall angle",()=>{
+  const point={x:640,y:480},production=five.radial(point);
+  for(let degree=0;degree<360;degree++){
+    const one=five.radialShot(point,degree);
+    assert.deepEqual(one,production[degree],
+      "single-shot benchmark helper must never change actual Starfall geometry");
+    assert.equal(one.redBlueSpecial,true);
+    assert.equal(one.redBluePhase,"outward");
+    assert.equal(one.power,five.RULES.specialBulletDamage);
+    assert.equal(one.redBlueOutwardRemaining,360);
+  }
+  assert.equal(five.radialShot(null,0),null);
+  assert.equal(five.radialShot({x:1,y:NaN},2),null);
+  assert.equal(five.radialShot(point,Infinity),null);
+});
