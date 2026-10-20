@@ -29,6 +29,15 @@ A controller-first, five-stage, side-scrolling neon arcade shooter built with br
 - **v26.2.0 NeonWings-Pan exclusive:** red P twin-line fire, a 250-projectile ±10° special fan triggered on 10% of eligible volleys, and an independent 0–5 star progression.
 - **v26.3.0 NeonWings-Pan exclusive:** green P retains starter-grade dual shots and adds a passive neon halo dealing area damage to nearby enemies once per second.
 
+
+## v26.26.0 — 紫白渐变五束激光增加强制停火窗口
+
+- **紫白渐变 PENTA LOCK**：发射累计满 **5 秒**后必须**停火 1 秒**，即 5 秒攻击 / 1 秒冷却循环；冷却结束后仍按住 FIRE 会自动恢复五束锁定。
+- 仅实际按住 FIRE 且能锁定有效敌人时累计发射时间；松开 FIRE、短暂停火、切换武器再切回来不会清空已消耗的发射额度，避免通过反复点击绕过限制。冷却期不能发射/造成伤害，激光全部消失，HUD 显示 `PENTA COOL` 倒计时。
+- 仅限紫白渐变。单束仍是 1.15 基础伤害、沿用棕色的 **0.101 秒**伤害节拍、最多 5 束、多目标覆盖优先和单体汇聚倍率；棕色、棕黄渐变和 ARC LASER 攻击节奏不改。
+- 冷却遵循活跃战斗时间；暂停／关卡过渡／Boss 奖励期间冻结。冷却在切换到其他武器后仍可以自然结束；新的一局/练习局重新计时。
+- 版本 **26.26.0**：完整同步主页面、所有带版本的脚本 URL、规则、HUD、回归测试和工程文档。以下历史版本保留供回顾。
+
 ## v26.25.0 — 黄绿色环绕子弹到期转追踪
 
 - 黄绿色 LIME 子弹保留 0.48 秒向外螺旋加速至半径 360、绕玩家运动以及原始 3.2 秒环绕寿命；在环绕**最后一段**仍有正常碰撞机会，未命中的才转化为**同一枚**亮黄绿色追踪子弹。

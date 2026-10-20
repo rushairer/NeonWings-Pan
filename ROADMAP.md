@@ -7,6 +7,17 @@ Independently maintained from NeonWings commit `5ebcb1de1adb288b41a3c5e387f747bc
 - [x] Configure standalone Pages workflow
 - [ ] Verify site deployment and controller tests on hardware
 
+
+## v26.26.0 — PURPLE-WHITE 5 秒发射 / 1 秒停火
+
+- [x] 仅紫白渐变 PENTA LOCK 新增发射负载状态：真正锁定敌人并持续按 FIRE 的时间累计 5.0 个活跃战斗秒，然后强制停火 1.0 个活跃战斗秒
+- [x] 强制冷却期 5 条激光全部隐藏、不得命中/造成伤害；HUD 展示冷却剩余秒数；持续 FIRE 自动恢复下一轮 5 秒
+- [x] 继续复用 BROWN 0.101 秒真实伤害节拍，保持 5 条光束、多目标锁定/汇聚、原始伤害、弱点和护盾行为；进入冷却时清空 Brown 小数节拍，下一轮重新完整计时
+- [x] 松开 FIRE 不会清零已经消耗的发射时间；强制冷却在活跃战斗中持续，无目标或松开 FIRE 不产生额外发射热量；切换武器不重置进度且后台继续冷却
+- [x] 暂停、过场、Boss 奖励期不推进定时器；重新开局/练习局重置；棕色、棕黄渐变、浅蓝白 ARC LASER 不受影响
+- [x] 为边界大 dt、发射中断、切枪、无目标、真实 HUD、无渲染伤害补充单元/集成回归测试；更新脚本缓存版本
+- [ ] 掌机真实浏览器实测冷却提示视觉可读性和手感
+
 ## v26.25.0 — LIME 环绕→追踪弹
 
 - [x] 先按原有 3.2s 在玩家 360 半径内螺旋环绕，最后扫掠命中优先处理

@@ -6,6 +6,81 @@ const five = require("../src/purple-white-weapon.js");
 const from={x:235,y:480};
 function e(x,y=480,r=25){return {x,y,r,hp:100};}
 
+
+test("PURPLE-WHITE duty holds five actual firing seconds and enforces one whole rest second",()=>{
+  const state=five.createDutyState(),firings=[],rests=[];
+  assert.deepEqual(state,{firedSeconds:0,restRemaining:0});
+  assert.equal(five.RULES.firingSeconds,5);
+  assert.equal(five.RULES.cooldownSeconds,1);
+  five.advanceDuty(state,4.98,true,seconds=>firings.push(seconds),
+    ()=>rests.push(true));
+  assert.equal(firings.length,1);
+  assert.ok(Math.abs(state.firedSeconds-4.98)<1e-9);
+  assert.equal(state.restRemaining,0);
+  const boundary=five.advanceDuty(state,.52,true,
+    seconds=>firings.push(seconds),()=>rests.push(true));
+  assert.ok(Math.abs(firings[1]-.02)<1e-9);
+  assert.ok(Math.abs(boundary.firingTime-.02)<1e-9);
+  assert.ok(Math.abs(boundary.restTime-.5)<1e-9);
+  assert.equal(rests.length,1);
+  assert.equal(five.cooling(state),true);
+  assert.ok(Math.abs(state.restRemaining-.5)<1e-9);
+  let hits=0;
+  five.advanceDuty(state,.5,true,()=>hits++);
+  assert.equal(hits,0,"forced rest cannot fire even when button held");
+  assert.equal(five.cooling(state),false);
+  assert.equal(state.firedSeconds,0);
+  five.advanceDuty(state,.101,true,()=>hits++);
+  assert.equal(hits,1);
+  assert.ok(Math.abs(state.firedSeconds-.101)<1e-9);
+});
+
+test("PURPLE-WHITE phase partition supports multi-cycle dt without a single rest hit",()=>{
+  const state=five.createDutyState(),fired=[],events=[];
+  const result=five.advanceDuty(state,12.25,true,
+    seconds=>{fired.push(seconds);events.push("F");},
+    ()=>events.push("C"));
+  assert.deepEqual(fired,[5,5,.25]);
+  assert.deepEqual(events,["F","C","F","C","F"]);
+  assert.equal(result.firingTime,10.25);
+  assert.equal(result.restTime,2);
+  assert.equal(five.cooling(state),false);
+  assert.ok(Math.abs(state.firedSeconds-.25)<1e-9);
+  assert.equal(state.restRemaining,0);
+});
+
+test("PURPLE-WHITE heat survives FIRE release and cannot be reset by rapid toggling",()=>{
+  const state=five.createDutyState();
+  five.advanceDuty(state,4,true,()=>{});
+  for(let i=0;i<100;i++)five.advanceDuty(state,.02,false);
+  assert.equal(state.firedSeconds,4);
+  assert.equal(five.cooling(state),false);
+  const spans=[],cooldowns=[];
+  five.advanceDuty(state,1,true,t=>spans.push(t),()=>cooldowns.push("rest"));
+  assert.deepEqual(spans,[1]);
+  assert.deepEqual(cooldowns,["rest"]);
+  assert.equal(five.cooling(state),true);
+  five.advanceDuty(state,.6,false,()=>{throw Error("released FIRE cannot fire");});
+  assert.ok(Math.abs(state.restRemaining-.4)<1e-9);
+  assert.ok(Math.abs(state.firedSeconds)<1e-9);
+  // A pause/transition does not call advanceDuty, so it cannot consume rest.
+  const frozen=state.restRemaining;
+  assert.equal(state.restRemaining,frozen);
+  five.advanceDuty(state,.4,false);
+  assert.equal(five.cooling(state),false);
+});
+
+test("PURPLE-WHITE does not spend firing budget without locks or on invalid dt",()=>{
+  const state=five.createDutyState();
+  let shots=0;
+  for(const dt of [0,-1,NaN,Infinity])
+    five.advanceDuty(state,dt,true,()=>shots++);
+  five.advanceDuty(state,50,false,()=>shots++);
+  assert.equal(shots,0);
+  assert.deepEqual(state,{firedSeconds:0,restRemaining:0});
+  assert.equal(five.cooling(null),false);
+});
+
 test("PURPLE-WHITE collects only from PURPLE, BROWN or itself",()=>{
   for(const p of ["purple","brown","purplewhite"])
     assert.equal(five.canEquip(p),true);

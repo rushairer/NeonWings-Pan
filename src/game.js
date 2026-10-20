@@ -1068,6 +1068,7 @@ const W = 1280;
         grayWeapon: grayRules.createState(),
         pinkWeapon: pinkRules.createState(),
         brownWeapon: brownRules.createState(),
+        purpleWhiteDuty: purpleWhiteRules.createDutyState(),
         brownBeam: null,
         greenAura: greenRules.createState(),
         missileSequence: 0,
@@ -3928,10 +3929,23 @@ const W = 1280;
       const isArc = game.weaponType === "arcLaser";
       const refracting = game.weaponType === "brownyellow";
       const fiveBeams = game.weaponType === "purplewhite";
+      // Heat and cooldown persist across weapon changes. A cooling PENTA
+      // finishes resting while another weapon is used in live combat; a swap
+      // does not grant a fresh five seconds of free firing.
+      if (!fiveBeams && game.state === "PLAYING" &&
+          (game.stageMode === "WAVE" || game.stageMode === "BOSS") &&
+          purpleWhiteRules.cooling(game.purpleWhiteDuty))
+        purpleWhiteRules.advanceDuty(game.purpleWhiteDuty, dt, false);
       const active = firing && (game.weaponType === "brown" || isArc || refracting || fiveBeams) &&
         game.state === "PLAYING" &&
         (game.stageMode === "WAVE" || game.stageMode === "BOSS");
       if (!active) {
+        // While PURPLE-WHITE is equipped, forced rest still counts active
+        // combat time even after FIRE is released. No beam can render or hit
+        // during this interval; ordinary BROWN/ARC timers are untouched.
+        if (fiveBeams && game.state === "PLAYING" &&
+            (game.stageMode === "WAVE" || game.stageMode === "BOSS"))
+          purpleWhiteRules.advanceDuty(game.purpleWhiteDuty, dt, false);
         game.brownBeam = null;
         brownRules.reset(game.brownWeapon);
         return;
@@ -3942,11 +3956,12 @@ const W = 1280;
       };
       if (fiveBeams) {
         // Five bounded Brown-style first-obstruction rays, one shared .101s
-        // laser clock. Each lane gets a DISTINCT visible victim where possible;
-        // spare lanes reinforce the other locks, never multiplying 5x twice.
+        // laser clock. The new 5s firing / 1s forced-rest envelope ONLY wraps
+        // PURPLE-WHITE: it never changes BROWN, BROWN-YELLOW or ARC LASER.
         let locks = purpleWhiteRules.plan(from, game.enemies, game.boss);
-        game.brownBeam = locks.length ? {purpleWhite:true, beams:locks} : null;
-        brownRules.tick(game.brownWeapon, dt, locks.length > 0, () => {
+        const duty = purpleWhiteRules.advanceDuty(game.purpleWhiteDuty, dt,
+          locks.length > 0, fireDt => {
+          brownRules.tick(game.brownWeapon, fireDt, true, () => {
           if (game.state !== "PLAYING" ||
               (game.stageMode !== "WAVE" && game.stageMode !== "BOSS"))
             return;
@@ -3976,8 +3991,16 @@ const W = 1280;
           // and new splitter minions never receive the SAME tick's damage.
           if (changed)
             locks = purpleWhiteRules.plan(from, game.enemies, game.boss);
+          });
+        }, () => {
+          // Do not carry a partial 0.101s laser tick into the next burst.
+          brownRules.reset(game.brownWeapon);
+          game.brownBeam = null;
         });
-        game.brownBeam = locks.length ? {purpleWhite:true, beams:locks} : null;
+        if (!locks.length) brownRules.reset(game.brownWeapon);
+        // A resting weapon has NO visible laser and cannot deal damage.
+        game.brownBeam = !duty.cooling && locks.length
+          ? {purpleWhite:true, beams:locks} : null;
         return;
       }
       const acquired = isArc
@@ -4717,6 +4740,7 @@ const W = 1280;
         grayRules.switchWeapon(game.grayWeapon);
         pinkRules.switchWeapon(game.pinkWeapon);
         brownRules.reset(game.brownWeapon);
+        game.purpleWhiteDuty = purpleWhiteRules.createDutyState();
         game.brownBeam = null;
         game.weaponType = "blue";
         game.invuln = 2.5;
@@ -5767,7 +5791,9 @@ const W = 1280;
         : game.weaponType === "brown"
         ? "BROWN LOCK LASER"
         : game.weaponType === "purplewhite"
-        ? "PENTA LOCK  5 BEAMS"
+        ? (purpleWhiteRules.cooling(game.purpleWhiteDuty)
+          ? `PENTA COOL  ${game.purpleWhiteDuty.restRemaining.toFixed(1)}S`
+          : "PENTA LOCK  5 BEAMS")
         : game.weaponType === "brownyellow"
         ? "REFRACT LASER  1 HOP"
         : game.weaponType === "lime"
@@ -5959,7 +5985,7 @@ const W = 1280;
       ctx.fillRect(0, 0, W, H);
 
       drawText("NEON WINGS", W / 2, 195, 86, "center", "#e7fbff");
-      drawText("NEONWINGS PAN  /  v26.25.0", W / 2, 270, 28, "center", "#98f5ff");
+      drawText("NEONWINGS PAN  /  v26.26.0", W / 2, 270, 28, "center", "#98f5ff");
       drawText(`HIGH SCORE ${String(highScore()).padStart(6, "0")}`, W / 2, 318, 24, "center", "#fff4b7");
 
       drawPlayerShip(W / 2 - 170, 492, -0.20, false, ships[0]);

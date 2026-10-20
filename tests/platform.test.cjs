@@ -417,7 +417,7 @@ test("DARK RED-GOLD runtime is cache-versioned and built after DARK RED and ORAN
   const html=fs.readFileSync(path.join(__dirname,"../index.html"),"utf8");
   const build=fs.readFileSync(path.join(__dirname,"../scripts/build.mjs"),"utf8");
   const pkg=require("../package.json");
-  assert.equal(pkg.version,"26.25.0");
+  assert.equal(pkg.version,"26.26.0");
   assert.ok(html.includes('src="./src/dark-red-weapon.js?v='+pkg.version+'"'));
   assert.ok(html.includes('src="./src/dark-red-gold-weapon.js?v='+pkg.version+'"'));
   assert.ok(html.includes('src="./src/game.js?v='+pkg.version+'"'));
@@ -443,4 +443,16 @@ test("v26.25 LIME homing successor is cache-fresh and bounded",()=>{
   assert.equal(limeWeapon.RULES.bulletLifetimeSeconds,3.2);
   assert.equal(limeWeapon.RULES.homingLifetimeSeconds,3.6);
   assert.equal(limeWeapon.RULES.homingSpeed,940);
+});
+
+test("v26.26 Purple-White duty timer and cache-versioned PENTA module",()=>{
+  const html=fs.readFileSync(path.join(__dirname,"../index.html"),"utf8");
+  const pkg=require("../package.json");
+  const penta=require("../src/purple-white-weapon.js");
+  assert.equal(pkg.version,"26.26.0");
+  assert.ok(html.includes('src="./src/purple-white-weapon.js?v='+pkg.version+'"'));
+  assert.ok(html.includes('src="./src/game.js?v='+pkg.version+'"'));
+  assert.equal(penta.RULES.firingSeconds,5);
+  assert.equal(penta.RULES.cooldownSeconds,1);
+  assert.equal(penta.RULES.secondsPerTick,.101);
 });
