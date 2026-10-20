@@ -64,11 +64,21 @@
       player.x+62,player.y,deg*Math.PI/180,power,player.x,player.y));
   }
 
+  // Also exposed for opt-in, non-ranked device stress fixtures. Generating
+  // one replacement at a time avoids allocating entire 360-shot rings every
+  // frame; production Starfall still creates precisely 360 distinct rays.
+  function radialShot(center,degree,power=RULES.specialBulletDamage) {
+    if (!Number.isFinite(center?.x) || !Number.isFinite(center?.y) ||
+        !Number.isFinite(degree)) return null;
+    return shot(center.x,center.y,degree*Math.PI/180,power,
+      center.x,center.y,true);
+  }
+
   function radial(center,power=RULES.specialBulletDamage) {
     if (!Number.isFinite(center?.x) || !Number.isFinite(center?.y))
       return [];
     return Array.from({length:RULES.specialShotCount},(_,degree)=>
-      shot(center.x,center.y,degree*Math.PI/180,power,center.x,center.y,true));
+      radialShot(center,degree,power));
   }
 
   // A once-per-volley chance, never once per bullet; prevent simultaneous
@@ -163,7 +173,7 @@
     return segments;
   }
 
-  const api=Object.freeze({RULES,canEquip,volley,radial,tryStartSpecial,
+  const api=Object.freeze({RULES,canEquip,volley,radial,radialShot,tryStartSpecial,
     finishSpecial,landing,starPosition,advanceShot});
   root.NeonRedBlueWeapon=api;
   if(typeof module==="object"&&module.exports)module.exports=api;
