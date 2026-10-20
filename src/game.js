@@ -3929,6 +3929,13 @@ const W = 1280;
       const isArc = game.weaponType === "arcLaser";
       const refracting = game.weaponType === "brownyellow";
       const fiveBeams = game.weaponType === "purplewhite";
+      // Heat and cooldown persist across weapon changes. A cooling PENTA
+      // finishes resting while another weapon is used in live combat; a swap
+      // does not grant a fresh five seconds of free firing.
+      if (!fiveBeams && game.state === "PLAYING" &&
+          (game.stageMode === "WAVE" || game.stageMode === "BOSS") &&
+          purpleWhiteRules.cooling(game.purpleWhiteDuty))
+        purpleWhiteRules.advanceDuty(game.purpleWhiteDuty, dt, false);
       const active = firing && (game.weaponType === "brown" || isArc || refracting || fiveBeams) &&
         game.state === "PLAYING" &&
         (game.stageMode === "WAVE" || game.stageMode === "BOSS");

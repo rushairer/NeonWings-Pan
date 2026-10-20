@@ -5907,6 +5907,111 @@ test("BROWN-YELLOW leaves ordinary BROWN and cyan-white ARC LASER independent",(
 });
 
 
+
+test("PURPLE-WHITE forces one damage-free second after five seconds of real laser fire",()=>{
+  const app=boot();
+  app.eval([
+    'game.state="PLAYING";game.stageMode="WAVE";game.weaponType="purplewhite";',
+    'game.player.x=175;game.player.y=480;',
+    'game.enemies=[{kind:"scout",x:650,y:480,r:30,hp:2000,maxHp:2000,',
+    'score:25,color:"#fff",core:"#eee"}];',
+    'for(let i=0;i<50;i++) updateBrownLaser(.1,true);'
+  ].join("\n"));
+  assert.equal(app.eval("game.bullets.length"),0);
+  assert.equal(app.eval("game.brownBeam"),null);
+  assert.ok(Math.abs(app.eval("game.enemies[0].hp")-(2000-49*5*1.15))<1e-7);
+  assert.equal(app.eval("game.purpleWhiteDuty.restRemaining"),1);
+  assert.equal(app.eval("game.purpleWhiteDuty.firedSeconds"),0);
+  const damageHp=app.eval("game.enemies[0].hp");
+  app.eval("updateBrownLaser(.5,true)");
+  assert.equal(app.eval("game.brownBeam"),null);
+  assert.equal(app.eval("game.enemies[0].hp"),damageHp);
+  const labels=app.eval('(()=>{const x=[];ctx.fillText=t=>x.push(String(t));drawHud();return x;})()');
+  assert.ok(labels.includes("PENTA COOL  0.5S"));
+  app.eval("updateBrownLaser(.499,true)");
+  assert.equal(app.eval("game.brownBeam"),null);
+  assert.equal(app.eval("game.enemies[0].hp"),damageHp);
+  app.eval("updateBrownLaser(.002,true)");
+  assert.equal(app.eval("game.purpleWhiteDuty.restRemaining"),0);
+  assert.equal(app.eval("game.brownBeam.beams.length"),5);
+  app.eval("updateBrownLaser(.1,true)");
+  assert.ok(Math.abs(app.eval("game.enemies[0].hp")-(damageHp-5.75))<1e-8);
+});
+
+test("PURPLE-WHITE firing heat survives release and a temporary BROWN switch",()=>{
+  const app=boot();
+  app.eval([
+    'game.state="PLAYING";game.stageMode="WAVE";game.weaponType="purplewhite";',
+    'game.enemies=[{kind:"scout",x:620,y:480,r:25,hp:2000,maxHp:2000,',
+    'score:20,color:"#fff",core:"#eee"}];',
+    'for(let i=0;i<48;i++) updateBrownLaser(.1,true);'
+  ].join("\n"));
+  assert.ok(Math.abs(app.eval("game.purpleWhiteDuty.firedSeconds")-4.8)<1e-8);
+  app.eval("updateBrownLaser(.5,false)");
+  assert.ok(Math.abs(app.eval("game.purpleWhiteDuty.firedSeconds")-4.8)<1e-8);
+  assert.equal(app.eval("game.brownBeam"),null);
+  app.eval('collectPowerup({type:"P_BROWN",x:200,y:480,life:1})');
+  const brownHp=app.eval("game.enemies[0].hp");
+  app.eval("updateBrownLaser(.101,true)");
+  assert.ok(Math.abs(app.eval("game.enemies[0].hp")-(brownHp-1.15))<1e-8,
+    "normal BROWN laser remains operational");
+  app.eval('collectPowerup({type:"P_PURPLE_WHITE",x:200,y:480,life:1})');
+  assert.ok(Math.abs(app.eval("game.purpleWhiteDuty.firedSeconds")-4.8)<1e-8,
+    "P change must not erase accumulated heat");
+  app.eval("updateBrownLaser(.2,true)");
+  assert.equal(app.eval("game.purpleWhiteDuty.restRemaining"),1);
+  assert.equal(app.eval("game.brownBeam"),null);
+});
+
+test("PURPLE-WHITE cooldown freezes across PAUSE, TRANSITION and BOSS_REWARD",()=>{
+  const app=boot();
+  app.eval([
+    'game.state="PLAYING";game.stageMode="WAVE";game.weaponType="purplewhite";',
+    'game.enemies=[{kind:"scout",x:620,y:480,r:25,hp:2000,maxHp:2000,',
+    'score:20,color:"#fff",core:"#eee"}];',
+    'for(let i=0;i<50;i++) updateBrownLaser(.1,true);',
+    'game.purpleWhiteSnapshot=game.enemies[0].hp;',
+    'game.state="PAUSED";updatePlaying(5);'
+  ].join("\n"));
+  assert.equal(app.eval("game.purpleWhiteDuty.restRemaining"),1);
+  assert.equal(app.eval("game.enemies[0].hp"),app.eval("game.purpleWhiteSnapshot"));
+  app.eval('game.state="PLAYING";game.stageMode="TRANSITION";game.transition=9;updatePlaying(5)');
+  assert.equal(app.eval("game.purpleWhiteDuty.restRemaining"),1);
+  app.eval('game.stageMode="BOSS_REWARD";game.rewardTimer=99;updatePlaying(5)');
+  assert.equal(app.eval("game.purpleWhiteDuty.restRemaining"),1);
+  app.eval('game.stageMode="WAVE";updateBrownLaser(.25,false)');
+  assert.ok(Math.abs(app.eval("game.purpleWhiteDuty.restRemaining")-.75)<1e-8);
+  assert.equal(app.eval("game.brownBeam"),null);
+});
+
+test("PURPLE-WHITE no-target time does not heat lasers or grant free damage",()=>{
+  const app=boot();
+  app.eval([
+    'game.state="PLAYING";game.stageMode="WAVE";game.weaponType="purplewhite";',
+    'updateBrownLaser(90,true);'
+  ].join("\n"));
+  assert.equal(app.eval("game.purpleWhiteDuty.firedSeconds"),0);
+  assert.equal(app.eval("game.purpleWhiteDuty.restRemaining"),0);
+  assert.equal(app.eval("game.brownBeam"),null);
+});
+
+test("PURPLE-WHITE cooling beam is not rendered even with a locked victim",()=>{
+  const app=boot();
+  const result=app.eval([
+    '(()=>{game.state="PLAYING";game.stageMode="WAVE";game.weaponType="purplewhite";',
+    'game.enemies=[{kind:"scout",x:600,y:480,r:25,hp:2000,maxHp:2000,',
+    'score:20,color:"#fff",core:"#eee"}];',
+    'for(let i=0;i<50;i++)updateBrownLaser(.1,true);',
+    'const hp=game.enemies[0].hp,steps=game.purpleWhiteDuty.restRemaining;',
+    'const lines=[];ctx.lineTo=(x,y)=>lines.push([x,y]);drawBrownLaser();',
+    'return {hp,after:game.enemies[0].hp,rest:steps,lines,beam:game.brownBeam};})()'
+  ].join("\n"));
+  assert.equal(result.rest,1);
+  assert.equal(result.lines.length,0);
+  assert.equal(result.beam,null);
+  assert.equal(result.after,result.hp);
+});
+
 test("PURPLE-WHITE P requires currently equipped PURPLE or BROWN; invalid drop is persistent",()=>{
   const app=boot();
   app.eval([
