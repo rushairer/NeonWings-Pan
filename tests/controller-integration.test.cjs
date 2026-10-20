@@ -18,6 +18,7 @@ const grayFlameWeapon = require("../src/gray-flame-weapon.js");
 const pinkWeapon = require("../src/pink-weapon.js");
 const orangeWeapon = require("../src/orange-weapon.js");
 const redOrangeWeapon = require("../src/red-orange-weapon.js");
+const redBlueWeapon = require("../src/red-blue-weapon.js");
 const brownWeapon = require("../src/brown-weapon.js");
 const purpleWhiteWeapon = require("../src/purple-white-weapon.js");
 const brownYellowWeapon = require("../src/brown-yellow-weapon.js");
@@ -58,7 +59,7 @@ function boot(storage = new Map()) {
   const canvas = { style: {}, getContext: () => ({}) };
   const window = {
     innerWidth: 1280, innerHeight: 960,
-    NeonPlatform: platform, NeonController: controller, NeonCombat: combat, NeonRedWeapon: redWeapon, NeonGreenWeapon: greenWeapon, NeonSolarAuraWeapon: solarAuraWeapon, NeonBlackWeapon: blackWeapon, NeonBlueBlackWeapon: blueBlackWeapon, NeonWhiteWeapon: whiteWeapon, NeonRedWhiteWeapon: redWhiteWeapon, NeonGrayWeapon: grayWeapon, NeonGrayFlameWeapon: grayFlameWeapon, NeonPinkWeapon: pinkWeapon, NeonOrangeWeapon: orangeWeapon, NeonRedOrangeWeapon: redOrangeWeapon, NeonBrownWeapon: brownWeapon, NeonPurpleWhiteWeapon: purpleWhiteWeapon, NeonBrownYellowWeapon: brownYellowWeapon, NeonLimeWeapon: limeWeapon, NeonSkyWeapon: skyWeapon, NeonDarkRedWeapon: darkRedWeapon, NeonDarkRedGoldWeapon: darkRedGoldWeapon, NeonRainbowWeapon: rainbowWeapon, NeonMagnetWeapon: magnetWeapon, NeonArcLaserWeapon: arcLaserWeapon, NeonStasisWeapon: stasisWeapon, NeonEclipseWeapon: eclipseWeapon, NeonRecruitWeapon: recruitWeapon, NeonCollision: collision, NeonEnemyBehaviors: enemyBehaviors, NeonWorlds: worlds, NeonBossParts: bossParts, NeonModes: modes, NeonRecords: records, NeonSelectLayout: selectLayout,
+    NeonPlatform: platform, NeonController: controller, NeonCombat: combat, NeonRedWeapon: redWeapon, NeonGreenWeapon: greenWeapon, NeonSolarAuraWeapon: solarAuraWeapon, NeonBlackWeapon: blackWeapon, NeonBlueBlackWeapon: blueBlackWeapon, NeonWhiteWeapon: whiteWeapon, NeonRedWhiteWeapon: redWhiteWeapon, NeonGrayWeapon: grayWeapon, NeonGrayFlameWeapon: grayFlameWeapon, NeonPinkWeapon: pinkWeapon, NeonOrangeWeapon: orangeWeapon, NeonRedOrangeWeapon: redOrangeWeapon, NeonRedBlueWeapon: redBlueWeapon, NeonBrownWeapon: brownWeapon, NeonPurpleWhiteWeapon: purpleWhiteWeapon, NeonBrownYellowWeapon: brownYellowWeapon, NeonLimeWeapon: limeWeapon, NeonSkyWeapon: skyWeapon, NeonDarkRedWeapon: darkRedWeapon, NeonDarkRedGoldWeapon: darkRedGoldWeapon, NeonRainbowWeapon: rainbowWeapon, NeonMagnetWeapon: magnetWeapon, NeonArcLaserWeapon: arcLaserWeapon, NeonStasisWeapon: stasisWeapon, NeonEclipseWeapon: eclipseWeapon, NeonRecruitWeapon: recruitWeapon, NeonCollision: collision, NeonEnemyBehaviors: enemyBehaviors, NeonWorlds: worlds, NeonBossParts: bossParts, NeonModes: modes, NeonRecords: records, NeonSelectLayout: selectLayout,
     addEventListener: (event, callback) => listeners.set(event, callback)
   };
   const document = {
