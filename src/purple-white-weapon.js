@@ -3,6 +3,8 @@
  * assign unused lanes evenly to existing targets. Fixed 5x original BROWN
  * output on one target, not an additional 5x multiply on top of 5 beams.
  * No projectiles, Canvas, random numbers or second damage clock.
+ * v26.26: each 5 active firing seconds MUST be followed by 1 combat-
+ * second of forced rest; only this weapon uses the firing/rest scheduler.
  */
 (function(root) {
   "use strict";
@@ -17,6 +19,8 @@
     muzzleOffset: brown.RULES.muzzleOffset,
     maxTicksPerFrame: brown.RULES.maxTicksPerFrame,
     beams: 5,
+    firingSeconds: 5,
+    cooldownSeconds: 1,
     lanes: Object.freeze([-28, -14, 0, 14, 28]),
     // At most 24 nearest goal candidates per frame; all current enemies
     // still participate in obstruction checks for every goal.
@@ -179,7 +183,70 @@
     return output;
   }
 
-  const api=Object.freeze({RULES,canEquip,alive,firstContact,plan,groups});
+
+  // Time is active combat time, not wall-clock time. "enabled" means the
+  // player is holding FIRE AND at least one real target has been acquired.
+  // Releasing FIRE or switching weapons cannot reset accumulated beam time.
+  // A forced cooldown keeps counting during active combat even if FIRE is
+  // released; pause, reward and stage transitions never call this function.
+  function createDutyState() {
+    return { firedSeconds: 0, restRemaining: 0 };
+  }
+
+  function cooling(state) {
+    return Boolean(state && state.restRemaining > 1e-9);
+  }
+
+  // Partition dt at exact 5s/1s boundaries. onFire receives ONLY time during
+  // which firing is permitted, in chronological order; onRest is invoked on
+  // each entry into cooldown so the shared Brown 0.101s timer can be reset.
+  // Handle a large dt spanning multiple cycles without accidentally granting
+  // laser hits during the mandatory rest interval.
+  function advanceDuty(state, dt, enabled, onFire = () => {}, onRest = () => {}) {
+    if (!state || !Number.isFinite(state.firedSeconds) ||
+        !Number.isFinite(state.restRemaining) ||
+        state.firedSeconds < 0 || state.firedSeconds >= RULES.firingSeconds ||
+        state.restRemaining < 0 ||
+        typeof onFire !== "function" || typeof onRest !== "function")
+      throw new TypeError("Valid PURPLE-WHITE duty state and callbacks required");
+    let firingTime = 0;
+    let restTime = 0;
+    if (!(dt > 0) || !Number.isFinite(dt))
+      return { firingTime, restTime, cooling: cooling(state) };
+    let remaining = dt;
+    // Real frames are short (< 0.1 s); cap work if an external caller passes
+    // an enormous dt to avoid unbounded callbacks/ticks in one animation frame.
+    const maxPhases = 128;
+    for (let phase = 0; phase < maxPhases && remaining > 1e-9; phase++) {
+      if (cooling(state)) {
+        const slice = Math.min(remaining, state.restRemaining);
+        state.restRemaining = Math.max(0, state.restRemaining - slice);
+        restTime += slice;
+        remaining -= slice;
+        continue;
+      }
+      if (!enabled) break;
+      const available = RULES.firingSeconds - state.firedSeconds;
+      const slice = Math.min(remaining, available);
+      if (slice > 0) {
+        onFire(slice);
+        state.firedSeconds += slice;
+        firingTime += slice;
+        remaining -= slice;
+      }
+      if (state.firedSeconds >= RULES.firingSeconds - 1e-9) {
+        state.firedSeconds = 0;
+        state.restRemaining = RULES.cooldownSeconds;
+        onRest();
+      } else if (!(slice > 0)) {
+        break;
+      }
+    }
+    return { firingTime, restTime, cooling: cooling(state) };
+  }
+
+  const api=Object.freeze({RULES,canEquip,alive,firstContact,plan,groups,
+    createDutyState, cooling, advanceDuty});
   root.NeonPurpleWhiteWeapon=api;
   if(typeof module==="object"&&module.exports) module.exports=api;
 })(typeof globalThis!=="undefined"?globalThis:this);
