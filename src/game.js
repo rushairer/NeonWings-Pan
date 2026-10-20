@@ -1156,6 +1156,66 @@ const W = 1280;
     const performanceTelemetry = {
       frameTimes: new Array(120).fill(0), next:0, count:0, p95:0
     };
+
+    // Explicit, opt-in real-hardware workload fixture. No test paths unless
+    // BOTH perf=1 and an EXACT 360/720/1800 bench value were supplied.
+    // Production/ranked modes never add test bullets or targets.
+    const benchmarkMatch = performanceOverlay
+      ? /(?:^\?|&)bench=(360|720|1800)(?=&|$)/.exec(
+        window.location?.search || "")
+      : null;
+    const redBlueBench = benchmarkMatch ? {
+      active:true,count:Number(benchmarkMatch[1]),emitted:0,
+      centers:[
+        {x:560,y:400},{x:600,y:460},{x:640,y:480},
+        {x:680,y:500},{x:720,y:550}
+      ]
+    } : null;
+
+    function refillRedBlueBenchmark() {
+      if (!redBlueBench?.active) return;
+      // Keep N live pellets across real collisions/expiry. Only allocate
+      // replacements, not 360 extra bullets for each lost projectile.
+      while (game.redBlueBullets.length < redBlueBench.count) {
+        const i=redBlueBench.emitted++;
+        const center=redBlueBench.centers[Math.floor(i/360)%5];
+        game.redBlueBullets.push(redBlueRules.radialShot(
+          center,i%360,redBlueRules.RULES.specialBulletDamage));
+      }
+    }
+
+    function startRedBlueBenchmark() {
+      if (!redBlueBench?.active) return;
+      game=newGame();
+      game.mode="training"; // no ranking/record mutation
+      game.state="PLAYING";
+      game.stageMode="WAVE";
+      game.stageIntro=0;
+      game.weaponType="redblue";
+      game.spawnTimer=Infinity;
+      game.formationTimer=Infinity;
+      // These fixed, practically indestructible targets exercise the
+      // production SKY/PINK target selector and collision/damage pipeline
+      // without enemy AI, spawns, BOMB or score side effects.
+      game.enemies=Array.from({length:48},(_,i)=>({
+        kind:"scout",id:i+1,
+        x:385+(i%8)*109,y:170+Math.floor(i/8)*124,
+        r:21,hp:1e9,maxHp:1e9,score:0,
+        color:"#5779c4",core:"#f6edff"
+      }));
+      refillRedBlueBenchmark();
+    }
+
+    function updateRedBlueBenchmark(dt) {
+      if (!redBlueBench?.active || game.state!=="PLAYING" ||
+          !(dt>0)) return;
+      game.t+=dt;
+      // Same production projectile update/Canvas draw as in real combat,
+      // without real spawn timers, player controls, enemy AI or ranking.
+      updateRedBlueBullets(dt);
+      updateParticles(dt);
+      refillRedBlueBenchmark();
+    }
     function recordPerformanceFrame(ms) {
       // No per-frame arrays or GPU reads. Ignore interrupted/background
       // frames so an app switch cannot poison active-combat P95.
@@ -1298,6 +1358,8 @@ const W = 1280;
     }
 
     function returnToTitle() {
+      // Leave the synthetic lab and restore normal game/menu behavior.
+      if (redBlueBench) redBlueBench.active=false;
       stopBgm();
       const keepHigh = highScore();
       game = newGame();
@@ -6288,7 +6350,9 @@ const W = 1280;
         x+14,y+78,18,"left","#e7fbff");
       drawText(`FX ${game.particles.length}/${LIMITS.particles}  EB ${game.enemyBullets.length}/${LIMITS.enemyBullets}`,
         x+14,y+105,18,"left","#e7fbff");
-      drawText(`STAR ${game.redBlueStarfall?"DESCENDING":"IDLE"}   F3 / ?perf=1`,
+      drawText(redBlueBench?.active
+        ? `BENCH ${redBlueBench.count}  /  48 STATIC TARGETS  /  UNRANKED`
+        : `STAR ${game.redBlueStarfall?"DESCENDING":"IDLE"}   F3 / ?perf=1`,
         x+14,y+132,17,"left","#e7fbff");
       ctx.restore();
     }
@@ -6351,7 +6415,7 @@ const W = 1280;
       ctx.fillRect(0, 0, W, H);
 
       drawText("NEON WINGS", W / 2, 195, 86, "center", "#e7fbff");
-      drawText("NEONWINGS PAN  /  v26.29.1", W / 2, 270, 28, "center", "#98f5ff");
+      drawText("NEONWINGS PAN  /  v26.30.0", W / 2, 270, 28, "center", "#98f5ff");
       drawText(`HIGH SCORE ${String(highScore()).padStart(6, "0")}`, W / 2, 318, 24, "center", "#fff4b7");
 
       drawPlayerShip(W / 2 - 170, 492, -0.20, false, ships[0]);
@@ -6727,8 +6791,12 @@ const W = 1280;
 
       pollGamepadSystemButtons();
 
-      if (game.state === "PLAYING") updatePlaying(dt);
-      else if (game.messageTimer > 0) game.messageTimer = Math.max(0, game.messageTimer - dt);
+      if (game.state === "PLAYING") {
+        if (redBlueBench?.active) updateRedBlueBenchmark(dt);
+        else updatePlaying(dt);
+      } else if (game.messageTimer > 0) {
+        game.messageTimer = Math.max(0, game.messageTimer - dt);
+      }
 
       drawFrame(dt);
       requestAnimationFrame(loop);
@@ -6756,6 +6824,14 @@ const W = 1280;
       if (e.code === "F3") {
         e.preventDefault();
         if (!e.repeat) performanceOverlay = !performanceOverlay;
+        return;
+      }
+
+      // Do not let gameplay shortcuts fire BOMB/Overdrive or select a weapon
+      // inside a synthetic non-ranked performance scene.
+      if (redBlueBench?.active && game.state === "PLAYING") {
+        if ((e.code === "KeyP" || e.code === "Escape") && !e.repeat)
+          pauseGame();
         return;
       }
 
@@ -6864,4 +6940,5 @@ const W = 1280;
       if (event.gamepad?.index === activeGamepadIndex) handleControllerLoss();
     });
 
+    startRedBlueBenchmark();
     requestAnimationFrame(loop);

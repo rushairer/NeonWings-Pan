@@ -31,6 +31,22 @@ A controller-first, five-stage, side-scrolling neon arcade shooter built with br
 
 
 
+## v26.30.0 — 红蓝弹幕实机性能实验场
+
+为解决真实掌机上随机大招难以稳定叠到固定弹量的问题，本版新增**显式开启、不计分的测试场景**，供 AYANEO、安卓 Chrome/WebView 等浏览器真实测量 GPU/CPU 和显示效果。生产游戏无变化。
+
+直接在测试设备打开相应链接（不需要先玩到红蓝武器）：
+
+- [360 枚追踪弹](https://rushairer.github.io/NeonWings-Pan/?v=26.30.0&perf=1&bench=360)
+- [720 枚追踪弹](https://rushairer.github.io/NeonWings-Pan/?v=26.30.0&perf=1&bench=720)
+- [1800 枚追踪弹](https://rushairer.github.io/NeonWings-Pan/?v=26.30.0&perf=1&bench=1800)
+
+入口要求**同时满足** URL 的 `perf=1`（或 `perf=true`）和 `bench=360/720/1800`，值严格匹配。仅 `bench=360`、错误参数或普通用户访问依然进入正常标题画面。独立实验场自动启动、固定 48 个静态高血量目标，维持准确的 N 枚红蓝星爆弹，使用**与正式战斗相同的追踪、扫掠碰撞、粒子和 Canvas 渲染**；不进行敌人 AI/关卡生成、不记录排名、不自动触发游戏内大招，也不改随机掉落概率。按暂停可冻结；从暂停菜单返回标题后退出实验模式。
+
+面板继续显示 FPS、120 有效帧样本滚动 P95、慢帧累计、实时 OUT/SEEK 弹量。每档场景建议稳定运行 10–20 秒后截屏，并记录设备、刷新率、渲染分辨率、供电/性能模式、浏览器版本、FPS/P95、慢帧和视觉可读性。**实验场是固定目标的合成负载，不能等同于完整关卡表现；上线后仍需真实游戏人工测试。** 当前尚未取得硬件数据。
+
+正常启动地址不变：<https://rushairer.github.io/NeonWings-Pan/>。版本和 Pages 缓存已同步至 **26.30.0**。
+
 ## v26.29.1 — 红蓝几何缓存与保守碰撞粗筛
 
 - 保留 v26.28 Canvas 批量绘制、扫掠段复用、共享五星 HUD 修复和 v26.29 `?perf=1` FPS/P95 性能诊断；本次只补此前尚未合入的两项性能优化。
