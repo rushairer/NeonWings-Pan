@@ -497,5 +497,5 @@ test("v26.29 debug HUD code and cache release stay consistent",()=>{
   assert.ok(html.includes('src="./src/game.js?v='+pkg.version+'"'));
   assert.ok(code.includes('window.location?.search || ""'));
   assert.ok(code.includes("RED-BLUE "));
-  assert.ok(code.includes('performanceTelemetry.frameTimes.slice(0,stats.count)'));
+  assert.ok(code.includes('stats.frameTimes.slice(0,stats.count)'));
 });
