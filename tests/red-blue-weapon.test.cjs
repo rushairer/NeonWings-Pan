@@ -144,3 +144,38 @@ test("RED-BLUE star chooses a valid arena landing point and animates from above"
   close(five.starPosition(star).y,600);
   assert.equal(five.starPosition(null),null);
 });
+
+test("RED-BLUE reuses caller-provided swept segment buffer without retaining stale paths",()=>{
+  const b=five.volley({x:175,y:480})[2];
+  const buffer=[{phase:"stale",fromX:-999}];
+  const run=five.advanceShot(b,.10,()=>null,buffer);
+  assert.strictEqual(run,buffer);
+  assert.equal(run.length,1);
+  assert.equal(run[0].phase,"outward");
+  assert.equal(run[0].fromX,237);
+  assert.equal(run[0].toX,333);
+  const next=five.advanceShot(b,.30,()=>null,buffer);
+  assert.strictEqual(next,buffer);
+  assert.equal(next.length,2);
+  assert.deepEqual(next.map(p=>p.phase),["outward","homing"]);
+  assert.equal(b.redBluePhase,"homing");
+  const invalid=five.advanceShot(b,NaN,()=>null,buffer);
+  assert.strictEqual(invalid,buffer);
+  assert.equal(invalid.length,0,"no stale hit segments on invalid combat time");
+  const fresh=five.advanceShot(b,.04,()=>null);
+  assert.equal(fresh.length,1);
+  assert.equal(fresh[0].phase,"homing");
+  assert.equal(buffer.length,0,"standalone no-buffer call must not touch old scratch");
+});
+
+test("RED-BLUE never moves a zero-speed invalid outgoing pellet offstage",()=>{
+  const b=five.radial({x:640,y:480})[0];
+  b.vx=0;
+  b.vy=0;
+  const buffer=[{phase:"stale"}];
+  assert.strictEqual(five.advanceShot(b,.1,()=>null,buffer),buffer);
+  assert.equal(buffer.length,0);
+  assert.equal(b.redBluePhase,"outward");
+  assert.equal(b.x,640);
+  assert.equal(b.y,480);
+});
