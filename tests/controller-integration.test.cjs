@@ -312,7 +312,7 @@ test("RED-BLUE triple starfall emits 1080 shots, deals three 1.3x full-field hit
       hp:200,maxHp:200,score:0,color:"#fff",core:"#fff"}];
     game.redWeapon.special={redBlue:true,elapsed:0,emitted:0};
     game.redBlueStarfall={
-      stars:NeonRedBlueWeapon.landingTriplet(game.enemies,null),
+      stars:redBlueRules.landingTriplet(game.enemies,null),
       elapsed:0,power:11.5,bulletPower:.38
     };`);
   app.eval("updateRedBlueStarfall(.8)");
