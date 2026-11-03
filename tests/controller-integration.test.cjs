@@ -302,3 +302,42 @@ test("laser never starts in a menu or benchmark", () => {
   app.eval('game.state="PLAYING";game.stageMode="TRANSITION"');
   assert.equal(app.eval("activateFloorLaser()"),false);
 });
+
+
+test("RED-BLUE triple starfall emits 1080 shots, deals three 1.3x full-field hits, and upgrades once",()=>{
+  const app=boot();
+  app.eval(`game.state="PLAYING";game.stageMode="WAVE";
+    game.weaponType="redblue";
+    game.enemies=[{id:999,kind:"scout",x:840,y:450,r:24,
+      hp:200,maxHp:200,score:0,color:"#fff",core:"#fff"}];
+    game.redWeapon.special={redBlue:true,elapsed:0,emitted:0};
+    game.redBlueStarfall={
+      stars:NeonRedBlueWeapon.landingTriplet(game.enemies,null),
+      elapsed:0,power:11.5,bulletPower:.38
+    };`);
+  app.eval("updateRedBlueStarfall(.8)");
+  assert.equal(app.eval("game.redBlueStarfall"),null);
+  assert.equal(app.eval("game.redBlueStarFx.length"),3);
+  assert.equal(app.eval("game.redBlueBullets.length"),1080);
+  assert.equal(app.eval("game.redWeapon.stars"),1);
+  assert.equal(app.eval("game.redWeapon.special"),null);
+  assert.ok(Math.abs(app.eval("game.enemies[0].hp")-(200-3*11.5*1.3))<1e-7);
+  assert.equal(app.eval("new Set(game.redBlueBullets.map(b=>b.redBlueOriginX)).size"),3);
+  app.eval("updateRedBlueStarfall(.8)");
+  assert.equal(app.eval("game.redWeapon.stars"),1);
+});
+
+test("RED-BLUE amplifies any direct player hit once, including floor laser, but unequipping disables it",()=>{
+  const app=boot();
+  app.eval(`game.state="PLAYING";game.stageMode="WAVE";
+    game.enemies=[{id:1001,kind:"scout",x:640,y:480,r:25,
+      hp:100,maxHp:100,score:0,color:"#fff",core:"#fff"}];
+    game.floorLaser.x=640;game.floorLaser.active=5;
+    game.weaponType="redblue";`);
+  app.eval("updateFloorLaser(.016)");
+  assert.ok(Math.abs(app.eval("game.enemies[0].hp")-99.87)<1e-8);
+  app.eval('damageEnemy(game.enemies[0],10,640,480,"#fff")');
+  assert.ok(Math.abs(app.eval("game.enemies[0].hp")-86.87)<1e-8);
+  app.eval('game.weaponType="yellow";damageEnemy(game.enemies[0],10,640,480,"#fff")');
+  assert.ok(Math.abs(app.eval("game.enemies[0].hp")-76.87)<1e-8);
+});
