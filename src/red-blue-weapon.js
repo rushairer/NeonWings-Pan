@@ -1,5 +1,5 @@
 /* RED-BLUE P: 5-way volley -> 360-distance seeking shots; a falling
- * five-point star triggers a full-field 10x blast and 360 unique rays.
+ * triple five-point stars each trigger a full-field 10x blast and 360 unique rays.
  * ALL four red-star weapons use the ONE original redWeapon.stars counter.
  */
 (function(root) {
@@ -14,6 +14,8 @@
     normalDamage: 1.15,
     specialBulletDamage: 0.38,
     starfallMultiplier: 10,
+    starCount: 3,
+    allDamageMultiplier: 1.3,
     volleySeconds: 1,
     normalShotCount: 5,
     spreadDegrees: Object.freeze([-60,-30,0,30,60]),
@@ -23,7 +25,7 @@
     homingLifetimeSeconds: 3.6,
     starfallSeconds: 0.8,
     specialShotCount: 360,
-    specialChance: red.RULES.specialChance,
+    specialChance: 0.20,
     maxStars: red.RULES.maxStars,
     // Independent from the shared 360 ordinary-bullet quota. Never truncate
     // the exact 360-degree star burst. Its 3.6s homing TTL bounds retention.
@@ -113,6 +115,20 @@
     return {x:clamp(x,w*.35,w-100), y:clamp(y,100,h-100)};
   }
 
+  // Triple landing points stay separated and in-bounds without extra RNG.
+  // The middle star stays as close as the arena allows to the selected focus.
+  function landingTriplet(enemies,boss,w=1280,h=960) {
+    const focus=landing(enemies,boss,w,h);
+    const margin=Math.min(90,w*.1);
+    const spacing=Math.min(176,Math.max(1,(w-2*margin)/4));
+    const clamp=(v,lo,hi)=>Math.max(lo,Math.min(hi,v));
+    const mid=clamp(focus.x,margin+spacing,w-margin-spacing);
+    return [-1,0,1].map((offset,index)=>({
+      x:mid+offset*spacing,
+      y:clamp(focus.y+(1-index)*48,100,h-100)
+    }));
+  }
+
   function starPosition(star) {
     if (!star) return null;
     const t=Math.max(0,Math.min(1,star.elapsed/RULES.starfallSeconds));
@@ -174,7 +190,7 @@
   }
 
   const api=Object.freeze({RULES,canEquip,volley,radial,radialShot,tryStartSpecial,
-    finishSpecial,landing,starPosition,advanceShot});
+    finishSpecial,landing,landingTriplet,starPosition,advanceShot});
   root.NeonRedBlueWeapon=api;
   if(typeof module==="object"&&module.exports)module.exports=api;
 })(typeof globalThis!=="undefined"?globalThis:this);
