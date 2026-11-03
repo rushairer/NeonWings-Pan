@@ -475,7 +475,7 @@ test("v26.27 RED-BLUE 29th P module runs after RED/PINK and ships to Pages",()=>
   assert.equal(redBlueWeapon.RULES.specialShotCount,360);
   assert.equal(redBlueWeapon.RULES.starfallMultiplier,10);
   assert.equal(redBlueWeapon.RULES.volleySeconds,1);
-  assert.equal(redBlueWeapon.RULES.specialChance,.1);
+  assert.equal(redBlueWeapon.RULES.specialChance,.2);
 });
 
 test("v26.28 Red-Blue perf hardening keeps current Pages module URLs and scratch API",()=>{
