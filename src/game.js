@@ -1072,6 +1072,8 @@ const W = 1280;
         redBlueBullets: [],
         redBlueStarfall: null,
         redBlueStarFx: [],
+        // Independent floor turret: X fires a five-second vertical beam.
+        floorLaser: { x: W / 2, active: 0, cooldown: 0 },
         grayWeapon: grayRules.createState(),
         pinkWeapon: pinkRules.createState(),
         brownWeapon: brownRules.createState(),
@@ -1429,6 +1431,7 @@ const W = 1280;
       game.redBlueBullets.length = 0;
       game.redBlueStarfall = null;
       game.redBlueStarFx.length = 0;
+      game.floorLaser.active = 0;
       game.boss = null;
       sfx("gameOver");
       haptic("gameOver", 0.78, 0.70, 300, 0.8);
@@ -1519,6 +1522,7 @@ const W = 1280;
         // Start / Select remain system keys. Combat fire and bomb are configurable.
         if (startDown && !gamepadEdge.start) handleStartButton();
         if (selectDown && !gamepadEdge.select) toggleFullscreen();
+        if (game.state === "PLAYING" && xDown && !gamepadEdge.x && !redBlueBench?.active) activateFloorLaser();
         if (game.state === "PLAYING" && bombDown && !gamepadEdge.bomb) useBomb();
         if (game.state === "PLAYING" && overdriveDown && !gamepadEdge.overdrive) activateOverdrive();
 
@@ -3638,6 +3642,7 @@ const W = 1280;
       game.redBlueBullets.length = 0;
       game.redBlueStarfall = null;
       game.redBlueStarFx.length = 0;
+      game.floorLaser.active = 0;
       if (game.redWeapon.special?.redBlue) game.redWeapon.special = null;
       game.magneticFields.length = 0;
       game.magneticBursts.length = 0;
@@ -5075,6 +5080,95 @@ const W = 1280;
       showMessage(game.transitionText, 2.0);
     }
 
+    // The gun platform belongs to the arena, not the player ship or a P pickup.
+    // Its 0.1 damage is PER RENDERED COMBAT FRAME, independent of frame duration.
+    function activateFloorLaser() {
+      const turret = game.floorLaser;
+      if (game.state !== "PLAYING" || redBlueBench?.active ||
+          (game.stageMode !== "WAVE" && game.stageMode !== "BOSS") ||
+          turret.active > 0 || turret.cooldown > 0) return false;
+      turret.active = 5;
+      sfx("overdriveOn");
+      haptic("floorLaser", 0.34, 0.45, 110, 0.3);
+      showMessage("FLOOR LASER  /  5.0S", 1.1);
+      return true;
+    }
+
+    function updateFloorLaser(dt) {
+      const turret = game.floorLaser;
+      // Right stick is independent of the ship's left-stick movement.
+      const pad = gamepadAwaitRelease ? null : readActivePad();
+      const horizontal = controller.normalizeAxis(pad?.axes?.[2], settings.stickDeadzone);
+      turret.x = clamp(turret.x + horizontal * 720 * dt, 36, W - 36);
+      if (game.stageMode !== "WAVE" && game.stageMode !== "BOSS") return;
+
+      if (turret.active <= 0) {
+        turret.cooldown = Math.max(0, turret.cooldown - dt);
+        return;
+      }
+
+      // A vertical full-field ray from the stationary bottom-edge rail.
+      // Snapshot identities: a split child cannot be damaged in its parent's frame.
+      const targets = game.enemies.slice();
+      for (const enemy of targets) {
+        if (game.stageMode !== "WAVE" && game.stageMode !== "BOSS") break;
+        if (enemy.hp > 0 && enemy.y - enemy.r < H - 48 &&
+            Math.abs(enemy.x - turret.x) <= enemy.r + 7)
+          damageEnemy(enemy, 0.1, turret.x, enemy.y, "#8cf7ff");
+      }
+      const boss = game.boss;
+      if (boss?.active && boss.hp > 0 &&
+          Math.abs(boss.x - turret.x) <= boss.rx + 7) {
+        // Respect the existing boss-part pipeline and never hit hull and
+        // a mounted weapon simultaneously in one tick.
+        const part = (boss.parts || []).find(p => p.hp > 0 &&
+          Math.abs(boss.x + p.x - turret.x) <= p.r + 7);
+        damageBoss(0.1, turret.x, boss.y, "#8cf7ff", part || null);
+      }
+      turret.active = Math.max(0, turret.active - dt);
+      if (turret.active === 0) turret.cooldown = 30;
+    }
+
+    function drawFloorLaser() {
+      const turret = game.floorLaser;
+      if (!turret) return;
+      const y = H - 38;
+      ctx.save();
+      if (turret.active > 0 && (game.stageMode === "WAVE" || game.stageMode === "BOSS")) {
+        const flicker = 0.75 + 0.25 * Math.sin(game.t * 30);
+        ctx.globalAlpha = flicker;
+        ctx.lineCap = "round";
+        ctx.strokeStyle = "rgba(65,231,255,.22)";
+        ctx.lineWidth = 30;
+        ctx.beginPath();
+        ctx.moveTo(turret.x, y - 12);
+        ctx.lineTo(turret.x, 0);
+        ctx.stroke();
+        ctx.strokeStyle = "#82f5ff";
+        ctx.lineWidth = 12;
+        ctx.beginPath();
+        ctx.moveTo(turret.x, y - 12);
+        ctx.lineTo(turret.x, 0);
+        ctx.stroke();
+        ctx.strokeStyle = "#ffffff";
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.moveTo(turret.x, y - 12);
+        ctx.lineTo(turret.x, 0);
+        ctx.stroke();
+      }
+      // Permanent platform, independent of whether the skill is ready.
+      ctx.globalAlpha = 1;
+      ctx.fillStyle = "#142a47";
+      ctx.fillRect(turret.x - 37, y - 5, 74, 27);
+      ctx.fillStyle = turret.active > 0 ? "#ffffff"
+        : turret.cooldown > 0 ? "#44647a" : "#6ceeff";
+      ctx.fillRect(turret.x - 23, y - 13, 46, 13);
+      ctx.fillStyle = "#8cf7ff";
+      ctx.fillRect(turret.x - 5, y - 24, 10, 12);
+      ctx.restore();
+    }
+
     function updateGreenAura(dt) {
       // GREEN keeps its original 0.4s global clock; SOLAR inherits its exact
       // circle/Boss geometry and damage, but pulses once every 0.1s.
@@ -5117,6 +5211,7 @@ const W = 1280;
 
       game.t += dt;
       game.fireCooldown -= dt;
+      if (!redBlueBench?.active) updateFloorLaser(dt);
       game.invuln = Math.max(0, game.invuln - dt);
       game.bombFlash = Math.max(0, game.bombFlash - dt);
 
@@ -6270,6 +6365,15 @@ const W = 1280;
         drawText(`GRAZES ${combat.grazes}  /  BEST ${combat.maxCombo}`, W - 336, H - 37, 19, "left", "#e7fbff");
       }
 
+      // The floor turret is available regardless of equipped P / fighter.
+      const turret = game.floorLaser;
+      if (!redBlueBench?.active) {
+        const status = turret.active > 0 ? `BEAM ${turret.active.toFixed(1)}S`
+          : turret.cooldown > 0 ? `COOL ${turret.cooldown.toFixed(1)}S` : "READY";
+        drawText(`X FLOOR LASER  ${status}`, W / 2, H - 130, 19, "center",
+          turret.active > 0 ? "#ffffff" : turret.cooldown > 0 ? "#91a7bc" : "#8cf7ff");
+      }
+
       // Exactly ONE shared RED five-star state for RED, RED-WHITE,
       // RED-ORANGE and RED-BLUE. Red-Blue does NOT use Red's volley rest.
       // Equipping other P hides stars without resetting the same state.
@@ -6765,6 +6869,7 @@ const W = 1280;
       drawElectricArcs();
       drawPowerups();
       drawParticles();
+      if (!redBlueBench?.active) drawFloorLaser();
 
       drawPlayerShip(game.player.x, game.player.y, game.player.vx / selectedShip().speed, game.invuln > 0, selectedShip());
       drawHud();
