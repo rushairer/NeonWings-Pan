@@ -5126,7 +5126,7 @@ const W = 1280;
         damageBoss(0.1, turret.x, boss.y, "#8cf7ff", part || null);
       }
       turret.active = Math.max(0, turret.active - dt);
-      if (turret.active === 0) turret.cooldown = 30;
+      if (turret.active === 0) turret.cooldown = 10;
     }
 
     function drawFloorLaser() {
@@ -5166,6 +5166,22 @@ const W = 1280;
       ctx.fillRect(turret.x - 23, y - 13, 46, 13);
       ctx.fillStyle = "#8cf7ff";
       ctx.fillRect(turret.x - 5, y - 24, 10, 12);
+
+      // Cooldown meter: its center stays exactly 100 logical pixels above
+      // the turret base (y = H - 38), independent of horizontal movement.
+      // Empty at 10s remaining, fills left-to-right toward the next READY.
+      const meterY = y - 100;
+      const meterWidth = 86;
+      const meterHeight = 10;
+      const meterX = turret.x - meterWidth / 2;
+      const progress = clamp(1 - turret.cooldown / 10, 0, 1);
+      ctx.fillStyle = "rgba(2,12,29,.84)";
+      ctx.fillRect(meterX - 3, meterY - 3, meterWidth + 6, meterHeight + 6);
+      ctx.fillStyle = "#35506b";
+      ctx.fillRect(meterX, meterY, meterWidth, meterHeight);
+      ctx.fillStyle = turret.active > 0 ? "#ffffff"
+        : turret.cooldown > 0 ? "#57d9ff" : "#68ffb3";
+      ctx.fillRect(meterX, meterY, meterWidth * progress, meterHeight);
       ctx.restore();
     }
 
@@ -6519,7 +6535,7 @@ const W = 1280;
       ctx.fillRect(0, 0, W, H);
 
       drawText("NEON WINGS", W / 2, 195, 86, "center", "#e7fbff");
-      drawText("NEONWINGS PAN  /  v26.31.0", W / 2, 270, 28, "center", "#98f5ff");
+      drawText("NEONWINGS PAN  /  v26.31.1", W / 2, 270, 28, "center", "#98f5ff");
       drawText(`HIGH SCORE ${String(highScore()).padStart(6, "0")}`, W / 2, 318, 24, "center", "#fff4b7");
 
       drawPlayerShip(W / 2 - 170, 492, -0.20, false, ships[0]);
