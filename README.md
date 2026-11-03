@@ -588,3 +588,7 @@ The workflow tests, builds, and publishes `dist/` when changes reach `main`. Con
 See [AGENTS.md](AGENTS.md) for invariants and test gates; [ROADMAP.md](ROADMAP.md) for upcoming versions.
 
 This project is still evolving. Hardware rumble and browser fullscreen are browser/device-dependent; not all browsers support them. No software license has yet been specified in this repository.
+
+### AYANEO right-stick floor laser (v26.31.0)
+
+During normal combat, an independent turret is always visible at the bottom of the 1280x960 playfield. Move it horizontally with the **right stick** (`Gamepad.axes[2]`); the left stick still controls the fighter. Press the physical **X** button (`buttons[2]`) to fire a vertical piercing beam for **5 seconds**. Every active combat frame, each enemy overlapping the beam takes **0.1 damage**, and the turret may still move while firing. After the beam ends, a **30-second active-combat cooldown** begins. The HUD displays READY / BEAM / COOL. Timers stop on pause and between stages; the beam is independent of P pickups, BOMB, and Overdrive. X remains the records shortcut on the title screen, and is reserved from configurable combat bindings (including saved legacy mappings). The optional `?perf=1&bench=360` synthetic Red-Blue lab does not use this turret. Actual AYANEO X/right-stick mapping and performance still require device QA.
