@@ -98,16 +98,18 @@ test("RED-BLUE starfall explosion multiplier is 10x normal but radial bullets st
   assert.equal(R.starfallMultiplier,10);
   assert.equal(R.normalDamage*R.starfallMultiplier,11.5);
   assert.equal(R.specialBulletDamage,.38);
-  assert.equal(R.specialChance,red.RULES.specialChance);
-  assert.equal(R.specialChance,.10);
+  assert.equal(R.specialChance,.20);
+  assert.equal(red.RULES.specialChance,.10,"ordinary RED must remain 10%");
+  assert.equal(R.starCount,3);
+  assert.equal(R.allDamageMultiplier,1.3);
   assert.equal(R.maxStars,red.RULES.maxStars);
   assert.ok(R.maxBullets>=R.specialShotCount);
 });
 
-test("RED-BLUE uses ONE existing RED special slot; chance strictly below 10%",()=>{
+test("RED-BLUE uses ONE existing RED special slot; chance strictly below 20%",()=>{
   const shared=red.createState();
-  assert.equal(five.tryStartSpecial(shared,.1),false);
-  assert.equal(five.tryStartSpecial(shared,.099999),true);
+  assert.equal(five.tryStartSpecial(shared,.2),false);
+  assert.equal(five.tryStartSpecial(shared,.199999),true);
   assert.equal(shared.special.redBlue,true);
   assert.equal(five.tryStartSpecial(shared,0),false);
   assert.equal(red.tick(shared,3,()=>{throw Error("Red 250 fan must not fire");}).fired,0);
@@ -237,4 +239,16 @@ test("RED-BLUE one-shot radial fixture matches every production Starfall angle",
   assert.equal(five.radialShot(null,0),null);
   assert.equal(five.radialShot({x:1,y:NaN},2),null);
   assert.equal(five.radialShot(point,Infinity),null);
+});
+
+
+test("RED-BLUE triple landings are distinct, deterministic and within arena",()=>{
+  const target={x:900,y:500,hp:100};
+  const centers=five.landingTriplet([target],null);
+  assert.equal(centers.length,3);
+  assert.equal(new Set(centers.map(p=>p.x)).size,3);
+  assert.ok(centers.every(p=>p.x>=0&&p.x<=1280&&p.y>=100&&p.y<=860));
+  assert.deepEqual(centers,five.landingTriplet([target],null));
+  assert.equal(centers[1].y,500);
+  assert.equal(centers.flatMap(p=>five.radial(p)).length,1080);
 });
