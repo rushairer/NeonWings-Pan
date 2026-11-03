@@ -43,7 +43,7 @@ const source = fs.readFileSync(path.join(__dirname, "../src/game.js"), "utf8");
 
 function makePad(index = 0) {
   return {
-    index, connected: true, axes: [0, 0],
+    index, connected: true, axes: [0, 0, 0, 0],
     buttons: Array.from({ length: 16 }, () => ({ pressed: false, value: 0 }))
   };
 }
@@ -102,25 +102,25 @@ test("controller options can remap fire/bomb and persist to another boot", () =>
   app.eval('game.state = "PAUSED"; pauseMenu.page = "main"; pauseMenu.index = 8; activatePauseItem()');
   assert.equal(app.eval('pauseMenu.page'), 'controls');
   app.eval('pauseMenu.index = 1; adjustPauseItem(1)');
-  assert.equal(app.eval('settings.firePrimary'), 2);
+  assert.equal(app.eval('settings.firePrimary'), 4);
   app.eval('pauseMenu.index = 3; adjustPauseItem(1); adjustPauseItem(1)');
-  // A -> B -> LB: X is primary fire and Y is reserved for Overdrive.
-  assert.equal(app.eval('settings.bombButton'), 4);
+  // A -> B -> RB: X is reserved for the floor laser, Y is Overdrive.
+  assert.equal(app.eval('settings.bombButton'), 5);
   const after = boot(storage);
-  assert.equal(after.eval('settings.firePrimary'), 2);
-  assert.equal(after.eval('settings.bombButton'), 4);
+  assert.equal(after.eval('settings.firePrimary'), 4);
+  assert.equal(after.eval('settings.bombButton'), 5);
   after.eval('game.state = "PLAYING"');
-  press(after.pad, 2, true);
+  press(after.pad, 4, true);
   assert.equal(after.eval('readInput(0.016)'), true);
-  press(after.pad, 2, false);
-  press(after.pad, 4, true);
-  after.eval('pollGamepadSystemButtons()');
-  assert.equal(after.eval('game.bomb'), 1);
-  after.eval('pollGamepadSystemButtons()');
-  assert.equal(after.eval('game.bomb'), 1);
   press(after.pad, 4, false);
+  press(after.pad, 5, true);
   after.eval('pollGamepadSystemButtons()');
-  press(after.pad, 4, true);
+  assert.equal(after.eval('game.bomb'), 1);
+  after.eval('pollGamepadSystemButtons()');
+  assert.equal(after.eval('game.bomb'), 1);
+  press(after.pad, 5, false);
+  after.eval('pollGamepadSystemButtons()');
+  press(after.pad, 5, true);
   after.eval('pollGamepadSystemButtons()');
   assert.equal(after.eval('game.bomb'), 0);
 });
@@ -248,4 +248,57 @@ test("physical X opens local records from the title and Start safely closes it",
   press(app.pad,9,true);
   app.eval("pollGamepadSystemButtons()");
   assert.equal(app.eval("game.state"),"TITLE");
+});
+
+
+test("floor turret uses right stick, X triggers once, remains steerable, then cools for 30 seconds", () => {
+  const app=boot();
+  app.eval('game.state="PLAYING";game.stageMode="WAVE"');
+  app.pad.axes[2]=1;
+  app.eval("updateFloorLaser(0.5)");
+  assert.equal(app.eval("game.floorLaser.x"), 1000);
+  assert.equal(app.eval("game.player.x"), 175);
+  press(app.pad,2,true);
+  app.eval("pollGamepadSystemButtons()");
+  assert.equal(app.eval("game.floorLaser.active"), 5);
+  assert.equal(app.eval("game.bomb"), 2);
+  app.eval("updateFloorLaser(1)");
+  assert.equal(app.eval("game.floorLaser.x"), 1244);
+  assert.equal(app.eval("game.floorLaser.active"), 4);
+  app.eval("pollGamepadSystemButtons()");
+  assert.equal(app.eval("game.floorLaser.active"), 4);
+  app.pad.axes[2]=-1;
+  app.eval("updateFloorLaser(4)");
+  assert.equal(app.eval("game.floorLaser.active"), 0);
+  assert.equal(app.eval("game.floorLaser.cooldown"), 30);
+  press(app.pad,2,false);app.eval("pollGamepadSystemButtons()");
+  press(app.pad,2,true);app.eval("pollGamepadSystemButtons()");
+  assert.equal(app.eval("game.floorLaser.active"), 0);
+  app.eval("updateFloorLaser(30)");
+  assert.equal(app.eval("game.floorLaser.cooldown"), 0);
+  press(app.pad,2,false);app.eval("pollGamepadSystemButtons()");
+  press(app.pad,2,true);app.eval("pollGamepadSystemButtons()");
+  assert.equal(app.eval("game.floorLaser.active"), 5);
+});
+
+test("laser deals 0.1 per simulation frame and freezes while paused", () => {
+  const app=boot();
+  app.eval('game.state="PLAYING";game.stageMode="WAVE";game.floorLaser.x=640;game.floorLaser.active=5;game.enemies=[{x:640,y:480,r:25,hp:10,maxHp:10,kind:"scout",vx:0,vy:0,color:"#fff",core:"#fff"}]');
+  app.eval("updateFloorLaser(.016)");
+  const afterOne=app.eval("game.enemies[0].hp");
+  assert.ok(afterOne <= 9.9000001 && afterOne >= 9.8999999);
+  app.eval("updateFloorLaser(.016)");
+  assert.ok(Math.abs(app.eval("game.enemies[0].hp")-9.8)<1e-8);
+  app.eval('game.state="PAUSED"');
+  // updatePlaying gates the damage and cooldown while paused.
+  app.eval("updatePlaying(2)");
+  assert.ok(Math.abs(app.eval("game.enemies[0].hp")-9.8)<1e-8);
+  assert.equal(app.eval("game.floorLaser.active")>4.9,true);
+});
+
+test("laser never starts in a menu or benchmark", () => {
+  const app=boot();
+  assert.equal(app.eval("activateFloorLaser()"),false);
+  app.eval('game.state="PLAYING";game.stageMode="TRANSITION"');
+  assert.equal(app.eval("activateFloorLaser()"),false);
 });
