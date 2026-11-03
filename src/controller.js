@@ -12,6 +12,8 @@
     Object.freeze({ index: 6, label: "LT" }),
     Object.freeze({ index: 7, label: "RT" })
   ]);
+  // Physical X (2) is reserved for the floor-laser special in combat.
+  const RESERVED_COMBAT = Object.freeze([2]);
   const DEFAULTS = Object.freeze({
     firePrimary: 1,
     fireSecondary: 7,
@@ -21,7 +23,7 @@
   });
 
   function indexIsAllowed(index) {
-    return Number.isInteger(index) && BUTTONS.some(option => option.index === index);
+    return Number.isInteger(index) && !RESERVED_COMBAT.includes(index) && BUTTONS.some(option => option.index === index);
   }
 
   function validButton(value, fallback, excluded = []) {
@@ -79,7 +81,7 @@
     return Math.sign(clamped) * (Math.abs(clamped) - dz) / (1 - dz);
   }
 
-  const api = Object.freeze({ BUTTONS, DEFAULTS, sanitizeSettings, cycleButton, buttonLabel, pressed, anyPressed, normalizeAxis });
+  const api = Object.freeze({ BUTTONS, RESERVED_COMBAT, DEFAULTS, sanitizeSettings, cycleButton, buttonLabel, pressed, anyPressed, normalizeAxis });
   root.NeonController = api;
   if (typeof module === "object" && module.exports) module.exports = api;
 })(typeof globalThis !== "undefined" ? globalThis : this);
