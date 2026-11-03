@@ -15,7 +15,8 @@ test("defaults preserve B / RT for fire and A for bomb", () => {
 test("corrupted or duplicate bindings are repaired without disabling an action", () => {
   const stored = controller.sanitizeSettings({ firePrimary: 2, fireSecondary: 2, bombButton: 2, stickDeadzone: "NaN" });
   assert.deepEqual(new Set([stored.firePrimary, stored.fireSecondary, stored.bombButton, stored.overdriveButton]).size, 4);
-  assert.equal(stored.firePrimary, 2);
+  assert.equal(stored.firePrimary, 1);
+  assert.ok(![stored.firePrimary,stored.fireSecondary,stored.bombButton,stored.overdriveButton].includes(2));
   assert.equal(stored.stickDeadzone, 0.18);
   assert.deepEqual(controller.sanitizeSettings({ stickDeadzone: 99 }).stickDeadzone, 0.44);
   assert.equal(controller.sanitizeSettings({ firePrimary: "bogus" }).firePrimary, 1);
@@ -24,6 +25,7 @@ test("corrupted or duplicate bindings are repaired without disabling an action",
 test("cycling the controller binding skips buttons used by other actions", () => {
   assert.equal(controller.cycleButton(1, 1, [0, 2]), 3);
   assert.equal(controller.cycleButton(0, -1, [7]), 6);
+  assert.equal(controller.cycleButton(1, 1, [3]), 4);
   assert.equal(controller.buttonLabel(7), "RT");
   assert.equal(controller.buttonLabel(999), "?");
 });
