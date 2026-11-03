@@ -3210,7 +3210,7 @@ const W = 1280;
         // The existing red-star special slot blocks overlapping fans/stars.
         if (redBlueRules.tryStartSpecial(game.redWeapon,Math.random())) {
           game.redBlueStarfall = {
-            ...redBlueRules.landing(game.enemies,game.boss,W,H),
+            stars:redBlueRules.landingTriplet(game.enemies,game.boss,W,H),
             elapsed:0,
             power:redBlueRules.RULES.normalDamage *
               redBlueRules.RULES.starfallMultiplier * scale,
@@ -3336,8 +3336,17 @@ const W = 1280;
       return a;
     }
 
+    function playerDamageAmount(amount) {
+      // Single common hit-time multiplier: bullets, missiles, beams, allied
+      // strikes, BOMB and delayed effects. Never modifies benchmark damage.
+      return game.state==="PLAYING" && !redBlueBench?.active &&
+        game.weaponType==="redblue"
+        ? amount*redBlueRules.RULES.allDamageMultiplier : amount;
+    }
+
     function damageEnemy(e, amount, x, y, c = "#64f4ff", recruitOnKill = false) {
       if (e.hp <= 0) return;
+      amount=playerDamageAmount(amount);
 
       const shield = enemyBehaviors.applyFrontalShield(e, amount, game.player.x);
       if (shield.absorbed > 0) {
@@ -3586,6 +3595,7 @@ const W = 1280;
     function damageBoss(amount, x, y, color = "#fff1a8", targetPart = null) {
       const boss = game.boss;
       if (!boss || boss.hp <= 0 || !boss.active) return false;
+      amount=playerDamageAmount(amount);
 
       if (targetPart) {
         const effect = bossParts.damagePart(boss, targetPart, amount);
@@ -4515,42 +4525,49 @@ const W = 1280;
     // Attack strength is captured when triggered: switching P cannot change
     // impact power. Ordinary and burst projectiles use one-hit swept damage.
     function updateRedBlueStarfall(dt) {
-      for (const fx of game.redBlueStarFx) fx.life = Math.max(0,fx.life-dt);
-      game.redBlueStarFx = game.redBlueStarFx.filter(fx=>fx.life>0);
-      const star = game.redBlueStarfall;
-      if (!star || !(dt>0) || (game.stageMode !== "WAVE" &&
-          game.stageMode !== "BOSS")) return;
-      star.elapsed = Math.min(redBlueRules.RULES.starfallSeconds,
-        star.elapsed+dt);
-      if (star.elapsed < redBlueRules.RULES.starfallSeconds) return;
-      game.redBlueStarfall = null;
-      // Award the ONE original RED star at completed impact, before a
-      // potential Boss kill clears stage attack state.
-      const upgraded = redBlueRules.finishSpecial(game.redWeapon);
-      if (upgraded.completed && game.weaponType === "redblue")
+      for (const fx of game.redBlueStarFx) fx.life=Math.max(0,fx.life-dt);
+      game.redBlueStarFx=game.redBlueStarFx.filter(fx=>fx.life>0);
+      const fall=game.redBlueStarfall;
+      if (!fall || !(dt>0) ||
+          (game.stageMode!=="WAVE" && game.stageMode!=="BOSS")) return;
+      fall.elapsed=Math.min(redBlueRules.RULES.starfallSeconds,fall.elapsed+dt);
+      if (fall.elapsed<redBlueRules.RULES.starfallSeconds) return;
+      game.redBlueStarfall=null;
+      // One shared RED special completion/star upgrade for all three impacts.
+      const upgraded=redBlueRules.finishSpecial(game.redWeapon);
+      if (upgraded.completed && game.weaponType==="redblue")
         showMessage(upgraded.upgraded
           ? "RED-BLUE  STAR UP  "+game.redWeapon.stars+"/5"
           : "RED-BLUE  MAX 5 STARS",1.3);
-      if (game.redBlueStarFx.length >= LIMITS.redBlueStarFx)
-        game.redBlueStarFx.shift();
-      game.redBlueStarFx.push({x:star.x,y:star.y,life:.72});
-      game.shake = Math.max(game.shake,18);
+      // Snapshot targets BEFORE all damage: do not hit newly spawned splitters
+      // or a Boss spawned by the triple full-screen impact.
+      const targets=game.enemies.slice();
+      const boss=game.boss?.active && game.boss.hp>0 ? game.boss : null;
+      const stage=game.stageMode;
+      const stars=fall.stars || [{x:fall.x,y:fall.y}];
+      const shots=[];
+      for (const point of stars) {
+        if (game.redBlueStarFx.length>=LIMITS.redBlueStarFx)
+          game.redBlueStarFx.shift();
+        game.redBlueStarFx.push({x:point.x,y:point.y,life:.72});
+        shots.push(...redBlueRules.radial(point,fall.bulletPower));
+      }
+      game.shake=Math.max(game.shake,18);
       sfx("explode");
       hapticExplosion();
-      // All 360 angles from 0° to 359°, never dependent on the shared
-      // 360 ordinary-bullet quota. Their first 360 units are OUTWARD ONLY;
-      // after that, homing shots can collide once and disappear.
-      pushRedBlueBullets(redBlueRules.radial(star,star.bulletPower));
-      // Snapshot BEFORE damage: freshly spawned split drones / a newly
-      // summoned Boss must not take the same full-field pulse.
-      const targets = game.enemies.slice();
-      const boss = game.boss?.active && game.boss.hp>0 ? game.boss : null;
-      for (const e of targets) {
-        if (e.hp>0 && game.enemies.includes(e))
-          damageEnemy(e,star.power,e.x,e.y,"#ff6d99");
+      // All three complete 360-ray rings share the existing 1800-shot pool.
+      pushRedBlueBullets(shots);
+      for (const point of stars) {
+        if (game.state!=="PLAYING" || game.stageMode!==stage) break;
+        for (const e of targets) {
+          if (game.stageMode!==stage) break;
+          if (e.hp>0 && game.enemies.includes(e))
+            damageEnemy(e,fall.power,e.x,e.y,"#ff6d99");
+        }
+        if (game.stageMode!==stage) break;
+        if (boss && game.boss===boss && boss.active && boss.hp>0)
+          damageBoss(fall.power,boss.x,boss.y,"#92caff");
       }
-      if (boss && game.boss===boss && boss.active && boss.hp>0)
-        damageBoss(star.power,boss.x,boss.y,"#92caff");
     }
 
     // The red-blue projectile pool is separate from normal player bullets:
@@ -4951,7 +4968,7 @@ const W = 1280;
       for (const e of game.enemies) {
         if (e.hp <= 0) continue;
 
-        const damage = Math.max(8, e.maxHp * 0.72);
+        const damage = playerDamageAmount(Math.max(8, e.maxHp * 0.72));
         e.hp -= damage;
 
         for (let i = 0; i < 18; i++) {
@@ -4978,7 +4995,7 @@ const W = 1280;
 
       const b = game.boss;
       if (b && b.active) {
-        const bossDamage = Math.max(80, b.maxHp * (game.loop >= 2 ? 0.08 : 0.11));
+        const bossDamage = playerDamageAmount(Math.max(80, b.maxHp * (game.loop >= 2 ? 0.08 : 0.11)));
         b.hp -= bossDamage;
 
         for (let i = 0; i < 54; i++) {
@@ -5712,12 +5729,13 @@ const W = 1280;
     }
 
     function drawRedBlueStarfall() {
-      const star=game.redBlueStarfall;
-      if (star && (game.stageMode==="WAVE" || game.stageMode==="BOSS")) {
-        const p=redBlueRules.starPosition(star);
+      const fall=game.redBlueStarfall;
+      if (fall && (game.stageMode==="WAVE" || game.stageMode==="BOSS")) {
+        for (const star of fall.stars || [{x:fall.x,y:fall.y}]) {
+        const p=redBlueRules.starPosition({...star,elapsed:fall.elapsed});
         ctx.save();
         ctx.translate(p.x,p.y);
-        ctx.rotate(star.elapsed*3.8);
+        ctx.rotate(fall.elapsed*3.8);
         ctx.shadowColor="#c26dff";
         ctx.shadowBlur=27;
         const gradient=ctx.createLinearGradient(-70,-70,70,70);
@@ -5731,6 +5749,7 @@ const W = 1280;
         ctx.lineWidth=4;
         ctx.stroke();
         ctx.restore();
+        }
       }
       for(const fx of game.redBlueStarFx) {
         ctx.save();
@@ -6299,7 +6318,7 @@ const W = 1280;
         : game.weaponType === "redorange"
         ? "RED-ORANGE BLAST  R100 X1.6"
         : game.weaponType === "redblue"
-        ? "RED-BLUE  5-WAY R360 SEEK"
+        ? "RED-BLUE  20% TRIPLE STAR X1.3"
         : game.weaponType === "gray"
         ? "GRAY 20/5/75  1.5X"
         : game.weaponType === "grayflame"
@@ -6535,7 +6554,7 @@ const W = 1280;
       ctx.fillRect(0, 0, W, H);
 
       drawText("NEON WINGS", W / 2, 195, 86, "center", "#e7fbff");
-      drawText("NEONWINGS PAN  /  v26.31.1", W / 2, 270, 28, "center", "#98f5ff");
+      drawText("NEONWINGS PAN  /  v26.32.0", W / 2, 270, 28, "center", "#98f5ff");
       drawText(`HIGH SCORE ${String(highScore()).padStart(6, "0")}`, W / 2, 318, 24, "center", "#fff4b7");
 
       drawPlayerShip(W / 2 - 170, 492, -0.20, false, ships[0]);
