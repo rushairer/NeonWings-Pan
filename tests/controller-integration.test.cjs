@@ -251,7 +251,7 @@ test("physical X opens local records from the title and Start safely closes it",
 });
 
 
-test("floor turret uses right stick, X triggers once, remains steerable, then cools for 30 seconds", () => {
+test("floor turret uses right stick, X triggers once, remains steerable, then cools for 10 seconds", () => {
   const app=boot();
   app.eval('game.state="PLAYING";game.stageMode="WAVE"');
   app.pad.axes[2]=1;
@@ -270,11 +270,11 @@ test("floor turret uses right stick, X triggers once, remains steerable, then co
   app.pad.axes[2]=-1;
   app.eval("updateFloorLaser(4)");
   assert.equal(app.eval("game.floorLaser.active"), 0);
-  assert.equal(app.eval("game.floorLaser.cooldown"), 30);
+  assert.equal(app.eval("game.floorLaser.cooldown"), 10);
   press(app.pad,2,false);app.eval("pollGamepadSystemButtons()");
   press(app.pad,2,true);app.eval("pollGamepadSystemButtons()");
   assert.equal(app.eval("game.floorLaser.active"), 0);
-  app.eval("updateFloorLaser(30)");
+  app.eval("updateFloorLaser(10)");
   assert.equal(app.eval("game.floorLaser.cooldown"), 0);
   press(app.pad,2,false);app.eval("pollGamepadSystemButtons()");
   press(app.pad,2,true);app.eval("pollGamepadSystemButtons()");
