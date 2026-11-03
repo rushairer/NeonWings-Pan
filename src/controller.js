@@ -54,7 +54,7 @@
     const delta = direction < 0 ? -1 : 1;
     for (let n = 1; n <= len; n++) {
       const candidate = BUTTONS[(start + delta * n + len * 2) % len].index;
-      if (!reserved.includes(candidate)) return candidate;
+      if (indexIsAllowed(candidate) && !reserved.includes(candidate)) return candidate;
     }
     return current;
   }
